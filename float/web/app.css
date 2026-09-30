@@ -915,3 +915,50 @@ table.grid td.num { text-align: right; font-variant-numeric: tabular-nums }
   .driving { padding: 8px 10px 8px 14px; gap: 9px }
   .driving small { display: none }
 }
+
+/* ------------------------------------------------ Claude-style dark mode */
+[data-theme="dark"] {
+  --paper:      #262624;   /* warm charcoal page */
+  --surface:    #30302E;   /* composer, cards */
+  --sage:       #30302E;
+  --sage-deep:  #3B3A37;
+  --line:       #3D3C39;
+  --ink:        #ECEBE6;
+  --ink-2:      #D6D4CC;
+  --soft:       #B0AEA5;
+  --faint:      #8B897F;
+  --board:      #1F1E1D;   /* sidebar */
+  --board-2:    #30302E;
+  --accent:     #D97757;   /* Claude terracotta */
+  --accent-ink: #FFFFFF;
+  --rose:       #E0705F;
+  --ok:         #6FBF8F;
+  --shadow: 0 0 0 1px rgba(255,255,255,.02), 0 6px 24px -10px rgba(0,0,0,.6);
+}
+[data-theme="dark"] a { color: #E39A7E }
+[data-theme="dark"] .rail { border-right: 1px solid #333230 }
+[data-theme="dark"] .topbar { background: transparent; border-bottom-color: transparent }
+[data-theme="dark"] .composer { border-color: #4A4844; border-radius: 22px }
+[data-theme="dark"] .composer:focus-within { border-color: #6A6862 }
+[data-theme="dark"] .send { background: var(--accent); color: #fff }
+[data-theme="dark"] .send:not(:disabled):hover { background: #C4664A }
+[data-theme="dark"] .send:disabled { background: #3B3A37; color: var(--faint) }
+[data-theme="dark"] .composer-wrap { background: linear-gradient(to top, var(--paper) 70%, transparent) }
+[data-theme="dark"] .chip.on { background: var(--surface); border-color: var(--accent); color: var(--ink) }
+
+/* Answers: no dividers, no boxes, just text on the page. */
+[data-theme="dark"] .turn + .turn { border-top: 0 }
+[data-theme="dark"] .turn { padding: 16px 0 }
+[data-theme="dark"] .user-said {
+  background: #141413; color: var(--ink);
+  border-radius: 18px; border-top-left-radius: 18px;
+}
+[data-theme="dark"] .turn-who .float-mark { background: var(--accent); color: #fff }
+[data-theme="dark"] .prose code,
+[data-theme="dark"] .prose pre { background: #1F1E1D; border-color: #3D3C39 }
+
+/* Assistant answers and the greeting in Times New Roman (both themes). */
+.prose, .greeting h2, .greeting p.detail { font-family: var(--serif) }
+.prose { font-size: 17.5px; line-height: 1.7 }
+.prose code, .prose pre, .prose pre code { font-family: var(--mono) }
+.prose table { font-family: var(--serif) }
