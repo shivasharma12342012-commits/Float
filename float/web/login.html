@@ -137,6 +137,23 @@
   </section>
 </main>
 
+<div class="gsetup" id="gsetup" hidden>
+  <form class="gsetup-card" id="gsetup-form" autocomplete="off">
+    <h2>Turn on Google sign-in</h2>
+    <p id="gsetup-lead">One-time, 2 minutes. After this, it is just one click.</p>
+    <ol id="gsetup-steps">
+      <li>Open <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud &rarr; Credentials</a> &rarr; <b>Create credentials &rarr; OAuth client ID &rarr; Web application</b>.</li>
+      <li>Under <b>Authorised redirect URIs</b> add this address: <code id="gsetup-uri"></code> <button type="button" class="gsetup-copy" id="gsetup-copy">Copy</button></li>
+      <li>Paste the two values Google shows you:</li>
+    </ol>
+    <div class="field"><label for="gs-id">Client ID</label><input type="text" id="gs-id" placeholder="123456-abc.apps.googleusercontent.com"></div>
+    <div class="field"><label for="gs-secret">Client secret</label><input type="password" id="gs-secret" placeholder="GOCSPX-…"></div>
+    <div class="gsetup-row">
+      <button type="button" class="gsetup-cancel" id="gsetup-cancel">Cancel</button>
+      <button type="submit" class="gate-submit" id="gsetup-save">Save and continue with Google</button>
+    </div>
+  </form>
+</div>
 <script src="/login.js"></script>
 </body>
 </html>
