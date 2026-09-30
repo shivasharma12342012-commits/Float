@@ -256,6 +256,30 @@ class Settings:
 settings = Settings()
 
 
+def _load_google_file() -> None:
+    """Google credentials pasted in the sign-in page live in data/google.json."""
+    import json
+    try:
+        saved = json.loads((DATA_DIR / "google.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if not settings.google_client_id:
+        settings.google_client_id = str(saved.get("client_id", "")).strip()
+        settings.google_client_secret = str(saved.get("client_secret", "")).strip()
+
+
+def save_google(client_id: str, client_secret: str) -> None:
+    import json
+    ensure_dirs()
+    (DATA_DIR / "google.json").write_text(
+        json.dumps({"client_id": client_id, "client_secret": client_secret}), encoding="utf-8")
+    settings.google_client_id = client_id
+    settings.google_client_secret = client_secret
+
+
+_load_google_file()
+
+
 def ensure_dirs() -> None:
     for path in (DATA_DIR, FILES_DIR, LOG_PATH.parent):
         path.mkdir(parents=True, exist_ok=True)
