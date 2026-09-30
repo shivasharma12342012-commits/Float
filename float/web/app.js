@@ -1625,7 +1625,19 @@ $("file-input").addEventListener("change", (event) => {
   event.target.value = "";
 });
 
-$("rail-toggle").addEventListener("click", () => $("rail").classList.toggle("open"));
+// Phone layout: the menu opens over the chat, so it must also close itself.
+const closeRail = () => $("rail").classList.remove("open");
+$("rail-toggle").addEventListener("click", (event) => {
+  event.stopPropagation();
+  $("rail").classList.toggle("open");
+});
+$("rail").addEventListener("click", (event) => {
+  if (event.target.closest("button")) closeRail();      // picked something
+});
+document.addEventListener("click", (event) => {
+  if (!event.target.closest("#rail")) closeRail();      // tapped outside
+});
+window.addEventListener("resize", () => { if (window.innerWidth > 760) closeRail(); });
 $("driving-stop").addEventListener("click", stopComputer);
 
 $("sign-out").addEventListener("click", async () => {
@@ -1636,6 +1648,7 @@ $("sign-out").addEventListener("click", async () => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
+    if ($("rail").classList.contains("open")) { closeRail(); return; }
     if (S.driving) { stopComputer(); return; }
     if (!$("modal-scrim").hidden) { closeModal(); return; }
     if (!$("drawer").hidden) closeDrawer();
