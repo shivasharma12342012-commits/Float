@@ -329,6 +329,7 @@ function addFloatTurn() {
 
 function scrollDown() {
   const stream = $("stream");
+  stream.style.scrollBehavior = "auto";   // smooth-scroll made streaming lag
   stream.scrollTop = stream.scrollHeight;
 }
 
@@ -356,6 +357,7 @@ async function send(prompt, convId) {
 
   setStreaming(true);
   let raw = "";
+  let renderQueued = false;
   let stepsCard = null;
 
   try {
@@ -404,8 +406,15 @@ async function send(prompt, convId) {
         } else if (event.type === "text") {
           waiting.remove();
           raw += event.text;
-          turn.prose.innerHTML = markdown(raw) + '<span class="caret"></span>';
-          scrollDown();
+          // Render at most once per frame instead of once per token.
+          if (!renderQueued) {
+            renderQueued = true;
+            requestAnimationFrame(() => {
+              renderQueued = false;
+              turn.prose.innerHTML = markdown(raw) + '<span class="caret"></span>';
+              scrollDown();
+            });
+          }
         } else if (event.type === "tool") {
           waiting.hidden = false;
           waiting.lastChild.textContent = event.label + "…";
