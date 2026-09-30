@@ -950,6 +950,14 @@ class FloatHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     # -- plumbing ----------------------------------------------------------
+    def setup(self) -> None:
+        super().setup()
+        try:   # send each streamed chunk immediately instead of waiting to batch it
+            import socket
+            self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        except OSError:
+            pass
+
     def log_message(self, fmt: str, *args: Any) -> None:
         return  # the audit log is the log
 
