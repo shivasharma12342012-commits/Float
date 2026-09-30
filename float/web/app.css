@@ -883,12 +883,35 @@ table.grid td.num { text-align: right; font-variant-numeric: tabular-nums }
 .right { text-align: right }
 .mono { font: 13px var(--mono) }
 .key-input {
-  background: #fff !important;
-  color: #000 !important;
-  caret-color: #000;
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  caret-color: var(--ink);
 }
-.key-input::placeholder { color: #666 !important; }
+.key-input::placeholder { color: var(--faint) !important; }
 .key-shown {
   font: 13px var(--mono); background: var(--sage); border: 1px dashed var(--sage-deep);
   padding: 9px 12px; border-radius: var(--r-sm); user-select: all; word-break: break-all;
+}
+
+/* ---------------------------------------------------- UI fixes (v2) */
+/* The "Float is using your computer" bar used to sit on top of the
+   composer. Put it at the top, clear of the text box and the send button. */
+.driving {
+  top: 14px; bottom: auto;
+  max-width: calc(100vw - 24px);
+}
+
+/* Mobile rail: drop shadow so it reads as a sheet above the chat. */
+.rail.open { box-shadow: 8px 0 32px rgba(0,0,0,.35) }
+
+/* Keep the composer clear of the phone's home bar. */
+.composer-wrap { padding-bottom: max(20px, env(safe-area-inset-bottom)) }
+
+@media (max-width: 760px) {
+  .topbar { padding: 0 12px; gap: 6px }
+  .topbar .chip { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  #chip-thread { display: none }
+  .composer-bar .composer-note { display: none }
+  .driving { padding: 8px 10px 8px 14px; gap: 9px }
+  .driving small { display: none }
 }
