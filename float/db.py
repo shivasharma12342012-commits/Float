@@ -510,6 +510,8 @@ def put_key(provider: str, secret: str, scope: str = "org", user_id: int | None 
             added_by: int | None = None, label: str = "") -> None:
     blob = security.encrypt_secret(secret)
     with cursor() as db:
+        if user_id is None:   # UNIQUE ignores NULL user_id, so replace the school key by hand
+            db.execute("DELETE FROM api_keys WHERE scope='org' AND provider=?", (provider,))
         db.execute(
             """INSERT INTO api_keys(scope,user_id,provider,secret,hint,label,added_by,created_at)
                VALUES(?,?,?,?,?,?,?,?)
@@ -542,7 +544,8 @@ def get_key(provider: str, user_id: int | None = None) -> str:
             if row:
                 return security.decrypt_secret(row["secret"])
         row = db.execute(
-            "SELECT secret FROM api_keys WHERE scope='org' AND provider=?", (provider,)
+            "SELECT secret FROM api_keys WHERE scope='org' AND provider=? ORDER BY id DESC LIMIT 1",
+            (provider,)
         ).fetchone()
     return security.decrypt_secret(row["secret"]) if row else ""
 
