@@ -616,7 +616,7 @@ def unlock(ctx: Route) -> dict[str, Any]:
     """The local transport. Not advertised; the passphrase is the whole gate."""
     user = ctx.require_user()
     phrase = str(ctx.body.get("phrase", ""))
-    allowed, wait = security.sign_in_limiter.check(f"unlock:{ctx.ip}")
+    allowed, wait = security.unlock_limiter.check(f"unlock:{ctx.ip}")
     if not allowed:
         raise HttpError(429, f"Try again in {int(wait)}s.")
     if not config.rt_phrase_matches(phrase):
