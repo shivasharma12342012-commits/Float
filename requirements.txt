@@ -22,3 +22,7 @@ keyboard>=0.13.5
 # emoji) correctly during "use the computer" tasks, via clipboard paste.
 # Without it, only characters pyautogui recognises as keys will be typed.
 pyperclip>=1.8.2
+
+# Lets Float read text out of PDFs you attach in chat (for example an NCERT
+# chapter). Without it only simple text PDFs work.
+pypdf>=4.0
