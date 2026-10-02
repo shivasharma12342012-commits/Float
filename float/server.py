@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import io
 import json
+import math
 import mimetypes
 import posixpath
 import re
@@ -746,10 +747,16 @@ def marks_add(ctx: Route) -> dict[str, Any]:
         try:
             if not isinstance(row, dict) or int(row["student_id"]) not in valid_ids:
                 raise ValueError
-            float(row.get("score", 0))
-            float(row.get("max_score", 100))
+            score = float(row.get("score", 0))
+            max_score = float(row.get("max_score", 100))
         except (KeyError, TypeError, ValueError):
             raise HttpError(400, "Each mark needs a student from this class and a numeric score.")
+        if not (math.isfinite(score) and math.isfinite(max_score)):
+            raise HttpError(400, "Marks must be ordinary numbers.")
+        if max_score <= 0:
+            raise HttpError(400, "Maximum marks must be more than 0.")
+        if not 0 <= score <= max_score:
+            raise HttpError(400, f"A score must be between 0 and the maximum ({max_score:g}).")
         clean.append(row)
     count = db.record_marks(clean)
     return {"ok": True, "saved": count}
