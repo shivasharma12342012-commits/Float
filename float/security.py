@@ -119,7 +119,7 @@ def token_fingerprint(token: str) -> str:
 
 
 def same(a: str, b: str) -> bool:
-    return hmac.compare_digest(a or "", b or "")
+    return hmac.compare_digest((a or "").encode("utf-8"), (b or "").encode("utf-8"))
 
 
 # ---------------------------------------------------------------------------
@@ -282,3 +282,5 @@ sign_in_limiter = RateLimiter(
     penalty=config.settings.lockout_seconds,
 )
 chat_limiter = RateLimiter(limit=60, window=60.0)
+# Separate budget so unlock guesses cannot lock people out of signing in.
+unlock_limiter = RateLimiter(limit=5, window=300.0, penalty=900.0)
