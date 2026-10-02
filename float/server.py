@@ -712,7 +712,21 @@ def marks_add(ctx: Route) -> dict[str, Any]:
     class_id = int(ctx.params["class_id"])
     if not db.owns_class(class_id, int(user["id"])):
         raise HttpError(404, "No such class.")
-    count = db.record_marks(ctx.body.get("marks") or [])
+    valid_ids = {int(x["id"]) for x in db.list_students(class_id)}
+    rows = ctx.body.get("marks") or []
+    if not isinstance(rows, list):
+        raise HttpError(400, "Marks must be a list.")
+    clean = []
+    for row in rows:
+        try:
+            if not isinstance(row, dict) or int(row["student_id"]) not in valid_ids:
+                raise ValueError
+            float(row.get("score", 0))
+            float(row.get("max_score", 100))
+        except (KeyError, TypeError, ValueError):
+            raise HttpError(400, "Each mark needs a student from this class and a numeric score.")
+        clean.append(row)
+    count = db.record_marks(clean)
     return {"ok": True, "saved": count}
 
 
@@ -723,9 +737,15 @@ def attendance_save(ctx: Route) -> dict[str, Any]:
     if not db.owns_class(class_id, int(user["id"])):
         raise HttpError(404, "No such class.")
     body = ctx.body
-    db.save_attendance(class_id, str(body.get("date", "")),
-                       [int(i) for i in body.get("present") or []],
-                       [int(i) for i in body.get("absent") or []])
+    valid_ids = {int(x["id"]) for x in db.list_students(class_id)}
+    try:
+        present = [int(i) for i in body.get("present") or []]
+        absent = [int(i) for i in body.get("absent") or []]
+    except (TypeError, ValueError):
+        raise HttpError(400, "Attendance lists must contain student ids.")
+    if not set(present + absent) <= valid_ids:
+        raise HttpError(400, "Attendance includes a student who is not in this class.")
+    db.save_attendance(class_id, str(body.get("date", "")), present, absent)
     return {"ok": True}
 
 
@@ -1092,9 +1112,12 @@ class FloatHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream; charset=utf-8")
         self.send_header("Cache-Control", "no-cache, no-transform")
-        self.send_header("Connection", "keep-alive")
+        # No Content-Length on a stream: close the connection when it ends so the
+        # browser sees end-of-stream instead of waiting forever.
+        self.send_header("Connection", "close")
         self.send_header("X-Accel-Buffering", "no")
         self.end_headers()
+        self.close_connection = True
         try:
             for event in stream:
                 frame = f"data: {json.dumps(event, default=str)}\n\n".encode("utf-8")
