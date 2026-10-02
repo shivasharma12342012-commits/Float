@@ -1570,7 +1570,9 @@ function clearAttachments() {
 
 async function attach(files) {
   for (const file of files) {
-    if (file.size > 11 * 1024 * 1024) { toast(`${file.name} is too big (11 MB limit).`, true); continue; }
+    if (file.size > 8 * 1024 * 1024) { toast(`${file.name} is too big (8 MB limit). Attach fewer pages or a smaller file.`, true); continue; }
+    const already = S.attachments.reduce((n, a) => n + a.data.length * 0.75, 0);
+    if (already + file.size > 8 * 1024 * 1024) { toast("Too much attached at once (8 MB total). Send the rest in a second message.", true); continue; }
     const data = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result).split(",")[1]);
