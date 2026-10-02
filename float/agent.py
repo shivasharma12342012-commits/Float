@@ -24,6 +24,7 @@ import threading
 import time
 from typing import Any, Iterator
 
+from . import attachments as attachment_reader
 from . import config, db, providers, tools
 
 MAX_TOOL_ROUNDS = 6
@@ -97,19 +98,26 @@ def run(user: dict[str, Any], conv_id: int, message: str, model_choice: str = ""
     if message.strip():
         user_blocks.append({"type": "text", "text": message})
     for attachment in attachments or []:
-        if attachment.get("kind") == "image" and provider != "local":
-            user_blocks.append({
-                "type": "image",
-                "source": {"type": "base64",
-                           "media_type": attachment.get("media_type", "image/png"),
-                           "data": attachment.get("data", "")},
-            })
-        elif attachment.get("text"):
-            user_blocks.append({
-                "type": "text",
-                "text": f"\n\n--- {attachment.get('name', 'attached file')} ---\n"
-                        f"{attachment['text'][:120_000]}",
-            })
+        if not isinstance(attachment, dict):
+            continue
+        if attachment.get("kind") == "image":
+            if provider != "local":
+                user_blocks.append({
+                    "type": "image",
+                    "source": {"type": "base64",
+                               "media_type": attachment.get("media_type") or attachment.get("mime") or "image/png",
+                               "data": attachment.get("data", "")},
+                })
+            continue
+        try:
+            body_text = attachment_reader.to_text(attachment)
+        except attachment_reader.AttachmentError as exc:
+            yield {"type": "error", "message": str(exc)}
+            return
+        user_blocks.append({
+            "type": "text",
+            "text": f"\n\n--- {attachment.get('name', 'attached file')} ---\n{body_text}",
+        })
 
     db.add_message(conv_id, "user", message, {"blocks": user_blocks if len(user_blocks) > 1 else None})
 
