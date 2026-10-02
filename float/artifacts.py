@@ -791,7 +791,7 @@ def store(user_id: int, conv_id: int | None, name: str, kind: str, data: bytes) 
 def artifact_bytes(artifact: dict[str, Any]) -> bytes:
     path = Path(config.FILES_DIR) / artifact["rel_path"]
     resolved = path.resolve()
-    if not str(resolved).startswith(str(Path(config.FILES_DIR).resolve())):
+    if not resolved.is_relative_to(Path(config.FILES_DIR).resolve()):
         raise PermissionError("Refused: path escapes the file area.")
     return resolved.read_bytes()
 
