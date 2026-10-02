@@ -82,7 +82,13 @@ class Route:
 
 def route(method: str, pattern: str, auth: str = "user") -> Callable[[Handler], Handler]:
     """auth: 'none' | 'user' | 'admin'."""
-    regex = re.compile("^" + re.sub(r"\{(\w+)\}", r"(?P<\1>[^/]+)", pattern) + "$")
+    def _param(m: "re.Match[str]") -> str:
+        name = m.group(1)   # numeric ids must be digits, so "abc" is a 404, not a crash
+        digits = name.endswith("_id") and name != "entry_id"
+        sub = r"\d{1,18}" if digits else "[^/]+"
+        return "(?P<" + name + ">" + sub + ")"
+
+    regex = re.compile("^" + re.sub(r"\{(\w+)\}", _param, pattern) + "$")
 
     def decorate(handler: Handler) -> Handler:
         _routes.append((method, regex, handler, auth))
@@ -188,6 +194,20 @@ def google_start(ctx: Route) -> dict[str, Any]:
         user_id = int(user["id"])
     redirect = f"http://{config.settings.host}:{ctx.request.server.server_port}/auth/google/callback"
     return {"url": google.start(redirect, want_drive, user_id)}
+
+
+@route("POST", "/api/auth/google/setup", auth="none")
+def google_setup(ctx: Route) -> dict[str, Any]:
+    """Save the school's Google OAuth client. First-run setup or an admin only."""
+    if db.count_users() > 0 and (ctx.user is None or ctx.user["role"] != "admin"):
+        raise HttpError(403, "Only an admin can change the Google sign-in settings.")
+    client_id = str(ctx.body.get("client_id", "")).strip()
+    client_secret = str(ctx.body.get("client_secret", "")).strip()
+    if not client_id or not client_secret or len(client_id) > 300 or len(client_secret) > 300:
+        raise HttpError(400, "Paste both the client ID and the client secret.")
+    config.save_google(client_id, client_secret)
+    db.audit("google.setup", detail="client saved", ip=ctx.ip, level="warn")
+    return {"ok": True}
 
 
 @route("GET", "/auth/google/callback", auth="none")
@@ -477,10 +497,12 @@ def toolkit_run(ctx: Route) -> dict[str, Any]:
     entry = tools.toolkit_entry(ctx.params["entry_id"])
     if entry is None:
         raise HttpError(404, "No such tool.")
-    prompt = tools.fill_prompt(entry, ctx.body.get("values") or {})
+    values = ctx.body.get("values")
+    if not isinstance(values, dict):
+        values = {}
+    prompt = tools.fill_prompt(entry, values)
     title = f"{entry['name']}" + (
-        f" — {ctx.body.get('values', {}).get('topic') or ctx.body.get('values', {}).get('klass', '')}"
-        if ctx.body.get("values") else ""
+        f" — {values.get('topic') or values.get('klass', '')}" if values else ""
     )
     conv_id = db.new_conversation(int(user["id"]), title.strip(" —")[:120], entry["id"])
     return {"conv_id": conv_id, "prompt": prompt, "title": title}
@@ -501,7 +523,10 @@ def artifact_download(ctx: Route) -> Any:
     artifact = db.get_artifact(int(ctx.params["artifact_id"]), int(user["id"]))
     if artifact is None:
         raise HttpError(404, "No such file.")
-    data = artifacts.artifact_bytes(artifact)
+    try:
+        data = artifacts.artifact_bytes(artifact)
+    except (PermissionError, FileNotFoundError):
+        raise HttpError(404, "That file is no longer available.") from None
     mime = artifacts.KINDS.get(artifact["kind"], ("", "application/octet-stream"))[1]
     return ("file", (artifact["name"], mime, data))
 
@@ -830,11 +855,18 @@ def admin_add_user(ctx: Route) -> dict[str, Any]:
     email = str(body.get("email", "")).strip().lower()
     name = str(body.get("name", "")).strip()
     password = str(body.get("password", "")) or security.new_token(9)
+    role = str(body.get("role", "teacher"))
     if "@" not in email:
         raise HttpError(400, "That email address does not look right.")
+    if role not in {"teacher", "admin"}:
+        raise HttpError(400, "Role must be 'teacher' or 'admin'.")
+    if body.get("password"):
+        problems = security.password_problems(password)
+        if problems:
+            raise HttpError(400, " ".join(problems))
     if db.get_user_by_email(email):
         raise HttpError(409, "There is already an account with that email.")
-    user = db.create_user(email, name, password, role=str(body.get("role", "teacher")),
+    user = db.create_user(email, name, password, role=role,
                           must_change=True, school=db.org_get("school_name"))
     db.audit("admin.user.add", user_id=int(admin["id"]), actor=admin["name"],
              detail=f"added {email}", level="warn", ip=ctx.ip)
@@ -935,7 +967,10 @@ def admin_notice(ctx: Route) -> dict[str, Any]:
     admin = ctx.require_admin()
     body = ctx.body
     if body.get("retire"):
-        db.retire_notice(int(body["retire"]))
+        try:
+            db.retire_notice(int(body["retire"]))
+        except (TypeError, ValueError):
+            raise HttpError(400, "Which notice? Send its number.") from None
     else:
         title = str(body.get("title", "")).strip()
         if not title:
@@ -968,6 +1003,7 @@ def admin_export(ctx: Route) -> Any:
 class FloatHandler(BaseHTTPRequestHandler):
     server_version = f"Float/{config.VERSION}"
     protocol_version = "HTTP/1.1"
+    timeout = 30   # seconds a client may stall on a read before its thread is freed
 
     # -- plumbing ----------------------------------------------------------
     def setup(self) -> None:
@@ -984,10 +1020,15 @@ class FloatHandler(BaseHTTPRequestHandler):
     def json_body(self) -> dict[str, Any]:
         if getattr(self, "_body_cache", None) is not None:
             return self._body_cache
-        length = int(self.headers.get("Content-Length") or 0)
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            self.close_connection = True
+            raise HttpError(400, "Bad Content-Length header.") from None
         if length <= 0:
             self._body_cache = {}
         elif length > config.settings.max_upload_bytes:
+            self.close_connection = True   # the unread body would corrupt the next request
             raise HttpError(413, "That is larger than Float accepts.")
         else:
             raw = self.rfile.read(length)
@@ -1140,9 +1181,13 @@ class FloatHandler(BaseHTTPRequestHandler):
         if path in self._PAGES:
             target = Path(config.WEB_ROOT) / self._PAGES[path]
         else:
-            clean = posixpath.normpath(urllib.parse.unquote(path)).lstrip("/")
-            target = (Path(config.WEB_ROOT) / clean).resolve()
-            if not str(target).startswith(str(Path(config.WEB_ROOT).resolve())):
+            decoded = urllib.parse.unquote(path)
+            if "\x00" in decoded:
+                raise HttpError(404, "Not found.")
+            clean = posixpath.normpath(decoded).lstrip("/")
+            root = Path(config.WEB_ROOT).resolve()
+            target = (root / clean).resolve()
+            if not target.is_relative_to(root):
                 raise HttpError(403, "Refused.")
         if not target.is_file():
             raise HttpError(404, "Not found.")
@@ -1170,6 +1215,6 @@ def serve(host: str | None = None, port: int | None = None) -> FloatServer:
     config.ensure_dirs()
     db.init()
     db.purge_stale_sessions()
-    server = FloatServer((host or config.settings.host, port or config.settings.port), FloatHandler)
+    server = FloatServer((host or config.settings.host, config.settings.port if port is None else port), FloatHandler)
     threading.Thread(target=server.serve_forever, daemon=True, name="float-http").start()
     return server
