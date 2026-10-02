@@ -298,6 +298,25 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(len(data["notices"]), 1)
 
+    def test_13_marks_are_validated(self):
+        status, data = self.call("/api/classes", {"name": "8B", "roster": "1, Aarav\n2, Diya"},
+                                 token=self.token)
+        cid = data["id"]
+        _, data = self.call(f"/api/classes/{cid}/students", token=self.token)
+        sid = data["students"][0]["id"]
+
+        def post(score, mx):
+            return self.call(f"/api/classes/{cid}/marks", {"marks": [
+                {"student_id": sid, "assessment": "UT", "score": score, "max_score": mx}]},
+                token=self.token)[0]
+
+        self.assertEqual(post(42, 50), 200)
+        self.assertEqual(post(0, 50), 200)
+        self.assertEqual(post(50, 50), 200)
+        for bad in [(55, 50), (-5, 50), (3, 0), ("abc", 50), (None, 50), (float("nan"), 50),
+                    (float("inf"), 50), (3, -10)]:
+            self.assertEqual(post(*bad), 400, bad)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
