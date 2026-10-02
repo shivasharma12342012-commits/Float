@@ -257,6 +257,23 @@ Run `Start Float.bat` directly instead of the `.vbs` shortcut — that one shows
 <br>
 
 
+## License
+
+**Float is proprietary software.** Copyright © 2026 Shiva Sharma, Prabhjot Singh and Yatharth Joshi. All rights reserved.
+
+Licensed to **New Era Public School** under a separate written agreement. Nothing in this repository grants any right to copy, modify, host, redistribute or resell Float without a written agreement signed by all three authors. The full terms are in [`LICENSE`](LICENSE).
+
+| | |
+|---|---|
+| **Owners** | Shiva Sharma, Prabhjot Singh, Yatharth Joshi |
+| **Licensee** | New Era Public School |
+| **Data** | Stays on the school's own computers; the authors hold none of it |
+| **Third-party packages** | Optional (`cryptography`, `pyautogui`, `keyboard`, `pyperclip`), each under its own licence |
+
+For licensing, support or purchase enquiries, contact the authors at [your email].
+
+<br>
+
 <div align="center">
 
 *Float · Your teaching, lighter.*
