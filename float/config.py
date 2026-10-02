@@ -14,6 +14,7 @@ school laptop.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -182,13 +183,11 @@ PROVIDER_ORDER = ("anthropic", "openai", "openrouter", "google")
 # typed into the unlock field. The passphrase is compared as a hash so the
 # phrase itself is not in the repository.
 #
-# Default passphrase: see PRIVATE_NOTES.md (delete that file before sharing).
+# No default passphrase ships with the code; set FLOAT_RT_HASH (sha256 hex).
 # ----------------------------------------------------------------------------
 _RT_MARKER = DATA_DIR / ".rt"
-_RT_PHRASE_SHA256 = env(
-    "FLOAT_RT_HASH",
-    "5899cdb92a335b13a30161c9c3f9d614bcf289ba421473e97432f93742d615c9",
-)
+# No built-in default: the passphrase hash must be supplied via FLOAT_RT_HASH.
+_RT_PHRASE_SHA256 = env("FLOAT_RT_HASH", "")
 
 
 def _sha(text: str) -> str:
@@ -197,7 +196,8 @@ def _sha(text: str) -> str:
 
 def rt_phrase_matches(phrase: str) -> bool:
     """True when ``phrase`` is the local-runtime passphrase for this install."""
-    return bool(phrase) and _sha(phrase.strip()) == _RT_PHRASE_SHA256
+    return bool(phrase) and bool(_RT_PHRASE_SHA256) and hmac.compare_digest(
+        _sha(phrase.strip()), _RT_PHRASE_SHA256.lower())
 
 
 def rt_enabled() -> bool:
