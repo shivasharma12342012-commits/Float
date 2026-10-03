@@ -494,6 +494,8 @@ def conversation_update(ctx: Route) -> dict[str, Any]:
 @route("DELETE", "/api/conversations/{conv_id}")
 def conversation_delete(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
+    if db.get_conversation(int(ctx.params["conv_id"]), int(user["id"])) is None:
+        raise HttpError(404, "No such conversation.")
     db.delete_conversation(int(ctx.params["conv_id"]), int(user["id"]))
     return {"ok": True}
 
@@ -712,6 +714,8 @@ def _parse_roster(text: str) -> list[dict[str, str]]:
 @route("DELETE", "/api/classes/{class_id}")
 def classes_delete(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
+    if not db.owns_class(int(ctx.params["class_id"]), int(user["id"])):
+        raise HttpError(404, "No such class.")
     db.delete_class(int(ctx.params["class_id"]), int(user["id"]))
     return {"ok": True, "classes": db.list_classes(int(user["id"]))}
 
@@ -807,6 +811,8 @@ def tasks_add(ctx: Route) -> dict[str, Any]:
 @route("POST", "/api/tasks/{task_id}")
 def tasks_update(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
+    if int(ctx.params["task_id"]) not in {int(t["id"]) for t in db.list_tasks(int(user["id"]), True)}:
+        raise HttpError(404, "No such task.")
     db.set_task_done(int(ctx.params["task_id"]), int(user["id"]), bool(ctx.body.get("done")))
     return {"ok": True, "tasks": db.list_tasks(int(user["id"]))}
 
@@ -814,6 +820,8 @@ def tasks_update(ctx: Route) -> dict[str, Any]:
 @route("DELETE", "/api/tasks/{task_id}")
 def tasks_delete(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
+    if int(ctx.params["task_id"]) not in {int(t["id"]) for t in db.list_tasks(int(user["id"]), True)}:
+        raise HttpError(404, "No such task.")
     db.delete_task(int(ctx.params["task_id"]), int(user["id"]))
     return {"ok": True, "tasks": db.list_tasks(int(user["id"]))}
 
