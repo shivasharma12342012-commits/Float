@@ -1108,6 +1108,33 @@ class FloatHandler(BaseHTTPRequestHandler):
         except Exception as exc:  # pragma: no cover
             traceback.print_exc()
             self._send_json({"error": f"Float hit an unexpected problem: {exc}"}, 500)
+        finally:
+            self._drain_body()
+
+    def _drain_body(self) -> None:
+        """Discard a request body the handler never read.
+
+        The server speaks HTTP/1.1 keep-alive. If a POST is rejected (401, 403,
+        a handler that ignores its body) before the body is read, those bytes
+        stay on the socket and get glued onto the next request line, which the
+        browser then sees as "501 Unsupported method".
+        """
+        if getattr(self, "_body_cache", None) is not None or self.close_connection:
+            return
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            self.close_connection = True
+            return
+        if length <= 0:
+            return
+        if length > 32 * 1024 * 1024:
+            self.close_connection = True
+            return
+        try:
+            self.rfile.read(length)
+        except (OSError, ValueError):
+            self.close_connection = True
 
     def _bearer(self) -> str:
         header = self.headers.get("Authorization", "")
