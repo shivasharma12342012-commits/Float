@@ -238,7 +238,7 @@ class Settings:
     max_attempts: int = field(default_factory=lambda: env_int("FLOAT_MAX_ATTEMPTS", 7))
     lockout_seconds: float = field(default_factory=lambda: env_float("FLOAT_LOCKOUT", 90.0))
 
-    max_upload_bytes: int = field(default_factory=lambda: env_int("FLOAT_MAX_UPLOAD", 12_000_000))
+    max_upload_bytes: int = field(default_factory=lambda: env_int("FLOAT_MAX_UPLOAD", 45_000_000))
     request_timeout: float = field(default_factory=lambda: env_float("FLOAT_TIMEOUT", 180.0))
 
     google_client_id: str = field(default_factory=lambda: env("GOOGLE_CLIENT_ID"))
