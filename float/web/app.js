@@ -103,7 +103,6 @@ async function boot() {
   theme(data.user.appearance || "system");
   paintIdentity();
   paintGreeting(data.greeting, data.reflection);
-  paintQuick(data.greeting);
   paintThreads(data.conversations);
   paintNotices(data.notices);
   paintCounts();
@@ -134,44 +133,15 @@ function paintIdentity() {
 
 /** The greeting. Times New Roman, no network, nothing to click through. */
 function paintGreeting(greeting, reflection) {
-  $("g-date").textContent = `${greeting.date} · ${greeting.clock}`;
+  showGreeting(true);
   $("g-headline").textContent = greeting.headline;
   $("g-detail").textContent = greeting.detail || "";
   $("g-detail").className = "detail" + (greeting.tone === "urgent" ? " urgent" : "");
-  $("g-opener").textContent = greeting.opener || "";
 
   if (reflection) {
     $("reflection").hidden = false;
     $("reflection-text").textContent = reflection;
   }
-}
-
-/** Five openers, chosen for the hour of the day rather than at random. */
-function paintQuick(greeting) {
-  const box = $("quick");
-  box.innerHTML = "";
-
-  const byPeriod = greeting.period && greeting.period.label
-    ? [`Plan ${greeting.period.label}`]
-    : [];
-
-  const picks = [
-    ...byPeriod,
-    "Make a worksheet for tomorrow",
-    "Write a question paper",
-    "Draft a message for parents",
-    "Help me mark a set of answers",
-  ].slice(0, 5);
-
-  picks.forEach((text) => {
-    const button = make("button", null, text);
-    button.addEventListener("click", () => {
-      $("input").value = text;
-      grow();
-      $("input").focus();
-    });
-    box.append(button);
-  });
 }
 
 function paintThreads(list) {
@@ -245,10 +215,16 @@ function paintAssistChip() {
 
 /* ══════════════════════════════════ 3. the conversation ═════════════════ */
 
+/** Landing layout (centred greeting + composer) only while the welcome shows. */
+function showGreeting(on) {
+  $("greeting").hidden = !on;
+  document.querySelector(".main").classList.toggle("landing", on);
+}
+
 function newThread() {
   S.conv = null;
   $("turns").innerHTML = "";
-  $("greeting").hidden = false;
+  showGreeting(true);
   $("chip-thread").hidden = true;
   document.querySelectorAll(".thread").forEach((t) => t.setAttribute("aria-current", "false"));
   $("input").focus();
@@ -258,7 +234,7 @@ async function openThread(convId) {
   const data = await api(`/api/conversations/${convId}`);
   if (!data) return;
   S.conv = convId;
-  $("greeting").hidden = true;
+  showGreeting(false);
   $("chip-thread").hidden = false;
   $("chip-thread-title").textContent = data.conversation.title;
   $("turns").innerHTML = "";
@@ -345,7 +321,7 @@ async function send(prompt, convId) {
   if (prompt === undefined) { input.value = ""; grow(); }
   clearAttachments();
 
-  $("greeting").hidden = true;
+  showGreeting(false);
   addUserTurn(text, attachments);
 
   const turn = addFloatTurn();
