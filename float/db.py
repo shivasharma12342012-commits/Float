@@ -711,7 +711,7 @@ def usage_summary(days: int = 30) -> list[dict[str, Any]]:
                       COUNT(g.id)                   AS calls,
                       COALESCE(AVG(g.latency_ms),0) AS latency
                FROM users u LEFT JOIN usage g ON g.user_id=u.id AND g.created_at>=?
-               GROUP BY u.id ORDER BY paise DESC, u.name COLLATE NOCASE""",
+               GROUP BY u.id ORDER BY u.name COLLATE NOCASE""",
             (since,),
         ).fetchall()
     return [dict(r) for r in rows]
@@ -984,3 +984,59 @@ def own_work_summary(user_id: int, days: int = 7) -> dict[str, Any]:
     total = data["ai"] + data["own"]
     data["own_share"] = round(100 * data["own"] / total) if total else 0
     return data
+
+
+# ---------------------------------------------------------------------------
+# Fair-share limits (equal by default; any exception is named and audited)
+# ---------------------------------------------------------------------------
+def _month_start() -> float:
+    t = time.localtime()
+    return time.mktime((t.tm_year, t.tm_mon, 1, 0, 0, 0, 0, 0, -1))
+
+
+def month_paise(user_id: int) -> float:
+    with cursor() as db:
+        row = db.execute("SELECT COALESCE(SUM(paise),0) p FROM usage WHERE user_id=? AND created_at>=?",
+                         (user_id, _month_start())).fetchone()
+    return float(row["p"])
+
+
+def pool_paise() -> float:
+    with cursor() as db:
+        row = db.execute("SELECT COALESCE(SUM(paise),0) p FROM usage WHERE created_at>=?",
+                         (_month_start(),)).fetchone()
+    return float(row["p"])
+
+
+def has_own_key(user_id: int) -> bool:
+    with cursor() as db:
+        return db.execute("SELECT 1 FROM api_keys WHERE scope='user' AND user_id=? LIMIT 1",
+                          (user_id,)).fetchone() is not None
+
+
+def cap_overrides() -> dict[str, int]:
+    try:
+        raw = json.loads(org_get("cap_overrides", "{}"))
+        return {str(k): int(v) for k, v in raw.items()}
+    except (ValueError, TypeError, AttributeError):
+        return {}
+
+
+def cap_for(user_id: int) -> tuple[int, bool]:
+    """(monthly cap in paise, is_custom). 0 means no cap."""
+    custom = cap_overrides()
+    if str(user_id) in custom:
+        return custom[str(user_id)], True
+    try:
+        return max(0, int(org_get("teacher_monthly_paise_cap", "0") or 0)), False
+    except ValueError:
+        return 0, False
+
+
+def set_cap_override(user_id: int, paise: int | None) -> None:
+    custom = cap_overrides()
+    if paise is None:
+        custom.pop(str(user_id), None)
+    else:
+        custom[str(user_id)] = int(paise)
+    org_set("cap_overrides", json.dumps(custom))
