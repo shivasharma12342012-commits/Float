@@ -1256,6 +1256,34 @@ function tabModels() {
   const two = make("span"); two.append(make("b", null, "₹" + ((usage.paise || 0) / 100).toFixed(2))); two.append(" estimated");
   ledger.append(one, two);
   spendBody.append(ledger);
+
+  // Fair-share meter: every teacher sees their own allowance, nobody else's.
+  const capPaise = usage.cap_paise || 0, usedPaise = usage.month_paise || 0;
+  const share = make("div", "hint");
+  share.style.marginTop = "12px";
+  if (capPaise > 0) {
+    const pct = Math.min(100, Math.round((usedPaise / capPaise) * 100));
+    share.append(make("b", null, "Your share this month: "));
+    share.append(`₹${(usedPaise / 100).toFixed(2)} of ₹${(capPaise / 100).toFixed(2)} used (${pct}%). Resets on the 1st.`);
+    const track = make("div");
+    track.style.cssText = "height:6px;border-radius:3px;background:var(--line);margin-top:6px;overflow:hidden";
+    const fill = make("div");
+    fill.style.cssText = `height:100%;width:${pct}%;background:${pct >= 100 ? "#B3412E" : "var(--accent)"}`;
+    track.append(fill);
+    share.append(track);
+    if (pct >= 80) {
+      share.append(make("div", null, pct >= 100
+        ? "Limit reached. Classes, marks and files still work. Ask your admin if you need more."
+        : "Getting close. Ask your admin early if you have a heavy month."));
+    }
+    if (S.boot.capabilities && S.boot.capabilities.teacher_own_keys) {
+      share.append(make("div", null, "Using your own API key below is never counted against this share."));
+    }
+  } else {
+    share.append(make("b", null, "Your share this month: "));
+    share.append("no limit set by your school.");
+  }
+  spendBody.append(share);
   spendBody.append(make("div", "hint",
     "An estimate from published per-token prices. Your provider's bill is the real number."));
   spend.append(spendBody);
