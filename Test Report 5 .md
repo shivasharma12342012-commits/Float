@@ -9,7 +9,7 @@
 
 | Item | Result |
 |---|---|
-| Live checks (teacher + admin + security + speed) | **64 of 65 pass**; the 1 flagged item is a **low-severity** wording/response problem. Data was not affected (Bug 1). |
+| Live checks (teacher + admin + security + speed) | **64 of 65 pass** on first run (the 1 flagged item was Bug 1). **65 of 65 pass** after the fixes in section 8. |
 | Unit tests, zip exactly as uploaded | 13 of 26 run, **1 import error** (Linux/macOS only, see Bug 2). Not an issue on Windows. |
 | Unit tests with the file name lowercased | **26 of 26 pass** |
 | Server errors / tracebacks in the server log | **0** |
@@ -162,3 +162,12 @@ Checks per area:
 ## 7b. Verdict
 
 For an everyday teacher workflow, Float held up. Nothing crashed, nobody could see another teacher's classes, and the admin panel exposes accounts and bands, not what teachers write. Fix Bug 1 (small) and show teachers their own limit (Bug 3) before a school-wide rollout.
+
+## 8. Re-test after fixes (same day)
+
+| Bug | Fix | Re-test result |
+|---|---|---|
+| 1. Deleting or editing someone else's class, task or chat said "ok" | `server.py` now checks ownership first and returns 404 (class delete, task edit, task delete, chat delete) | Other teacher: all four return **404**. The owner's own delete and edit still return **200**. |
+| 3. Teacher could not see their own monthly limit | `app.js` Settings now shows "Your share this month: ₹X of ₹Y (Z%)", a progress bar, an early warning at 80%, and a note that their own API key is never counted | Data reaches the app (`cap_paise: 10000` confirmed). JavaScript passes a syntax check. **Not yet looked at in a browser.** |
+
+Full re-run: **65 of 65** live checks pass, **26 of 26** unit tests pass, 0 tracebacks in the server log. Bug 2 (`Attachments.py` case) is unchanged because it only affects Linux/macOS.
