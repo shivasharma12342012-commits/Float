@@ -962,3 +962,24 @@ table.grid td.num { text-align: right; font-variant-numeric: tabular-nums }
 .prose { font-size: 17.5px; line-height: 1.7 }
 .prose code, .prose pre, .prose pre code { font-family: var(--mono) }
 .prose table { font-family: var(--serif) }
+
+/* ───────────── landing: centred welcome + composer, like Claude's home */
+.main.landing { justify-content: center; }
+.main.landing .topbar { position: absolute; top: 0; left: 0; right: 0; background: transparent; border-bottom-color: transparent; backdrop-filter: none; }
+.main.landing .stream { flex: 0 0 auto; overflow: visible; }
+.main.landing .column { padding-bottom: 0; }
+.main.landing .greeting { padding: 0; text-align: center; }
+.main.landing .greeting h2 { display: flex; align-items: center; justify-content: center; gap: 14px; font-size: clamp(28px, 4.4vw, 40px); margin-bottom: 26px; color: var(--ink); }
+.main.landing .greeting p.detail { margin: -12px auto 24px; font-size: 16px; max-width: 44ch; }
+.main.landing .reflection { margin-left: auto; margin-right: auto; text-align: left; }
+.main.landing .composer-wrap { background: none; padding-bottom: 0; }
+.main.landing .composer textarea { min-height: 58px; }
+.main.landing .composer-wrap > .composer-note { visibility: hidden; height: 0; margin: 0; }
+.greeting .spark { color: var(--accent); flex-shrink: 0; }
+[data-theme="dark"] .main.landing .greeting h2 { color: #F1F0EA; }
+@media (max-width: 720px) { .main.landing .greeting h2 { gap: 10px; } .greeting .spark { width: 28px; height: 28px; } }
+
+/* Sidebar account button: was falling back to the browser's grey button. */
+button.rail-foot-name { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; text-align: left; background: none; border: 0; color: inherit; font: inherit; font-size: 13px; padding: 4px 6px; border-radius: var(--r-sm); cursor: pointer; }
+button.rail-foot-name:hover { background: rgba(255,255,255,.07); }
+button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
