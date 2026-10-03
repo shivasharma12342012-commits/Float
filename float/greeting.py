@@ -44,6 +44,48 @@ SALUTATIONS = {
     "ur": {"morning": "صبح بخیر", "afternoon": "السلام علیکم", "evening": "شام بخیر"},
 }
 
+
+#: Creative one-liners, picked fresh on every sign-in. ``, {name}`` is dropped
+#: cleanly when the teacher has no name set. Kept short: one line, one idea.
+LINES = {
+    "morning": (
+        "Chai and Float time, {name}?",
+        "A fresh page awaits, {name}.",
+        "Chalk up, {name}. The day is yours.",
+        "Bright and early, {name}.",
+        "The bell hasn't rung yet, {name}.",
+        "Let's make today a good one, {name}.",
+        "Morning, {name}. Who are we teaching today?",
+    ),
+    "afternoon": (
+        "Second wind time, {name}?",
+        "Survived the staff room, {name}?",
+        "Still going strong, {name}.",
+        "Take a breath, {name}. What's next?",
+        "Chai refill and Float time, {name}?",
+        "Halfway through the day, {name}.",
+    ),
+    "evening": (
+        "Marking pile or planning, {name}?",
+        "The bell has rung. What's left on the desk, {name}?",
+        "Winding down, {name}?",
+        "Let's tidy up tomorrow tonight, {name}.",
+        "Good evening, {name}. One last thing?",
+    ),
+    "night": (
+        "Burning the midnight diya, {name}?",
+        "Still up, {name}? Let's make it quick.",
+        "Late night lesson planning, {name}?",
+    ),
+}
+
+DAY_LINES = {
+    0: ("Monday again, {name}. We've got this.",),
+    4: ("It's Friday, {name}. Nearly there.",),
+    5: ("Weekend planning, {name}? Admirable.",),
+    6: ("Sunday prep, {name}? Future you says thanks.",),
+}
+
 WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
 #: Said once, quietly, under the greeting. Never more than one.
@@ -56,6 +98,8 @@ OPENERS = (
 
 
 def _part_of_day(hour: int) -> str:
+    if hour >= 22 or hour < 4:
+        return "night"
     if hour < 12:
         return "morning"
     if hour < 17:
@@ -107,8 +151,18 @@ def build(user: dict[str, Any], now: dt.datetime | None = None) -> dict[str, Any
     now = now or dt.datetime.now()
     name = _first_name(user.get("name", ""))
     language = user.get("language", "en")
-    salutation = SALUTATIONS.get(language, SALUTATIONS["en"])[_part_of_day(now.hour)]
-    headline = f"{salutation}, {name}." if name else f"{salutation}."
+    part = _part_of_day(now.hour)
+    if language in SALUTATIONS and language != "en":
+        # Regional salutation + name; mixing scripts mid-sentence reads badly.
+        salutation = SALUTATIONS[language].get(part, SALUTATIONS[language]["evening"])
+        headline = f"{salutation}, {name}." if name else f"{salutation}."
+    else:
+        pool = LINES[part] + DAY_LINES.get(now.weekday(), ())
+        line = random.choice(pool)
+        if name:
+            headline = line.replace("{name}", name)
+        else:
+            headline = line.replace(", {name}", "").replace(" {name}", "")
 
     detail = ""
     tone = "calm"
