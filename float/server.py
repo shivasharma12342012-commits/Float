@@ -413,7 +413,8 @@ def bootstrap(ctx: Route) -> dict[str, Any]:
             "screen": computer.screenshot_size(),
             "teacher_own_keys": db.org_get("teacher_own_keys", "1") == "1",
         },
-        "usage": db.usage_for_user(user_id),
+        "usage": {**db.usage_for_user(user_id), "month_paise": db.month_paise(user_id),
+                  "cap_paise": db.cap_for(user_id)[0]},
         "own_work": db.own_work_summary(user_id),
     }
 
@@ -428,6 +429,12 @@ def chat(ctx: Route) -> Any:
     allowed, wait = security.chat_limiter.check(str(user["id"]))
     if not allowed:
         raise HttpError(429, f"Slow down a moment — try again in {int(wait)}s.")
+
+    cap, _custom = db.cap_for(int(user["id"]))
+    if cap > 0 and not db.has_own_key(int(user["id"])) and db.month_paise(int(user["id"])) >= cap:
+        raise HttpError(429, "You've used your share of the school's AI budget for this month. "
+                             "It resets on the 1st, or your admin can adjust it. "
+                             "Your classes, marks and saved files all still work.")
 
     message = str(body.get("message", ""))
     conv_id = body.get("conv_id")
@@ -828,6 +835,48 @@ def timetable_set(ctx: Route) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Admin
 # ---------------------------------------------------------------------------
+
+def _band(calls: int) -> str:
+    return "No use" if calls == 0 else "Light" if calls < 20 else "Regular" if calls < 100 else "Frequent"
+
+
+def _admin_users(rows: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """Teacher rows for the admin screens. By default exact per-person numbers are
+    replaced by a usage band, so the panel manages accounts, not individuals' habits."""
+    rows = rows if rows is not None else db.usage_summary(30)
+    exact = db.org_get("usage_detail", "bands") == "exact"
+    out = []
+    for r in rows:
+        r = dict(r)
+        cap, custom = db.cap_for(int(r["id"]))
+        r["band"], r["cap_paise"], r["custom_cap"] = _band(r["calls"]), cap, custom
+        if not exact:
+            for k in ("calls", "tin", "tout", "paise", "latency"):
+                r[k] = None
+        out.append(r)
+    return out
+
+
+def _fairness(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    live = [r for r in rows if r["active"]]
+    n = len(live)
+    spend = sorted((r["paise"] for r in live), reverse=True)
+    total = sum(spend)
+    top = max(1, round(n * 0.2)) if n else 0
+    near = 0
+    for r in live:
+        cap, _ = db.cap_for(int(r["id"]))
+        if cap > 0 and db.month_paise(int(r["id"])) >= 0.8 * cap:
+            near += 1
+    try:
+        budget = int(db.org_get("monthly_paise_budget", "0") or 0)
+    except ValueError:
+        budget = 0
+    return {"accounts": n, "not_started": len([r for r in live if r["calls"] == 0]),
+            "top_fifth_share": round(sum(spend[:top]) / total * 100) if total else 0,
+            "near_cap": near, "pool_budget": budget, "pool_spent": round(db.pool_paise())}
+
+
 @route("GET", "/api/admin/overview", auth="admin")
 def admin_overview(ctx: Route) -> dict[str, Any]:
     ctx.require_admin()
@@ -835,7 +884,8 @@ def admin_overview(ctx: Route) -> dict[str, Any]:
     total_paise = sum(r["paise"] for r in rows)
     return {
         "org": db.org_all(),
-        "users": rows,
+        "users": _admin_users(rows),
+        "fairness": _fairness(rows),
         "sessions": db.active_sessions(),
         "by_day": db.usage_by_day(14),
         "totals": {
@@ -877,7 +927,7 @@ def admin_add_user(ctx: Route) -> dict[str, Any]:
                           must_change=True, school=db.org_get("school_name"))
     db.audit("admin.user.add", user_id=int(admin["id"]), actor=admin["name"],
              detail=f"added {email}", level="warn", ip=ctx.ip)
-    return {"ok": True, "temp_password": password, "users": db.usage_summary(30)}
+    return {"ok": True, "temp_password": password, "users": _admin_users()}
 
 
 @route("POST", "/api/admin/users/{user_id}", auth="admin")
@@ -899,6 +949,22 @@ def admin_update_user(ctx: Route) -> dict[str, Any]:
     elif action == "activate":
         db.update_user(user_id, active=1)
         detail = "activated"
+    elif action == "set_cap":
+        reason = str(body.get("reason", "")).strip()
+        raw = body.get("paise")
+        if raw in (None, ""):
+            db.set_cap_override(user_id, None)
+            detail = "limit back to the school default"
+        else:
+            if not reason:
+                raise HttpError(400, "Add a short reason. Every limit exception is recorded so it stays fair.")
+            try:
+                paise = int(raw)
+                assert paise >= 0
+            except (TypeError, ValueError, AssertionError):
+                raise HttpError(400, "Limit must be a whole number of rupees, or 0 for none.") from None
+            db.set_cap_override(user_id, paise)
+            detail = f"limit set to {paise} paise: {reason[:200]}"
     elif action == "make_admin":
         db.update_user(user_id, role="admin")
         detail = "made admin"
@@ -915,7 +981,7 @@ def admin_update_user(ctx: Route) -> dict[str, Any]:
         db.end_all_sessions(user_id)
         db.audit("admin.user.reset", user_id=int(admin["id"]), actor=admin["name"],
                  detail=f"reset {target['email']}", level="warn", ip=ctx.ip)
-        return {"ok": True, "temp_password": temporary, "users": db.usage_summary(30)}
+        return {"ok": True, "temp_password": temporary, "users": _admin_users()}
     elif action == "sign_out":
         ended = db.end_all_sessions(user_id)
         detail = f"signed out of {ended} session(s)"
@@ -931,7 +997,7 @@ def admin_update_user(ctx: Route) -> dict[str, Any]:
 
     db.audit("admin.user", user_id=int(admin["id"]), actor=admin["name"],
              detail=f"{target['email']}: {detail}", level="warn", ip=ctx.ip)
-    return {"ok": True, "detail": detail, "users": db.usage_summary(30)}
+    return {"ok": True, "detail": detail, "users": _admin_users()}
 
 
 def _admin_count() -> int:
@@ -944,9 +1010,14 @@ def admin_org(ctx: Route) -> dict[str, Any]:
     body = ctx.body
     changed: list[str] = []
     for key in ("school_name", "computer_control", "teacher_own_keys", "self_signup",
-                "monthly_paise_budget", "require_pin"):
+                "monthly_paise_budget", "require_pin", "teacher_monthly_paise_cap", "usage_detail"):
         if key in body:
-            db.org_set(key, str(body[key]))
+            value = str(body[key]).strip()
+            if key in ("monthly_paise_budget", "teacher_monthly_paise_cap") and not value.isdigit():
+                raise HttpError(400, "Limits must be a whole number of rupees, or 0 for no limit.")
+            if key == "usage_detail" and value not in ("bands", "exact"):
+                raise HttpError(400, "Usage detail must be 'bands' or 'exact'.")
+            db.org_set(key, value)
             changed.append(key)
     if "allowed_providers" in body and isinstance(body["allowed_providers"], list):
         db.org_set("allowed_providers", json.dumps(
@@ -990,17 +1061,17 @@ def admin_notice(ctx: Route) -> dict[str, Any]:
 
 @route("GET", "/api/admin/export", auth="admin")
 def admin_export(ctx: Route) -> Any:
-    ctx.require_admin()
+    admin = ctx.require_admin()
+    dash = lambda v: "" if v is None else v  # noqa: E731
     rows: list[list[Any]] = [
-        ["Teacher", "Email", "Role", "Active", "Sign-ins", "Requests",
-         "Tokens in", "Tokens out", "Estimated ₹", "Avg latency (ms)"]
+        ["Teacher", "Role", "Active", "Usage band", "Requests", "Tokens in", "Tokens out", "Estimated ₹"]
     ]
-    for entry in db.usage_summary(30):
-        rows.append([
-            entry["name"], entry["email"], entry["role"], "Yes" if entry["active"] else "No",
-            entry["sign_ins"], entry["calls"], entry["tin"], entry["tout"],
-            round(entry["paise"] / 100, 2), round(entry["latency"]),
-        ])
+    for e in _admin_users():
+        rows.append([e["name"], e["role"], "Yes" if e["active"] else "No", e["band"],
+                     dash(e["calls"]), dash(e["tin"]), dash(e["tout"]),
+                     "" if e["paise"] is None else round(e["paise"] / 100, 2)])
+    db.audit("admin.export", user_id=int(admin["id"]), actor=admin["name"],
+             detail="usage report downloaded", level="warn", ip=ctx.ip)
     return ("file", ("float-usage.xlsx", artifacts.KINDS["xlsx"][1], artifacts.build_xlsx(rows)))
 
 
@@ -1108,33 +1179,6 @@ class FloatHandler(BaseHTTPRequestHandler):
         except Exception as exc:  # pragma: no cover
             traceback.print_exc()
             self._send_json({"error": f"Float hit an unexpected problem: {exc}"}, 500)
-        finally:
-            self._drain_body()
-
-    def _drain_body(self) -> None:
-        """Discard a request body the handler never read.
-
-        The server speaks HTTP/1.1 keep-alive. If a POST is rejected (401, 403,
-        a handler that ignores its body) before the body is read, those bytes
-        stay on the socket and get glued onto the next request line, which the
-        browser then sees as "501 Unsupported method".
-        """
-        if getattr(self, "_body_cache", None) is not None or self.close_connection:
-            return
-        try:
-            length = int(self.headers.get("Content-Length") or 0)
-        except ValueError:
-            self.close_connection = True
-            return
-        if length <= 0:
-            return
-        if length > 32 * 1024 * 1024:
-            self.close_connection = True
-            return
-        try:
-            self.rfile.read(length)
-        except (OSError, ValueError):
-            self.close_connection = True
 
     def _bearer(self) -> str:
         header = self.headers.get("Authorization", "")
