@@ -112,5 +112,41 @@ def main() -> None:
     args.func(args)
 
 
+def _report_crash() -> None:
+    """When launched invisibly (pythonw), a crash would vanish without a trace.
+    Save the traceback next to main.py and, on Windows, show a popup."""
+    import traceback
+    from pathlib import Path
+
+    text = traceback.format_exc()
+    log = Path(__file__).resolve().parent / "float_error.log"
+    try:
+        log.write_text(text, encoding="utf-8")
+    except OSError:
+        pass
+    sys.stderr = sys.stderr or sys.__stderr__
+    if sys.stderr:
+        print(text, file=sys.stderr)
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            last = text.strip().splitlines()[-1][:300]
+            ctypes.windll.user32.MessageBoxW(
+                0,
+                f"Float couldn't start.\n\n{last}\n\nFull details saved to:\n{log}",
+                "Float",
+                0x10,
+            )
+        except Exception:
+            pass
+
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except BaseException:
+        _report_crash()
+        raise SystemExit(1)
