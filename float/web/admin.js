@@ -56,6 +56,7 @@ function rupees(paise) { return "₹" + (paise / 100).toFixed(2); }
 const TABS = [
   ["overview", "Overview"],
   ["teachers", "Teachers"],
+  ["fair", "Fairness & privacy"],
   ["org", "School settings"],
   ["notices", "Notices"],
   ["audit", "Audit log"],
@@ -86,7 +87,7 @@ function render() {
   paintTabs();
   const wrap = $("wrap");
   wrap.innerHTML = "";
-  ({ overview: viewOverview, teachers: viewTeachers, org: viewOrg,
+  ({ overview: viewOverview, teachers: viewTeachers, fair: viewFair, org: viewOrg,
      notices: viewNotices, audit: viewAudit }[TAB])(wrap);
 }
 
@@ -212,7 +213,7 @@ function viewTeachers(wrap) {
   const table = document.createElement("table");
   table.className = "grid";
   const thead = document.createElement("thead");
-  thead.innerHTML = "<tr><th>Teacher</th><th>Role</th><th class=num>Sign-ins</th>" +
+  thead.innerHTML = "<tr><th>Teacher</th><th>Role</th><th>Usage</th><th class=num>Sign-ins</th>" +
     "<th class=num>Answers</th><th class=num>Tokens</th><th class=num>Est. ₹</th><th></th></tr>";
   table.append(thead);
   const tbody = document.createElement("tbody");
@@ -231,16 +232,20 @@ function viewTeachers(wrap) {
     if (!user.active) roleTd.append(make("span", "pill off", "off"));
     tr.append(roleTd);
 
-    [user.sign_ins, user.calls, user.tin + user.tout].forEach((value) => {
+    const bandTd = document.createElement("td");
+    bandTd.textContent = user.band + (user.custom_cap ? " · custom limit" : "");
+    tr.append(bandTd);
+
+    [user.sign_ins, user.calls, user.calls === null ? null : user.tin + user.tout].forEach((value) => {
       const td = document.createElement("td");
       td.className = "num";
-      td.textContent = (value || 0).toLocaleString("en-IN");
+      td.textContent = value === null ? "—" : (value || 0).toLocaleString("en-IN");
       tr.append(td);
     });
 
     const rupeeTd = document.createElement("td");
     rupeeTd.className = "num";
-    rupeeTd.textContent = rupees(user.paise || 0);
+    rupeeTd.textContent = user.paise === null ? "—" : rupees(user.paise || 0);
     tr.append(rupeeTd);
 
     const actTd = document.createElement("td");
@@ -278,6 +283,20 @@ function actionMenu(user) {
   if (user.active) {
     wrap.append(button("Reset password", () =>
       act("reset_password", `Reset ${user.email}'s password? They'll need the new one.`)));
+    wrap.append(button("Adjust limit", async () => {
+      const v = prompt(`Monthly AI limit for ${user.name || user.email}, in ₹.\nLeave empty to use the school default. 0 means no limit.`, "");
+      if (v === null) return;
+      let body = { action: "set_cap", paise: "" };
+      if (v.trim() !== "") {
+        const reason = prompt("Why? (recorded in the audit log so limits stay fair)", "");
+        if (!reason) return;
+        body = { action: "set_cap", paise: Math.round(parseFloat(v) * 100), reason };
+      }
+      try {
+        const result = await api(`/api/admin/users/${user.id}`, { body });
+        DATA.users = result.users; toast("Limit updated."); render();
+      } catch (err) { toast(err.message, true); }
+    }));
     wrap.append(button("Sign out", () => act("sign_out")));
     if (user.role === "teacher") wrap.append(button("Make admin", () => act("make_admin")));
     else wrap.append(button("Make teacher", () => act("make_teacher")));
@@ -300,6 +319,68 @@ function button(label, onClick, danger) {
 function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/* ── school settings ───────────────────────────────────────────────────── */
+
+/* ── fairness & privacy ────────────────────────────────────────────────── */
+
+function viewFair(wrap) {
+  const f = DATA.fairness, org = DATA.org;
+  const grid = make("div", "stat-grid");
+  const pct = f.pool_budget ? Math.round((f.pool_spent / f.pool_budget) * 100) + "% of pool" : "no pool set";
+  [
+    ["Yet to start", `${f.not_started} of ${f.accounts}`, "a walkthrough helps more than a nudge"],
+    ["Top fifth's share of spend", f.top_fifth_share + "%", "near 20% would be even"],
+    ["Near their limit", f.near_cap, "80% or more used"],
+    ["School spend this month", "₹" + (f.pool_spent / 100).toFixed(2), pct],
+  ].forEach(([label, value, sub]) => {
+    const card = make("div", "stat");
+    card.append(make("b", null, String(value)));
+    card.append(make("small", null, `${label} · ${sub}`));
+    grid.append(card);
+  });
+  wrap.append(grid);
+
+  const panel = make("div", "panel"), body = make("div", "panel-body");
+  body.append(make("b", null, "Equal share, by default"));
+  body.append(make("small", null, "Every teacher gets the same monthly allowance. Exceptions (for example a head of department "
+    + "or a teacher with accessibility needs) are set per person from the Teachers tab and need a recorded reason. "
+    + "Teachers using their own API key are never limited."));
+  const mk = (label, value) => {
+    const field = make("div", "field"); field.append(make("label", null, label));
+    const input = document.createElement("input"); input.type = "number"; input.min = "0";
+    input.value = value; field.append(input); body.append(field); return input;
+  };
+  const cap = mk("Monthly limit per teacher (₹, 0 = none)", Math.round(+(org.teacher_monthly_paise_cap || 0) / 100));
+  const pool = mk("School monthly budget (₹, 0 = none) · shown as a warning, never blocks anyone", Math.round(+(org.monthly_paise_budget || 0) / 100));
+  const vis = make("div", "field"); vis.append(make("label", null, "What you see about each teacher"));
+  const sel = document.createElement("select");
+  [["bands", "Usage band only (recommended)"], ["exact", "Exact counts and ₹"]].forEach(([v, t]) => {
+    const o = document.createElement("option"); o.value = v; o.textContent = t;
+    o.selected = (org.usage_detail || "bands") === v; sel.append(o);
+  });
+  vis.append(sel); body.append(vis);
+  const save = make("button", "btn primary", "Save");
+  save.addEventListener("click", async () => {
+    try {
+      const r = await api("/api/admin/org", { body: {
+        teacher_monthly_paise_cap: Math.round(cap.value * 100) || 0,
+        monthly_paise_budget: Math.round(pool.value * 100) || 0, usage_detail: sel.value } });
+      DATA = await api("/api/admin/overview"); toast("Saved."); render();
+    } catch (err) { toast(err.message, true); }
+  });
+  body.append(save); panel.append(body); wrap.append(panel);
+
+  const priv = make("div", "panel"), pb = make("div", "panel-body");
+  pb.append(make("b", null, "What this panel can and cannot see"));
+  [
+    "Can see: account names, roles, sign-in counts, and usage as a band or totals.",
+    "Cannot see: any chat, draft, file, class list, mark, or attendance record. There is no screen or API for it.",
+    "Never shown: rankings. Teachers are listed alphabetically, and fairness figures are school-wide, never named.",
+    "Always logged: limit changes (with reason), exports, resets and role changes, visible in the Audit log.",
+  ].forEach((t) => { const p = make("p", null, t); p.style.margin = "8px 0"; pb.append(p); });
+  priv.append(pb); wrap.append(priv);
 }
 
 /* ── school settings ───────────────────────────────────────────────────── */
@@ -384,7 +465,7 @@ function viewOrg(wrap) {
   const exportRow = make("div", "row");
   const exportGrow = make("div", "grow");
   exportGrow.append(make("b", null, "Usage report"));
-  exportGrow.append(make("small", null, "Every teacher's last 30 days, as an Excel sheet."));
+  exportGrow.append(make("small", null, "Last 30 days as an Excel sheet, without email addresses. Each download is logged."));
   exportRow.append(exportGrow);
   const exportBtn = make("button", "btn", "Download .xlsx");
   exportBtn.addEventListener("click", async () => {
