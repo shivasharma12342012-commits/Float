@@ -679,6 +679,8 @@ def classes_add(ctx: Route) -> dict[str, Any]:
     name = str(body.get("name", "")).strip()
     if not name:
         raise HttpError(400, "Give the class a name, like '8B'.")
+    if len(name) > 80:
+        raise HttpError(400, "Class names can be up to 80 characters.")
     class_id = db.add_class(int(user["id"]), name, str(body.get("grade", "")),
                             str(body.get("section", "")), str(body.get("subject", "")),
                             str(body.get("board", user["board"])))
