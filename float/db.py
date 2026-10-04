@@ -339,13 +339,13 @@ def create_user(
             """INSERT INTO users(email,name,password_hash,role,google_sub,must_change,school,created_at)
                VALUES(?,?,?,?,?,?,?,?)""",
             (
-                email.strip().lower(),
-                name.strip() or email.split("@")[0].title(),
+                email.strip().lower()[:254],
+                (name.strip() or email.split("@")[0].title())[:120],
                 security.hash_password(password) if password else "",
                 role,
                 google_sub,
                 1 if must_change else 0,
-                school or config.settings.school_name,
+                (school or config.settings.school_name)[:160],
                 now,
             ),
         )
@@ -773,7 +773,7 @@ def add_class(user_id: int, name: str, grade: str = "", section: str = "",
     with cursor() as db:
         cur = db.execute(
             "INSERT INTO klasses(user_id,name,grade,section,subject,board,created_at) VALUES(?,?,?,?,?,?,?)",
-            (user_id, name, grade, section, subject, board, time.time()),
+            (user_id, name[:80], grade[:20], section[:20], subject[:60], board[:40], time.time()),
         )
         return int(cur.lastrowid)
 
@@ -803,9 +803,9 @@ def owns_class(class_id: int, user_id: int) -> bool:
 
 def add_students(class_id: int, entries: list[dict[str, str]]) -> int:
     rows = [
-        (class_id, str(e.get("roll", "")).strip(), str(e.get("name", "")).strip(),
-         str(e.get("notes", "")).strip())
-        for e in entries
+        (class_id, str(e.get("roll", "")).strip()[:20], str(e.get("name", "")).strip()[:120],
+         str(e.get("notes", "")).strip()[:500])
+        for e in list(entries)[:500]          # one request adds at most 500 students
         if str(e.get("name", "")).strip()
     ]
     if not rows:
@@ -891,9 +891,9 @@ def set_periods(user_id: int, rows: list[dict[str, Any]]) -> None:
         db.executemany(
             "INSERT INTO periods(user_id,weekday,slot,starts,ends,label,room) VALUES(?,?,?,?,?,?,?)",
             [
-                (user_id, int(r.get("weekday", 0)), int(r.get("slot", 1)), str(r.get("starts", "")),
-                 str(r.get("ends", "")), str(r.get("label", "")), str(r.get("room", "")))
-                for r in rows
+                (user_id, int(r.get("weekday", 0)), int(r.get("slot", 1)), str(r.get("starts", ""))[:10],
+                 str(r.get("ends", ""))[:10], str(r.get("label", ""))[:80], str(r.get("room", ""))[:40])
+                for r in list(rows)[:80]
             ],
         )
 
@@ -913,7 +913,7 @@ def add_task(user_id: int, title: str, due: str = "", kind: str = "todo") -> int
     with cursor() as db:
         cur = db.execute(
             "INSERT INTO tasks(user_id,title,due,kind,created_at) VALUES(?,?,?,?,?)",
-            (user_id, title[:300], due, kind, time.time()),
+            (user_id, title[:300], due[:40], kind, time.time()),
         )
         return int(cur.lastrowid)
 
