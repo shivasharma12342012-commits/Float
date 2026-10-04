@@ -1726,6 +1726,11 @@ $("nav-forward").addEventListener("click", () => navGo(1));
 // From Drive / From Calendar / From Gmail: start the sentence, let the teacher finish it.
 document.querySelectorAll(".starter").forEach((button) =>
   button.addEventListener("click", () => {
+    const caps = (S.boot && S.boot.capabilities) || {};
+    if (!caps.computer) {
+      toast(caps.computer_why || "Turn on computer control (admin panel) so Float can open Drive, Calendar and Gmail for you.", true);
+      return;
+    }
     const input = $("input");
     input.value = button.dataset.prompt;
     grow();
