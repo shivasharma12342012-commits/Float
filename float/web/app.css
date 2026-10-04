@@ -983,3 +983,80 @@ table.grid td.num { text-align: right; font-variant-numeric: tabular-nums }
 button.rail-foot-name { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; text-align: left; background: none; border: 0; color: inherit; font: inherit; font-size: 13px; padding: 4px 6px; border-radius: var(--r-sm); cursor: pointer; }
 button.rail-foot-name:hover { background: rgba(255,255,255,.07); }
 button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
+
+/* ═════════════════════════════════════════════════ opening screen (v3)
+   Follows the Claude desktop home screen: a quiet top bar, a centred
+   greeting, a composer with the model on its right, three starters. */
+
+/* Warm Claude light palette (the green is gone). The sidebar stays dark. */
+[data-theme="light"] {
+  --paper: #FAF9F5;  --surface: #FFFFFF;  --sage: #F0EEE6;  --sage-deep: #E8E5DA;
+  --line: #E3DFD3;   --ink: #1F1E1D;      --ink-2: #3D3D3A;
+  --soft: #6B6A63;   --faint: #8E8C82;
+  --board: #1F1E1D;  --board-2: #30302E;
+  --accent: #D97757; --accent-ink: #FFFFFF; --rose: #C4503F;
+}
+[data-theme="light"] .send { background: var(--accent); color: #fff; }
+[data-theme="light"] .send:not(:disabled):hover { background: #C4664A; }
+
+/* Dark palette sampled from the Claude desktop screenshot. */
+[data-theme="dark"] {
+  --paper: #151515;  --surface: #20201F;  --sage: #20201F;  --sage-deep: #2D2D2B;
+  --line: #2E2E2C;   --ink: #F0EFEC;      --ink-2: #D9D7D0;
+  --soft: #B0AEA5;   --faint: #85837B;
+  --board: #1B1B1A;  --board-2: #262624;
+}
+[data-theme="dark"] .composer { border-color: #34332F; }
+[data-theme="dark"] .composer:focus-within { border-color: #55534E; }
+[data-theme="dark"] .user-said { background: #262624; }
+[data-theme="dark"] .prose code, [data-theme="dark"] .prose pre { background: #1B1B1A; border-color: #2E2E2C; }
+
+/* Sidebar can be folded away on a desktop-sized window. */
+@media (min-width: 761px) {
+  .shell.rail-off { grid-template-columns: minmax(0, 1fr); }
+  .shell.rail-off .rail { display: none; }
+}
+
+/* Top bar: four quiet icons on the left; the window's own buttons sit on the right. */
+.topbar { padding: 0 10px; border-bottom-color: transparent; }
+.nav-cluster { display: flex; align-items: center; gap: 2px; }
+.topbar .icon-btn { color: var(--soft); padding: 7px; }
+.topbar .icon-btn:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); }
+.topbar .icon-btn:disabled { opacity: .32; cursor: default; background: none; color: var(--soft); }
+.topbar .chip { margin-left: 8px; }
+@media (max-width: 760px) { .topbar #chip-thread { display: none; } }
+
+/* Composer */
+.composer { border-radius: 20px; background: var(--surface); }
+.composer .icon-btn { color: var(--soft); }
+.composer .icon-btn:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); color: var(--ink); }
+.composer .icon-btn.live { color: var(--accent); animation: micpulse 1.2s ease-in-out infinite; }
+@keyframes micpulse { 50% { opacity: .45; } }
+.composer-bar { gap: 4px; padding: 6px 10px 10px 10px; }
+.pick { border: 0; background: none; color: var(--faint); font: inherit; font-size: 12.5px; padding: 6px 7px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+.pick:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.pick.on { color: var(--accent); }
+.send { display: none; width: 32px; height: 32px; border-radius: 9px; margin-left: 4px; }
+.composer.can-send .send { display: grid; }
+@media (max-width: 560px) { #chip-assist { display: none; } }
+
+/* Home: centred greeting, composer, starters */
+.main.landing { padding-bottom: 7vh; }
+.main.landing .greeting h2 { display: block; font-size: clamp(30px, 4.6vw, 42px); font-weight: 400; letter-spacing: -.01em; margin: 0 0 26px; color: var(--ink); }
+.main.landing .greeting p.detail { margin: -14px auto 26px; }
+.greeting p.detail:empty { display: none; }
+.main.landing .composer { max-width: 40rem; }
+.main.landing .composer textarea { min-height: 56px; }
+.home-extras { display: none; }
+.main.landing .home-extras { display: block; max-width: 40rem; margin: 22px auto 0; }
+.starters { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.starter { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 13px; border: 0; border-radius: 9px; background: var(--sage-deep); color: var(--ink-2); font: inherit; font-size: 13.5px; cursor: pointer; }
+.starter:hover { background: color-mix(in srgb, var(--sage-deep) 78%, var(--ink)); color: var(--ink); }
+.main.landing .reflection { max-width: 34rem; margin: 20px auto 0; }
+
+/* Small menus (top-left menu and the + button) */
+.pop { position: fixed; z-index: 90; min-width: 230px; padding: 6px; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 14px 40px -10px rgba(0,0,0,.55); animation: rise .14s ease-out both; }
+.pop button { display: flex; align-items: center; gap: 10px; border: 0; background: none; color: var(--ink); font: inherit; font-size: 13.5px; padding: 8px 10px; border-radius: 8px; cursor: pointer; text-align: left; }
+.pop button:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
+.pop hr { border: 0; border-top: 1px solid var(--line); margin: 5px 4px; }
+.pop kbd { margin-left: auto; font: 11px var(--mono); color: var(--faint); }
