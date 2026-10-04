@@ -221,7 +221,34 @@ function showGreeting(on) {
   document.querySelector(".main").classList.toggle("landing", on);
 }
 
+/* Back / forward between the home screen and the conversations opened this session. */
+const NAV = { stack: [{ t: "home" }], i: 0, replaying: false };
+function navPaint() {
+  $("nav-back").disabled = NAV.i <= 0;
+  $("nav-forward").disabled = NAV.i >= NAV.stack.length - 1;
+}
+function navPush(entry) {
+  if (NAV.replaying) return;
+  const cur = NAV.stack[NAV.i];
+  if (cur && cur.t === entry.t && cur.id === entry.id) return;
+  NAV.stack = NAV.stack.slice(0, NAV.i + 1);
+  NAV.stack.push(entry);
+  NAV.i = NAV.stack.length - 1;
+  navPaint();
+}
+async function navGo(step) {
+  const j = NAV.i + step;
+  if (j < 0 || j >= NAV.stack.length) return;
+  NAV.i = j;
+  NAV.replaying = true;
+  try {
+    const e = NAV.stack[j];
+    if (e.t === "home") newThread(); else await openThread(e.id);
+  } finally { NAV.replaying = false; navPaint(); }
+}
+
 function newThread() {
+  navPush({ t: "home" });
   S.conv = null;
   $("turns").innerHTML = "";
   showGreeting(true);
@@ -233,6 +260,7 @@ function newThread() {
 async function openThread(convId) {
   const data = await api(`/api/conversations/${convId}`);
   if (!data) return;
+  navPush({ t: "thread", id: convId });
   S.conv = convId;
   showGreeting(false);
   $("chip-thread").hidden = false;
@@ -377,6 +405,7 @@ async function send(prompt, convId) {
 
         if (event.type === "start") {
           S.conv = event.conv_id;
+          navPush({ t: "thread", id: event.conv_id });
           $("chip-thread").hidden = false;
           $("chip-thread-title").textContent = event.title;
         } else if (event.type === "text") {
@@ -445,6 +474,7 @@ function setStreaming(on) {
   button.classList.toggle("stop", on);
   button.setAttribute("aria-label", on ? "Stop" : "Send");
   $("input").disabled = false;
+  syncSend();
 }
 
 /* ══════════════════════════════════ 4. markdown ═════════════════════════ */
@@ -1555,6 +1585,8 @@ function theme(choice) {
   const apply = () => {
     document.documentElement.dataset.theme =
       choice === "system" ? (dark.matches ? "dark" : "light") : choice;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue("--paper").trim() || "#151515";
   };
   dark.onchange = choice === "system" ? apply : null;
   apply();
@@ -1564,12 +1596,19 @@ function grow() {
   const input = $("input");
   input.style.height = "auto";
   input.style.height = Math.min(input.scrollHeight, window.innerHeight * 0.4) + "px";
+  syncSend();
+}
+
+function syncSend() {
+  const box = document.querySelector(".composer");
+  box.classList.toggle("can-send", S.streaming || !!$("input").value.trim() || S.attachments.length > 0);
 }
 
 function clearAttachments() {
   S.attachments = [];
   $("attach-bar").innerHTML = "";
   $("attach-bar").hidden = true;
+  syncSend();
 }
 
 async function attach(files) {
@@ -1585,6 +1624,7 @@ async function attach(files) {
     });
     const kind = file.type.startsWith("image/") ? "image" : "text";
     S.attachments.push({ name: file.name, mime: file.type || "text/plain", kind, data });
+    syncSend();
 
     const chip = make("div", "attach-chip");
     chip.append(make("span", null, file.name));
@@ -1593,6 +1633,7 @@ async function attach(files) {
       S.attachments = S.attachments.filter((a) => a.name !== file.name);
       chip.remove();
       if (!S.attachments.length) $("attach-bar").hidden = true;
+      syncSend();
     });
     chip.append(drop);
     $("attach-bar").hidden = false;
@@ -1611,7 +1652,6 @@ $("send").addEventListener("click", () => {
 });
 
 $("new-thread").addEventListener("click", newThread);
-$("open-toolkit").addEventListener("click", () => showPanel("toolkit"));
 $("drawer-close").addEventListener("click", closeDrawer);
 $("drawer-scrim").addEventListener("click", closeDrawer);
 $("modal-close").addEventListener("click", closeModal);
@@ -1627,14 +1667,102 @@ $("chip-model").addEventListener("click", () => openSettings("models"));
 $("chip-assist").addEventListener("click", () => openSettings("assist"));
 $("open-admin").addEventListener("click", () => window.open("/admin", "_blank", "noopener"));
 
-$("toggle-theme").addEventListener("click", async () => {
+async function toggleTheme() {
   const now = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   S.user.appearance = now;
   theme(now);
   await api("/api/me", { body: { appearance: now } });
+}
+
+/* ── small pop-up menus: top-left menu and the + button ── */
+function closePop() { const old = document.getElementById("pop"); if (old) old.remove(); }
+function popMenu(anchor, items, up = false) {
+  const again = document.getElementById("pop") && document.getElementById("pop").dataset.for === anchor.id;
+  closePop();
+  if (again) return;
+  const box = make("div", "pop");
+  box.id = "pop";
+  box.dataset.for = anchor.id;
+  items.forEach((item) => {
+    if (item === "-") { box.append(document.createElement("hr")); return; }
+    const row = make("button", null, item.label);
+    if (item.kbd) row.append(make("kbd", null, item.kbd));
+    row.addEventListener("click", () => { closePop(); item.run(); });
+    box.append(row);
+  });
+  document.body.append(box);
+  const r = anchor.getBoundingClientRect();
+  if (up) box.style.bottom = (window.innerHeight - r.top + 8) + "px";
+  else box.style.top = (r.bottom + 6) + "px";
+  box.style.left = Math.max(8, Math.min(r.left, window.innerWidth - box.offsetWidth - 8)) + "px";
+}
+
+$("open-menu").addEventListener("click", () => {
+  const dark = document.documentElement.dataset.theme === "dark";
+  const items = [
+    { label: "New conversation", kbd: "Ctrl /", run: newThread },
+    "-",
+    { label: "Toolkit", kbd: "Ctrl K", run: () => showPanel("toolkit") },
+    { label: "Classes", run: () => showPanel("classes") },
+    { label: "To do", run: () => showPanel("tasks") },
+    { label: "Files", run: () => showPanel("files") },
+    "-",
+    { label: "Settings", run: () => openSettings("you") },
+    { label: dark ? "Switch to light mode" : "Switch to dark mode", run: toggleTheme },
+  ];
+  if (S.user && S.user.role === "admin") items.push({ label: "Admin panel", run: () => window.open("/admin", "_blank", "noopener") });
+  items.push("-", { label: "Sign out", run: () => $("sign-out").click() });
+  popMenu($("open-menu"), items);
 });
 
-$("attach").addEventListener("click", () => $("file-input").click());
+$("attach").addEventListener("click", () => popMenu($("attach"), [
+  { label: "Add a photo or file", run: () => $("file-input").click() },
+  { label: "Open the toolkit", kbd: "Ctrl K", run: () => showPanel("toolkit") },
+], true));
+
+$("nav-back").addEventListener("click", () => navGo(-1));
+$("nav-forward").addEventListener("click", () => navGo(1));
+
+// From Drive / From Calendar / From Gmail: start the sentence, let the teacher finish it.
+document.querySelectorAll(".starter").forEach((button) =>
+  button.addEventListener("click", () => {
+    const input = $("input");
+    input.value = button.dataset.prompt;
+    grow();
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }));
+
+// Dictation: the browser's own speech recognition, so nothing leaves Float's code.
+(function dictation() {
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const button = $("mic");
+  if (!Recognition) return;                  // button stays hidden where it can't work
+  button.hidden = false;
+  let rec = null;
+  button.addEventListener("click", () => {
+    if (rec) { rec.stop(); return; }
+    const code = (S.user && S.user.language) || "en";
+    const base = $("input").value ? $("input").value.replace(/\s*$/, " ") : "";
+    rec = new Recognition();
+    rec.lang = code === "en" ? "en-IN" : code + "-IN";
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.onresult = (event) => {
+      let heard = "";
+      for (let i = 0; i < event.results.length; i++) heard += event.results[i][0].transcript;
+      $("input").value = base + heard;
+      grow();
+    };
+    rec.onerror = (event) => {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed")
+        toast("Allow the microphone to dictate.", true);
+    };
+    rec.onend = () => { rec = null; button.classList.remove("live"); };
+    button.classList.add("live");
+    rec.start();
+  });
+})();
 $("file-input").addEventListener("change", (event) => {
   attach(event.target.files);
   event.target.value = "";
@@ -1642,15 +1770,25 @@ $("file-input").addEventListener("change", (event) => {
 
 // Phone layout: the menu opens over the chat, so it must also close itself.
 const closeRail = () => $("rail").classList.remove("open");
+const shell = document.querySelector(".shell");
+function setRail(off) {
+  shell.classList.toggle("rail-off", off);
+  try { localStorage.setItem("float.rail", off ? "off" : "on"); } catch { /* private window */ }
+}
+let railPref = "off";                         // opens folded away, like the reference
+try { railPref = localStorage.getItem("float.rail") || "off"; } catch { /* ignore */ }
+setRail(railPref === "off");
 $("rail-toggle").addEventListener("click", (event) => {
   event.stopPropagation();
-  $("rail").classList.toggle("open");
+  if (window.innerWidth > 760) setRail(!shell.classList.contains("rail-off"));
+  else $("rail").classList.toggle("open");
 });
 $("rail").addEventListener("click", (event) => {
   if (event.target.closest("button")) closeRail();      // picked something
 });
 document.addEventListener("click", (event) => {
   if (!event.target.closest("#rail")) closeRail();      // tapped outside
+  if (!event.target.closest("#pop, [data-pop]")) closePop();
 });
 window.addEventListener("resize", () => { if (window.innerWidth > 760) closeRail(); });
 $("driving-stop").addEventListener("click", stopComputer);
@@ -1663,6 +1801,7 @@ $("sign-out").addEventListener("click", async () => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
+    if (document.getElementById("pop")) { closePop(); return; }
     if ($("rail").classList.contains("open")) { closeRail(); return; }
     if (S.driving) { stopComputer(); return; }
     if (!$("modal-scrim").hidden) { closeModal(); return; }
