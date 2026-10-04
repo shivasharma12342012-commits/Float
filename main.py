@@ -2,7 +2,8 @@
 """Float — start here.
 
     python main.py                 start Float, open the browser
-    python main.py --no-browser    start without opening a tab
+    python main.py --no-browser    start without opening a window
+    python main.py --tab           open in a normal browser tab instead of an app window
     python main.py --port 9000     use a different port
     python main.py set-password you@school.edu.in   reset someone's password from the terminal
     python main.py make-admin you@school.edu.in     promote an existing account
@@ -25,6 +26,36 @@ from float import APP_NAME, APP_TAGLINE, VERSION
 from float import config, db, security, server
 
 
+def _open_window(url: str) -> None:
+    """Open Float in its own window (no tabs, no address bar) when Edge or Chrome
+    is installed, so it gets the normal minimise / maximise / close buttons.
+    Falls back to a plain browser tab."""
+    import os
+    import shutil
+    import subprocess
+
+    if sys.platform == "win32":
+        roots = [os.environ.get(k) for k in ("PROGRAMFILES(X86)", "PROGRAMFILES", "LOCALAPPDATA")]
+        candidates = []
+        for root in filter(None, roots):
+            candidates.append(os.path.join(root, "Microsoft", "Edge", "Application", "msedge.exe"))
+            candidates.append(os.path.join(root, "Google", "Chrome", "Application", "chrome.exe"))
+    elif sys.platform == "darwin":
+        candidates = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                      "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"]
+    else:
+        candidates = [shutil.which(n) for n in ("google-chrome", "chromium", "chromium-browser", "microsoft-edge")]
+
+    for exe in candidates:
+        if exe and os.path.exists(exe):
+            try:
+                subprocess.Popen([exe, f"--app={url}", "--window-size=1280,820"], close_fds=True)
+                return
+            except OSError:
+                continue
+    webbrowser.open(url)
+
+
 def _cmd_run(args: argparse.Namespace) -> None:
     host = args.host or config.settings.host
     port = args.port or config.settings.port
@@ -37,7 +68,10 @@ def _cmd_run(args: argparse.Namespace) -> None:
 
     if not args.no_browser:
         time.sleep(0.35)
-        webbrowser.open(url)
+        if args.tab:
+            webbrowser.open(url)
+        else:
+            _open_window(url)
 
     try:
         while True:
@@ -88,6 +122,7 @@ def main() -> None:
     run_p.add_argument("--host", default=None)
     run_p.add_argument("--port", type=int, default=None)
     run_p.add_argument("--no-browser", action="store_true")
+    run_p.add_argument("--tab", action="store_true", help="Open in a normal browser tab instead of an app window.")
     run_p.set_defaults(func=_cmd_run)
 
     pass_p = sub.add_parser("set-password", help="Reset a teacher's password from the terminal.")
