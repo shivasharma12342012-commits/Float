@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Float</title>
+<meta name="theme-color" content="#151515">
 <link rel="stylesheet" href="/app.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%231E3A32'/><circle cx='22' cy='11' r='3.2' fill='%23E8A33D'/></svg>">
 </head>
@@ -73,22 +74,23 @@
   <main class="main">
 
     <header class="topbar">
-      <button class="icon-btn only-small" id="rail-toggle" aria-label="Menu">
-        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      </button>
+      <div class="nav-cluster">
+        <button class="icon-btn" id="open-menu" data-pop aria-label="Menu" title="Menu">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn" id="rail-toggle" aria-label="Show or hide the sidebar" title="Sidebar">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M6.2 2.8v10.4" stroke="currentColor" stroke-width="1.3"/></svg>
+        </button>
+        <button class="icon-btn" id="nav-back" aria-label="Back" title="Back" disabled>
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M13 8H3.2M7.6 3.6 3.2 8l4.4 4.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        </button>
+        <button class="icon-btn" id="nav-forward" aria-label="Forward" title="Forward" disabled>
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h9.8M8.4 3.6 12.8 8l-4.4 4.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        </button>
+      </div>
 
       <div class="chip" id="chip-thread" hidden><span id="chip-thread-title"></span></div>
       <span class="spacer"></span>
-
-      <button class="chip" id="chip-assist" title="How much Float does for you">
-        <span class="dot"></span><span id="assist-label">Draft</span>
-      </button>
-      <button class="chip" id="chip-model" title="Which model answers you">
-        <span id="model-label">No key yet</span>
-      </button>
-      <button class="icon-btn" id="toggle-theme" aria-label="Light or dark">
-        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M13 9.4A5.2 5.2 0 0 1 6.6 3 5.5 5.5 0 1 0 13 9.4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-      </button>
     </header>
 
     <div class="notice-strip" id="notice-strip" hidden></div>
@@ -98,13 +100,10 @@
 
       <!-- The welcome. Rendered once per sign-in, then it scrolls away. -->
       <section class="greeting" id="greeting">
-        <h2><svg class="spark" viewBox="0 0 24 24" width="38" height="38" aria-hidden="true"><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M19.1 4.9l-4.2 4.2M9.1 14.9l-4.2 4.2"/></g></svg><span id="g-headline">Hello.</span></h2>
+        <h2 id="g-headline">Hello.</h2>
         <p class="detail" id="g-detail"></p>
 
-        <div class="reflection" id="reflection" hidden>
-          <b>This week</b>
-          <span id="reflection-text"></span>
-        </div>
+        
       </section>
 
         <div id="turns"></div>
@@ -115,22 +114,44 @@
     <div class="composer-wrap">
       <div class="composer">
         <div class="composer-bar" id="attach-bar" hidden></div>
-        <textarea id="input" rows="1" placeholder="Ask Float, or describe what you need…"
+        <textarea id="input" rows="1" placeholder="How can I help you today?"
                   aria-label="Message Float"></textarea>
         <div class="composer-bar">
-          <button class="icon-btn" id="attach" title="Attach a photo of the board, a PDF, a text file" aria-label="Attach">
-            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M10.6 5.2 5.9 9.9a1.7 1.7 0 0 0 2.4 2.4l5-5a3.1 3.1 0 1 0-4.4-4.4l-5 5a4.5 4.5 0 0 0 6.4 6.4l4.2-4.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <button class="icon-btn plus" id="attach" data-pop title="Add a photo or file, or open the toolkit" aria-label="Add">
+            <svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           </button>
           <input type="file" id="file-input" hidden multiple
                  accept="image/*,.pdf,.txt,.md,.csv">
-          <button class="icon-btn" id="open-toolkit" title="Toolkit" aria-label="Toolkit">
-            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="2.2" y="5" width="11.6" height="8.3" rx="1.4" stroke="currentColor" stroke-width="1.3"/><path d="M6 5V3.6c0-.5.4-.9.9-.9h2.2c.5 0 .9.4.9.9V5" stroke="currentColor" stroke-width="1.3"/></svg>
-          </button>
           <span class="spacer"></span>
           <span class="composer-note" id="composer-note"></span>
-          <button class="send" id="send" aria-label="Send">
-            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M2.6 13.4 13.4 8 2.6 2.6l1.9 5.4z" fill="currentColor"/></svg>
+          <button class="pick" id="chip-assist" title="How much Float does for you"><span id="assist-label">Draft it</span></button>
+          <button class="pick" id="chip-model" title="Which model answers you"><span id="model-label">No key yet</span></button>
+          <button class="icon-btn" id="mic" title="Dictate" aria-label="Dictate" hidden>
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="5.7" y="1.8" width="4.6" height="8" rx="2.3" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M3.4 7.6a4.6 4.6 0 0 0 9.2 0M8 12.2v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
           </button>
+          <button class="send" id="send" aria-label="Send">
+            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M8 13V3M3.6 7.2 8 2.8l4.4 4.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="home-extras" id="home-extras">
+        <div class="starters">
+          <button class="starter" data-prompt="Open my Google Drive and find ">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8.2 3h7.6l6.2 10.8h-7.6z" fill="#FFBA00"/><path d="M8.2 3 2 13.8l3.8 6.6L12 9.6z" fill="#1EA362"/><path d="M5.8 20.4h12.4l3.8-6.6H9.6z" fill="#4285F4"/></svg>
+            From Drive
+          </button>
+          <button class="starter" data-prompt="Open my Google Calendar and tell me what is coming up ">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5" fill="#4285F4"/><rect x="6" y="7.2" width="12" height="11" rx="1.6" fill="#fff"/><text x="12" y="16.1" font-size="7.6" text-anchor="middle" fill="#4285F4" font-family="Arial, sans-serif" font-weight="700">31</text></svg>
+            From Calendar
+          </button>
+          <button class="starter" data-prompt="Open my Gmail and look for ">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.2" fill="#F1F1F1"/><path d="M3.4 6.6 12 13l8.6-6.4" fill="none" stroke="#EA4335" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/></svg>
+            From Gmail
+          </button>
+        </div>
+        <div class="reflection" id="reflection" hidden>
+          <b>This week</b>
+          <span id="reflection-text"></span>
         </div>
       </div>
       <p class="composer-note">
