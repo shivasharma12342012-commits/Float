@@ -29,9 +29,20 @@ async function api(path, options = {}) {
     init.headers["Content-Type"] = "application/json";
     init.body = JSON.stringify(options.body);
   }
-  const res = await fetch(path, init);
+  let res;
+  try {
+    res = await fetch(path, init);
+  } catch (err) {
+    throw new Error("Float can't be reached right now. If you closed its window, open Float again.");
+  }
   if (res.status === 401) { sessionStorage.removeItem("float.token"); location.replace("/login"); return; }
   if (res.status === 403) {
+    const blocked = await res.clone().json().catch(() => ({}));
+    if (blocked.must_change) {
+      document.body.innerHTML = '<div class="empty" style="padding-top:20vh"><b>Set your own password first</b>' +
+        'You are using a temporary password. <a href="/">Open Float</a> and choose one in Settings.</div>';
+      throw new Error("must change password");
+    }
     document.body.innerHTML = '<div class="empty" style="padding-top:20vh"><b>Admins only</b>' +
       "This account can't open the admin panel.</div>";
     throw new Error("forbidden");
