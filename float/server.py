@@ -26,6 +26,7 @@ import math
 import mimetypes
 import posixpath
 import re
+import sys
 import threading
 import time
 import traceback
@@ -42,10 +43,45 @@ _routes: list[tuple[str, re.Pattern[str], Handler, str]] = []
 
 
 class HttpError(Exception):
-    def __init__(self, status: int, message: str) -> None:
+    def __init__(self, status: int, message: str, **extra: Any) -> None:
         super().__init__(message)
         self.status = status
         self.message = message
+        self.extra = extra          # e.g. must_change=True, passed through to the client
+
+
+# Routes a user on a temporary password may still call: enough to load the app
+# shell, choose a real password, or sign out. Everything else waits.
+_MUST_CHANGE_ALLOWED = {
+    ("GET", "/api/bootstrap"),
+    ("GET", "/api/me"),
+    ("POST", "/api/me/password"),
+    ("POST", "/api/auth/signout"),
+}
+
+
+def _log_unexpected() -> str:
+    """Record the current exception where a person can find it, and return a short
+    reference to show the user. Never raises: when Float runs windowless there is
+    no stderr, and a logging failure must not turn one error into a dropped
+    connection."""
+    ref = security.new_token(4)
+    text = traceback.format_exc()
+    try:
+        if sys.stderr:
+            print(f"[{ref}] {text}", file=sys.stderr)
+    except Exception:
+        pass
+    try:
+        config.DATA_DIR.mkdir(parents=True, exist_ok=True)
+        log = config.DATA_DIR / "float_errors.log"
+        if log.exists() and log.stat().st_size > 512_000:      # keep it from growing forever
+            log.replace(log.with_suffix(".log.old"))
+        with log.open("a", encoding="utf-8") as handle:
+            handle.write(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] ref {ref}\n{text}")
+    except Exception:
+        pass
+    return ref
 
 
 class Route:
@@ -285,6 +321,7 @@ def _public_user(user: dict[str, Any]) -> dict[str, Any]:
         "appearance": user["appearance"],
         "has_pin": bool(user["pin_hash"]),
         "sign_ins": user["sign_ins"],
+        "must_change": bool(user["must_change"]),
     }
 
 
@@ -1172,6 +1209,11 @@ class FloatHandler(BaseHTTPRequestHandler):
                     ctx.user = db.resolve_session(ctx.token)
                 if auth != "none" and ctx.user is None:
                     raise HttpError(401, "Sign in to continue.")
+                if (auth != "none" and ctx.user is not None and ctx.user["must_change"]
+                        and (method, path) not in _MUST_CHANGE_ALLOWED):
+                    # A temporary password may only be used to choose a real one.
+                    raise HttpError(403, "Please set your own password first "
+                                         "(Settings → Security).", must_change=True)
                 if auth == "admin":
                     ctx.require_admin()
                 self._send_result(handler(ctx))
@@ -1183,18 +1225,26 @@ class FloatHandler(BaseHTTPRequestHandler):
             raise HttpError(404, "No such endpoint.")
 
         except HttpError as exc:
-            self._send_json({"error": exc.message}, exc.status)
-        except BrokenPipeError:
+            self._send_json({"error": exc.message, **exc.extra}, exc.status)
+        except (BrokenPipeError, ConnectionResetError):
             pass
-        except Exception as exc:  # pragma: no cover
-            traceback.print_exc()
-            self._send_json({"error": f"Float hit an unexpected problem: {exc}"}, 500)
+        except Exception:  # pragma: no cover
+            # The details go to data/float_errors.log; the teacher gets a calm
+            # message and a reference, not a stack trace or an internal path.
+            ref = _log_unexpected()
+            try:
+                self._send_json({"error": "Something went wrong on Float's side. Your work "
+                                          f"is safe. Please try again. (ref {ref})"}, 500)
+            except Exception:
+                pass
 
     def _bearer(self) -> str:
         header = self.headers.get("Authorization", "")
         if header.startswith("Bearer "):
             return header[7:].strip()
-        return self.query.get("token", "")
+        # Tokens are deliberately NOT read from the URL: they would end up in
+        # browser history and logs, and the app never sends them that way.
+        return ""
 
     # -- responses ---------------------------------------------------------
     def _send_result(self, result: Any) -> None:
@@ -1254,11 +1304,11 @@ class FloatHandler(BaseHTTPRequestHandler):
                 self.wfile.flush()
         except (BrokenPipeError, ConnectionResetError):
             pass   # the teacher closed the tab mid-answer; nothing to clean up
-        except Exception as exc:  # pragma: no cover
+        except Exception:  # pragma: no cover
+            ref = _log_unexpected()
             try:
-                self.wfile.write(
-                    f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n".encode()
-                )
+                message = f"Float lost the thread of that answer. Please try again. (ref {ref})"
+                self.wfile.write(f"data: {json.dumps({'type': 'error', 'message': message})}\n\n".encode())
             except Exception:
                 pass
 
