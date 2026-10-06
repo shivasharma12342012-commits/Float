@@ -47,12 +47,41 @@ async function api(path, options = {}) {
     init.headers["Content-Type"] = "application/json";
     init.body = JSON.stringify(options.body);
   }
-  const res = await fetch(path, init);
+  let res;
+  try {
+    res = await fetch(path, init);
+  } catch (err) {
+    // The browser could not reach Float at all (it was closed, or the laptop slept).
+    throw new Error(OFFLINE_MESSAGE);
+  }
   if (res.status === 401) { sessionStorage.removeItem("float.token"); location.replace("/login"); return; }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Something went wrong at Float's end.");
+  if (res.status === 403 && data.must_change) {
+    if (!api.nagged) { api.nagged = true; openSettings("security"); }
+    throw new Error(data.error);
+  }
+  if (!res.ok) throw new Error(data.error || "Something went wrong at Float's end. Please try again.");
   return data;
 }
+
+const OFFLINE_MESSAGE =
+  "Float can't be reached right now. If you closed its window, open Float again. Your saved work is safe.";
+
+/** Turn whatever went wrong into a sentence a teacher can act on. */
+function friendly(err) {
+  const text = err && err.message ? String(err.message) : "";
+  if (!text || /failed to fetch|networkerror|load failed|network request failed|aborted/i.test(text)) {
+    return OFFLINE_MESSAGE;
+  }
+  return text;
+}
+
+// Safety net: an unexpected error should never fail silently or show raw jargon.
+window.addEventListener("unhandledrejection", (event) => {
+  event.preventDefault();
+  if (event.reason && event.reason.name === "AbortError") return;
+  try { toast(friendly(event.reason), true); } catch { /* the page itself is not ready yet */ }
+});
 
 let toastTimer = null;
 function toast(text, bad = false) {
@@ -92,7 +121,8 @@ async function boot() {
   } catch (err) {
     document.body.innerHTML =
       '<div class="empty" style="padding-top:22vh"><b>Float could not start</b>' +
-      escapeHtml(err.message) + "</div>";
+      escapeHtml(friendly(err)) +
+      '<p><button class="btn" onclick="location.reload()">Try again</button></p></div>';
     return;
   }
   if (!data) return;
@@ -112,7 +142,7 @@ async function boot() {
   $("count-kit").textContent = data.toolkit.length;
   $("open-admin").hidden = data.user.role !== "admin";
 
-  if (sessionStorage.getItem("float.must_change")) {
+  if (data.user.must_change || sessionStorage.getItem("float.must_change")) {
     sessionStorage.removeItem("float.must_change");
     openSettings("security");
     toast("Your admin gave you a temporary password. Set your own now.");
@@ -458,7 +488,7 @@ async function send(prompt, convId) {
     }
   } catch (err) {
     waiting.remove();
-    if (err.name !== "AbortError") turn.node.append(errorCard(err.message));
+    if (err.name !== "AbortError") turn.node.append(errorCard(friendly(err)));
     else turn.node.append(errorCard("Stopped. Nothing was lost — the part above is saved."));
   } finally {
     setStreaming(false);
@@ -611,7 +641,11 @@ function fileCard(artifact) {
     link.rel = "noopener";
     // The download route needs the bearer token, so fetch and hand over a blob.
     fetch(link.href, { headers: { Authorization: "Bearer " + TOKEN } })
-      .then((r) => r.blob())
+      .then((r) => {
+        // Never save an error message as if it were the teacher's document.
+        if (!r.ok) throw new Error("download failed");
+        return r.blob();
+      })
       .then((blob) => {
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
@@ -620,7 +654,7 @@ function fileCard(artifact) {
         anchor.click();
         setTimeout(() => URL.revokeObjectURL(url), 4000);
       })
-      .catch(() => toast("Could not download that file.", true));
+      .catch(() => toast("Could not download that file. Try again, or save it to your Desktop instead.", true));
   });
   acts.append(down);
 
