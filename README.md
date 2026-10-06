@@ -257,7 +257,7 @@ There is also a one-click **usage report** (Excel). It contains **no email addre
 
 Float's admin panel exists to **manage accounts and share a budget fairly**. It deliberately cannot become a way to watch teachers.
 
-### Equity: an equal share, with honest exceptions
+### Equality: an equal share, with honest exceptions
 
 ```mermaid
 flowchart TD
