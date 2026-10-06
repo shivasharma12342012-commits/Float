@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Float's own data (accounts, classes, keys, logs). Never commit these
+data/
+float_error.log
+float_errors.log
+float_errors.log.old
+.rt
+
+# Secrets
+.env
+*.key
+
+# Editor and OS junk
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
