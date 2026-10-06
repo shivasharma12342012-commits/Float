@@ -16,7 +16,7 @@
 
 ![Data](https://img.shields.io/badge/your%20data-stays%20on%20your%20computer-1E3A32?style=flat-square)
 ![Providers](https://img.shields.io/badge/works%20with-Anthropic%20%7C%20OpenAI%20%7C%20Google-E8A33D?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-26%2F26%20unit%20%C2%B7%2065%2F65%20live-2E7D5B?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-33%2F33%20unit%20%C2%B7%2065%2F65%20live-2E7D5B?style=flat-square)
 ![Privacy](https://img.shields.io/badge/admin%20can%20read%20teacher%20content-never-B3412E?style=flat-square)
 
 <br>
@@ -318,7 +318,7 @@ Float has been tested like a real school would use it: an AI-assisted script pla
 
 | Measure | Result |
 |---|---|
-| Unit tests | **26 / 26 pass** |
+| Unit tests | **33 / 33 pass** |
 | Live teacher + admin + security + speed checks | **65 / 65 pass** |
 | Server errors during the run | **0** |
 | Load: 300 requests from 30 simultaneous users | **0 errors**, slowest request under 2 seconds |
@@ -400,7 +400,7 @@ Float is built for and supported on **Windows**.
 | **Use a different port** | `python main.py --port 9000` |
 | **Close Float** | Close its window, or press `Ctrl + C`. Everyone is signed out. |
 
-> macOS and Linux are not supported or tested. The only known issue off Windows is that the file `float/Attachments.py` must be named in lowercase (`attachments.py`).
+> Float is built for and tested on Windows. The server and tests also run on Linux (the file-name case problem that used to stop it is fixed and guarded by a test), but the launchers, window mode and "use my computer" tool have only been checked on Windows.
 
 <br>
 
