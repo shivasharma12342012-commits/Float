@@ -24,11 +24,16 @@ let busy = false;
 /* ---------------------------------------------------------------- plumbing */
 
 async function api(path, body) {
-  const res = await fetch(path, {
-    method: body === undefined ? "GET" : "POST",
-    headers: { "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body || {}),
-  });
+  let res;
+  try {
+    res = await fetch(path, {
+      method: body === undefined ? "GET" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body || {}),
+    });
+  } catch (err) {
+    throw new Error("Float can't be reached right now. If you closed its window, open Float again.");
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Float could not reach its own server.");
   return data;
