@@ -401,7 +401,7 @@ async function send(prompt, convId) {
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + TOKEN },
       signal: S.abort.signal,
       body: JSON.stringify({
-        message: text,
+        message: LENSES[lens].rule ? text + "\n\n[Lens: " + LENSES[lens].rule + "]" : text,
         conv_id: S.conv,
         model: S.model,
         attachments,
@@ -1731,6 +1731,44 @@ function popMenu(anchor, items, up = false) {
   box.style.left = Math.max(8, Math.min(r.left, window.innerWidth - box.offsetWidth - 8)) + "px";
 }
 
+// ---- Lenses: change HOW Float thinks with you, not just what it knows. ----
+// Each lens rides along as a short hidden instruction (a few tokens), so it costs almost nothing.
+const LENSES = {
+  plain:    { name: "Plain",    hint: "Straight answers, as usual.", rule: "" },
+  socratic: { name: "Socratic", hint: "Guides you with questions before giving the answer.",
+              rule: "Teach Socratically: ask 2-3 short guiding questions first, give a hint, and only reveal the full answer if I ask." },
+  skeptic:  { name: "Skeptic",  hint: "Answers, then attacks its own answer and rates confidence.",
+              rule: "Answer, then add a 'Where I could be wrong' section (max 3 bullets) and a confidence rating (low/medium/high) with what to verify." },
+  brief:    { name: "Brief",    hint: "Three bullets, then stops.",
+              rule: "Reply in at most 3 short bullets. No preamble, no closing offer." },
+};
+let lens = "plain";
+try { lens = localStorage.getItem("float.lens") || "plain"; } catch { /* ignore */ }
+if (!LENSES[lens]) lens = "plain";
+function paintLens() {
+  $("lens-label").textContent = "Lens: " + LENSES[lens].name;
+  $("chip-lens").classList.toggle("lens-on", lens !== "plain");
+}
+function setLens(id) {
+  lens = id;
+  try { localStorage.setItem("float.lens", id); } catch { /* ignore */ }
+  paintLens();
+}
+paintLens();
+$("chip-lens").addEventListener("click", () => {
+  popMenu($("chip-lens"), Object.entries(LENSES).map(([id, l]) => ({
+    label: l.name, run: () => setLens(id),
+  })), true);
+  // add the one-line hint + a tick under the open menu
+  const box = document.getElementById("pop");
+  if (!box) return;
+  [...box.querySelectorAll("button")].forEach((row, i) => {
+    const id = Object.keys(LENSES)[i];
+    row.append(make("small", null, LENSES[id].hint));
+    if (id === lens) row.classList.add("on-lens");
+  });
+});
+
 $("open-menu").addEventListener("click", () => {
   const dark = document.documentElement.dataset.theme === "dark";
   const items = [
@@ -1810,17 +1848,23 @@ $("file-input").addEventListener("change", (event) => {
 // Phone layout: the menu opens over the chat, so it must also close itself.
 const closeRail = () => $("rail").classList.remove("open");
 const shell = document.querySelector(".shell");
-function setRail(off) {
-  shell.classList.toggle("rail-off", off);
-  try { localStorage.setItem("float.rail", off ? "off" : "on"); } catch { /* private window */ }
+function setRail(mini) {
+  shell.classList.toggle("rail-mini", mini);
+  const btn = $("rail-toggle");
+  btn.setAttribute("aria-expanded", String(!mini));
+  btn.title = mini ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)";
+  try { localStorage.setItem("float.rail", mini ? "mini" : "full"); } catch { /* private window */ }
 }
-let railPref = "off";                         // opens folded away, like the reference
-try { railPref = localStorage.getItem("float.rail") || "off"; } catch { /* ignore */ }
-setRail(railPref === "off");
+function toggleRail() {
+  if (window.innerWidth > 760) setRail(!shell.classList.contains("rail-mini"));
+  else $("rail").classList.toggle("open");
+}
+let railPref = "full";
+try { railPref = localStorage.getItem("float.rail") || "full"; } catch { /* ignore */ }
+setRail(railPref === "mini");
 $("rail-toggle").addEventListener("click", (event) => {
   event.stopPropagation();
-  if (window.innerWidth > 760) setRail(!shell.classList.contains("rail-off"));
-  else $("rail").classList.toggle("open");
+  toggleRail();
 });
 $("rail").addEventListener("click", (event) => {
   if (event.target.closest("button")) closeRail();      // picked something
@@ -1849,6 +1893,14 @@ document.addEventListener("keydown", (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key === "k") {
     event.preventDefault();
     showPanel("toolkit");
+  }
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
+    event.preventDefault();
+    toggleRail();
+  }
+  if (event.altKey && event.key.toLowerCase() === "l") {
+    event.preventDefault();
+    $("chip-lens").click();
   }
   if ((event.metaKey || event.ctrlKey) && event.key === "/") {
     event.preventDefault();
