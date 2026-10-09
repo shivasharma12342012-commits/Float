@@ -1011,11 +1011,32 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
 [data-theme="dark"] .user-said { background: #262624; }
 [data-theme="dark"] .prose code, [data-theme="dark"] .prose pre { background: #1B1B1A; border-color: #2E2E2C; }
 
-/* Sidebar can be folded away on a desktop-sized window. */
+/* Sidebar collapses to a slim icon strip on desktop (Ctrl+B). */
+.shell { transition: grid-template-columns .18s ease; }
 @media (min-width: 761px) {
-  .shell.rail-off { grid-template-columns: minmax(0, 1fr); }
-  .shell.rail-off .rail { display: none; }
+  .shell.rail-mini { --rail: 56px; }
+  .shell.rail-mini .rail { overflow: hidden; align-items: center; }
+  .shell.rail-mini .rail-top { padding-left: 0; padding-right: 0; justify-content: center; }
+  .shell.rail-mini .wordmark { font-size: 0; }
+  .shell.rail-mini .wordmark-dot { font-size: 22px; }
+  .shell.rail-mini .school-tag,
+  .shell.rail-mini .rail-heading,
+  .shell.rail-mini .rail-scroll,
+  .shell.rail-mini .rail-link .count,
+  .shell.rail-mini .rail-foot-name .grow,
+  .shell.rail-mini #sign-out,
+  .shell.rail-mini #open-admin { display: none; }
+  .shell.rail-mini .rail-new,
+  .shell.rail-mini .rail-link { font-size: 0; width: 38px; height: 38px; padding: 0; margin: 2px 0; justify-content: center; gap: 0; }
+  .shell.rail-mini .rail-nav { padding-left: 0; padding-right: 0; display: flex; flex-direction: column; align-items: center; }
+  .shell.rail-mini .rail-foot { padding: 10px 0; justify-content: center; }
+  .shell.rail-mini button.rail-foot-name { flex: 0; padding: 4px; }
 }
+
+/* Lens chip: Float's own way of changing how it thinks with you. */
+.pick.lens-on { color: var(--accent); font-weight: 600; }
+.pop button small { display: block; font-size: 11.5px; color: var(--faint); font-weight: 400; margin-top: 1px; }
+.pop button.on-lens::before { content: "\2713"; color: var(--accent); margin-right: -2px; }
 
 /* Top bar: four quiet icons on the left; the window's own buttons sit on the right. */
 .topbar { padding: 0 10px; border-bottom-color: transparent; }
