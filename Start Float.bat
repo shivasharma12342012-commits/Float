@@ -4,16 +4,23 @@ setlocal enabledelayedexpansion
 rem ============================================================
 rem  Start Float.bat
 rem
-rem  You shouldn't normally see this window — double-click
-rem  "Start Float.vbs" instead, and this runs invisibly behind it.
+rem  Double-click this (or the desktop shortcut) and Float starts
+rem  with NO terminal window. If something goes wrong you get a
+rem  message box, and details land in data\float_startup_error.log.
 rem
-rem  Running this file directly (not the .vbs) is useful once:
-rem  if something goes wrong and you want to see the actual error
-rem  instead of a silent failure, run this one by hand.
+rem  To watch the raw output once, run:  Start Float.bat --show
 rem ============================================================
 
 cd /d "%~dp0"
 
+rem --- hide this window: relaunch ourselves invisibly, then exit ---------
+if /i "%~1"=="--hidden" goto :run
+if /i "%~1"=="--show" goto :run
+> "%TEMP%\float_hidden.vbs" echo CreateObject("WScript.Shell").Run "cmd /c """"%~f0"" --hidden""", 0, False
+wscript "%TEMP%\float_hidden.vbs"
+exit /b 0
+
+:run
 rem --- find a working Python -------------------------------------------
 set "PY="
 where python >nul 2>nul
@@ -21,7 +28,7 @@ if %errorlevel%==0 (
     set "PY=python"
 ) else (
     where py >nul 2>nul
-    if %errorlevel%==0 set "PY=py"
+    if !errorlevel!==0 set "PY=py"
 )
 
 if "%PY%"=="" (
@@ -36,10 +43,28 @@ if not exist "data\.deps_v2" (
     echo ok > "data\.deps_v2"
 )
 
-rem --- launch, with no console window if possible ------------------------
+rem --- showing the output on purpose? ---------------------------------------
+if /i "%~1"=="--show" (
+    %PY% "main.py"
+    exit /b 0
+)
+
+rem --- find the windowless Python (pythonw), including Microsoft Store installs
+set "PYW="
 where pythonw >nul 2>nul
-if %errorlevel%==0 (
-    start "" pythonw "main.py"
+if !errorlevel!==0 set "PYW=pythonw"
+if not defined PYW (
+    where pyw >nul 2>nul
+    if !errorlevel!==0 set "PYW=pyw"
+)
+if not defined PYW (
+    for /f "delims=" %%P in ('%PY% -c "import sys,os;print(os.path.join(os.path.dirname(sys.executable),'pythonw.exe'))" 2^>nul') do (
+        if exist "%%P" set "PYW=%%P"
+    )
+)
+
+if defined PYW (
+    start "" "%PYW%" "main.py"
 ) else (
     start "" %PY% "main.py"
 )
@@ -47,7 +72,5 @@ if %errorlevel%==0 (
 exit /b 0
 
 :fail
-set "MSG=%~1"
-set "MSG=%MSG:\n=&echo:%"
 mshta "javascript:var sh=new ActiveXObject('WScript.Shell');sh.Popup('%~1',0,'Float',16);close();"
 exit /b 1
