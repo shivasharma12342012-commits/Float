@@ -1081,3 +1081,82 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
 .pop button:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
 .pop hr { border: 0; border-top: 1px solid var(--line); margin: 5px 4px; }
 .pop kbd { margin-left: auto; font: 11px var(--mono); color: var(--faint); }
+
+/* ═════════════════════════════════════════════════ sidebar (v4)
+   A calmer rail: soft tiles, one accent, quiet type. Collapsed it becomes a
+   64px strip with a monogram, icon tiles, hover labels and the account avatar. */
+.rail { position: relative; z-index: 30; border-right: 1px solid rgba(255,255,255,.06); }
+.rail button:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 75%, #fff); outline-offset: 2px; }
+
+.rail-top { padding: 20px 16px 16px 18px; align-items: center; gap: 8px; }
+.rail .wordmark { display: flex; align-items: baseline; font-size: 26px; }
+.rail .wordmark-dot { display: inline-block; width: 6px; height: 6px; margin-left: 3px; border-radius: 50%; background: var(--accent); }
+.school-tag { margin-left: auto; max-width: 104px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.07); color: rgba(255,255,255,.58); font-size: 10.5px; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.school-tag:empty { display: none; }
+
+.rail-new { position: relative; margin: 2px 12px 14px; height: 40px; padding: 0 14px; gap: 10px; border-radius: 12px; font-size: 13.5px; font-weight: 600; letter-spacing: .005em;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 8px 18px -10px color-mix(in srgb, var(--accent) 80%, transparent);
+  transition: transform .14s, filter .14s, box-shadow .14s; }
+.rail-new:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.rail-new:active { transform: translateY(0); filter: brightness(.97); }
+.rail-new svg { transition: transform .22s ease; }
+.rail-new:hover svg { transform: rotate(90deg); }
+
+.rail-nav { padding: 0 10px; gap: 2px; }
+.rail-link { position: relative; height: 38px; padding: 0 11px; gap: 12px; border-radius: 10px; font-size: 13.5px; color: rgba(255,255,255,.64); transition: background .14s, color .14s; }
+.rail-link svg { flex-shrink: 0; opacity: .85; transition: transform .16s, color .14s, opacity .14s; }
+.rail-link:hover { background: rgba(255,255,255,.06); color: #fff; }
+.rail-link:hover svg { transform: scale(1.08); opacity: 1; }
+.rail-link[aria-current="true"] { background: rgba(255,255,255,.09); color: #fff; font-weight: 600; }
+.rail-link[aria-current="true"] svg { color: var(--accent); opacity: 1; }
+.rail-link[aria-current="true"]::before { content: ""; position: absolute; left: -10px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.rail-link .count { margin-left: auto; }
+.rail-link .count:empty { display: none; }
+.rail-link .count:not(:empty) { min-width: 20px; padding: 1px 7px; border-radius: 999px; background: rgba(255,255,255,.08); color: rgba(255,255,255,.7); font-size: 11px; text-align: center; font-variant-numeric: tabular-nums; }
+
+.rail-heading { padding: 22px 20px 8px; font-size: 10.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: rgba(255,255,255,.36); }
+.rail-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.14) transparent; }
+.rail-scroll .rail-heading { padding: 8px 20px; font-size: 12.5px; font-weight: 400; letter-spacing: 0; text-transform: none; color: rgba(255,255,255,.4); }
+
+.thread { width: calc(100% - 20px); margin: 1px 10px; height: 34px; padding: 0 8px 0 11px; border-radius: 9px; font-size: 13px; color: rgba(255,255,255,.62); transition: background .14s, color .14s; }
+.thread:hover { background: rgba(255,255,255,.06); color: #fff; }
+.thread[aria-current="true"] { background: rgba(255,255,255,.1); color: #fff; }
+.thread .x { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; padding: 0; }
+.thread .x:hover { background: rgba(255,255,255,.13); }
+
+.rail-foot { position: relative; border-top: 0; padding: 10px; gap: 4px; }
+.rail-foot::before { content: ""; position: absolute; left: 14px; right: 14px; top: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.13), transparent); }
+.avatar { width: 32px; height: 32px; box-shadow: 0 0 0 2px var(--board), 0 0 0 3.5px color-mix(in srgb, var(--accent) 45%, transparent); }
+button.rail-foot-name { position: relative; overflow: visible; padding: 6px 8px; gap: 11px; border-radius: 11px; transition: background .14s; }
+.rail-foot-name small { color: rgba(255,255,255,.42); }
+.rail-foot .icon-btn { width: 32px; height: 32px; border-radius: 9px; color: rgba(255,255,255,.5); }
+.rail-foot #sign-out:hover { color: #F28B7C; }
+
+@keyframes tipin { from { opacity: 0; transform: translateY(-50%) translateX(-4px); } to { opacity: 1; transform: translateY(-50%); } }
+@media (min-width: 761px) {
+  .shell.rail-mini { --rail: 64px; }
+  .shell.rail-mini .rail { overflow: visible; align-items: stretch; }
+  .shell.rail-mini .rail-top { padding: 18px 0 14px; justify-content: center; }
+  .shell.rail-mini .wm-rest,
+  .shell.rail-mini .school-tag,
+  .shell.rail-mini .rail-heading,
+  .shell.rail-mini .lbl,
+  .shell.rail-mini .rail-link .count,
+  .shell.rail-mini .rail-foot-name .grow,
+  .shell.rail-mini #sign-out,
+  .shell.rail-mini #open-admin { display: none; }
+  .shell.rail-mini .rail-scroll { visibility: hidden; overflow: hidden; }      /* keeps the footer pinned to the bottom */
+  .shell.rail-mini .rail .wordmark { font-size: 27px; }
+  .shell.rail-mini .rail-new { width: 40px; height: 40px; margin: 2px auto 14px; padding: 0; justify-content: center; }
+  .shell.rail-mini .rail-nav { padding: 0; align-items: center; gap: 4px; }
+  .shell.rail-mini .rail-link { width: 40px; height: 40px; padding: 0; margin: 0; justify-content: center; border-radius: 12px; }
+  .shell.rail-mini .rail-link[aria-current="true"]::before { left: -12px; top: 11px; bottom: 11px; }
+  .shell.rail-mini .rail-link #count-tasks:not(:empty) { display: block; position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; min-width: 0; padding: 0; font-size: 0; background: var(--accent); box-shadow: 0 0 0 2px var(--board); }
+  .shell.rail-mini .rail-foot { flex-direction: column; justify-content: center; padding: 12px 0 14px; }
+  .shell.rail-mini .rail-foot::before { left: 12px; right: 12px; }
+  .shell.rail-mini button.rail-foot-name { flex: 0 0 auto; width: 40px; height: 40px; padding: 0; justify-content: center; }
+
+  /* hover labels for the collapsed strip */
+  .shell.rail-mini [data-tip]:hover::after { content: attr(data-tip); position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%); z-index: 100; padding: 6px 10px; border-radius: 8px; background: #2B2A28; border: 1px solid rgba(255,255,255,.09); color: #F3F1EA; font-size: 12px; font-weight: 500; white-space: nowrap; pointer-events: none; box-shadow: 0 10px 26px -10px rgba(0,0,0,.65); animation: tipin .14s .4s ease-out both; }
+}
+@media (prefers-reduced-motion: reduce) { .rail *, .rail-new { transition: none !important; animation: none !important; } }
