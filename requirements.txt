@@ -23,6 +23,10 @@ keyboard>=0.13.5
 # Without it, only characters pyautogui recognises as keys will be typed.
 pyperclip>=1.8.2
 
+# Lets Float find buttons and search boxes by their NAME (instead of guessing
+# where to click) in Windows apps and browsers. Strongly recommended on Windows.
+pywinauto>=0.6.8; sys_platform == "win32"
+
 # Lets Float read text out of PDFs you attach in chat (for example an NCERT
 # chapter). Without it only simple text PDFs work.
 pypdf>=4.0
