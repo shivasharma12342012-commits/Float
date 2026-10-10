@@ -30,3 +30,8 @@ pywinauto>=0.6.8; sys_platform == "win32"
 # Lets Float read text out of PDFs you attach in chat (for example an NCERT
 # chapter). Without it only simple text PDFs work.
 pypdf>=4.0
+
+# Lets Float take a screenshot (with numbered controls drawn on it) so the AI
+# can SEE the screen during "use the computer" tasks. Usually installed along
+# with pyautogui already.
+Pillow>=10.0
