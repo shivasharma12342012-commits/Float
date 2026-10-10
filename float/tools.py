@@ -190,22 +190,28 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "description": (
             "Work on the teacher's computer like a careful personal assistant: open apps, search, "
             "click and type. Float shows a banner and its own pointer, and the teacher can press Esc.\n"
-            "HOW TO BE RELIABLE — follow in this order:\n"
-            "1. Open things by NAME, never by guessing where an icon is: open (app name, file path or "
-            "web address), search_web (query) for anything you would google, focus_window (part of a "
-            "title) to return to an app. These confirm the window is really in front before moving on.\n"
-            "2. Fill boxes by NAME: type with into='Search' (or 'Address and search bar', 'To', 'Subject') "
-            "finds that box and types in it; add submit=true to press Enter. Click buttons and links with "
-            "click_control (label). Keyboard shortcuts also work well: hotkey ctrl+l (browser address bar), "
-            "ctrl+f (find), ctrl+n, ctrl+s.\n"
-            "3. If unsure what is on screen, LOOK first: list_windows (what is open) or describe (the names "
-            "of boxes and buttons in the front window). Never invent a control name or a coordinate.\n"
-            "4. Use x,y clicking only as a last resort, when the teacher gave you the position.\n"
-            "5. Do small runs (about 3-8 steps), read the result, then continue. If a step fails, the run "
-            "stops and says why — do NOT repeat the same step; look, then take another route.\n"
-            "6. Afterwards tell the teacher in one plain sentence what is now on screen. Say so honestly if "
-            "something did not work. Only use this when the teacher asked Float to do something on the "
-            "machine, and never to send, submit, delete or pay without them saying so."
+            "YOU CAN SEE: every call ends with what is on screen NOW - the window in front, what else is "
+            "open, a NUMBERED list of the buttons, links and boxes in the front window, and (when your "
+            "model reads images) a screenshot with those numbers drawn on it. Read it before your next "
+            "call; don't ask to look again unless the screen changed after the call returned.\n"
+            "HOW TO BE RELIABLE:\n"
+            "1. Open things by NAME in ONE step: open (app name, file path or web address), search_web "
+            "(query) for anything you would google, focus_window (part of a title). They confirm the "
+            "window is really in front. 'Open Notepad and type hi' is two steps in one call: "
+            "[open notepad, type hi].\n"
+            "2. Act on the numbered list: click / type / double_click / right_click with element=N. "
+            "Or use names: type with into='Search' (add submit=true for Enter), click_control with "
+            "label. Keyboard shortcuts are fast and sure: hotkey ctrl+l (address bar), ctrl+f, ctrl+s.\n"
+            "3. Batch the steps you are sure of (about 2-8). If a step needs a control you have not "
+            "seen yet, end the call there - the next call starts with the numbered list.\n"
+            "4. x,y clicking is the last resort, only for places not in the list; read the position off "
+            "the screenshot grid. Never invent a control name or a number.\n"
+            "5. After a page or app needs time to load, use wait with until='text you expect'.\n"
+            "6. If a step fails, the run stops and says why. Do NOT repeat it: read the screen shown, "
+            "take another route, or tell the teacher plainly what went wrong.\n"
+            "7. Afterwards tell the teacher in one plain sentence what is now on screen. Only use this "
+            "when the teacher asked Float to do something on the machine, and never to send, submit, "
+            "delete or pay without them saying so."
         ),
         "parameters": {
             "type": "object",
@@ -220,22 +226,25 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
                             "action": {
                                 "type": "string",
                                 "enum": ["open", "open_app", "focus_window", "search_web", "list_windows",
-                                         "describe", "focus_field", "click_control", "type", "press", "hotkey",
-                                         "scroll", "wait", "click", "double_click", "right_click", "move"],
+                                         "see", "describe", "focus_field", "click_control", "type", "press",
+                                         "hotkey", "scroll", "wait", "click", "double_click", "right_click",
+                                         "move"],
                             },
                             "target": {"type": "string", "description": "open: app name, file path or web address."},
                             "title": {"type": "string", "description": "focus_window: part of the window title."},
                             "query": {"type": "string", "description": "search_web: what to search for."},
                             "engine": {"type": "string", "description": "search_web: google (default), bing, youtube, maps, images, duckduckgo."},
                             "label": {"type": "string", "description": "focus_field / click_control: the name of the box or button."},
+                            "element": {"type": "integer", "description": "click / double_click / right_click / type / scroll / focus_field: the [number] from the screen list."},
                             "text": {"type": "string", "description": "type: the text to enter."},
                             "into": {"type": "string", "description": "type: name of the box to click first, e.g. 'Search'."},
                             "clear": {"type": "boolean", "description": "type: select all and replace what is there."},
                             "submit": {"type": "boolean", "description": "type: press Enter afterwards."},
-                            "key": {"type": "string"},
-                            "keys": {"type": "array", "items": {"type": "string"}},
-                            "amount": {"type": "integer"},
-                            "seconds": {"type": "number"},
+                            "key": {"type": "string", "description": "press: one key (enter, esc, tab, down...) or a chord like ctrl+l."},
+                            "keys": {"type": "array", "items": {"type": "string"}, "description": "hotkey: e.g. ['ctrl','s']."},
+                            "amount": {"type": "integer", "description": "scroll: negative = down."},
+                            "seconds": {"type": "number", "description": "wait: how long (at most 15)."},
+                            "until": {"type": "string", "description": "wait: stop early once a window or control with this text appears."},
                             "x": {"type": "integer"},
                             "y": {"type": "integer"},
                         },
@@ -279,6 +288,8 @@ def execute(name: str, payload: dict[str, Any], user: dict[str, Any],
     try:
         return handler(payload, user, conv_id, emit)
     except Exception as exc:
+        if name == "use_computer":
+            computer.end(f"crashed: {exc}")                 # never leave the pointer "in use"
         return {"text": f"The tool failed: {exc}", "card": None}
 
 
@@ -379,18 +390,34 @@ def _tool_read_my_day(payload: dict[str, Any], user: dict[str, Any],
     return {"text": "\n".join(lines), "card": None}
 
 
+def _vision_wanted() -> bool:
+    return config.settings.computer_vision != "off"
+
+
 def _tool_use_computer(payload: dict[str, Any], user: dict[str, Any],
                        conv_id: int | None, emit: Any) -> dict[str, Any]:
     ok, reason = computer.available()
     if not ok:
         return {"text": f"Cannot use the computer: {reason}", "card": None}
 
-    intent = str(payload.get("intent", "a task"))[:120]
+    intent = str(payload.get("intent") or "a task")[:120]
     steps = payload.get("steps") or []
+    if isinstance(steps, str):                              # some models send the list as a JSON string
+        try:
+            steps = json.loads(steps)
+        except ValueError:
+            steps = []
+    if isinstance(steps, dict):
+        steps = [steps]
     if not isinstance(steps, list) or not steps:
-        return {"text": "No steps were given.", "card": None}
+        return {"text": "No steps were given. Give steps like [{\"action\": \"open\", \"target\": \"notepad\"}].",
+                "card": None}
     if len(steps) > 40:
         return {"text": "That is more than 40 steps. Break it into smaller runs.", "card": None}
+    bad = [i + 1 for i, st in enumerate(steps) if not isinstance(st, dict) or not st.get("action")]
+    if bad:
+        return {"text": f"Step {bad[0]} has no action. Every step needs an action, such as open, type or click.",
+                "card": None}
 
     try:
         session = computer.begin(int(user["id"]), user.get("name", ""), intent,
@@ -399,6 +426,17 @@ def _tool_use_computer(payload: dict[str, Any], user: dict[str, Any],
         return {"text": str(exc), "card": None}
 
     done: list[str] = []
+    want_image = _vision_wanted()
+
+    def with_screen(head: str, tail: str = "") -> dict[str, Any]:
+        """Always end on what the screen looks like now - that is the model's eyes."""
+        screen, image = computer.finish_report(session, want_image)
+        text = head + ("\nSCREEN NOW:\n" + screen if screen else "") + (("\n" + tail) if tail else "")
+        out: dict[str, Any] = {"text": text}
+        if image:
+            out["image"] = image
+        return out
+
     try:
         for step in steps:
             action = str(step.get("action", ""))
@@ -411,16 +449,18 @@ def _tool_use_computer(payload: dict[str, Any], user: dict[str, Any],
         return {"text": f"The teacher stopped the run after {len(done)} steps: "
                         + "; ".join(done), "card": {"type": "computer", "steps": done, "stopped": True}}
     except Exception as exc:
+        out = with_screen(
+            f"Stopped after {len(done)} steps because: {exc}. Completed: " + ("; ".join(done) or "nothing yet") + ".",
+            "Do not repeat the failed step. Use the screen above to take another route, "
+            "or tell the teacher plainly what went wrong.")
         computer.end(f"failed: {exc}")
-        return {"text": f"Stopped after {len(done)} steps because: {exc}. Completed: "
-                        + ("; ".join(done) or "nothing yet") + ". " + computer.state_summary()
-                        + " Do not repeat the failed step: look (list_windows or describe) and try another route, "
-                        "or tell the teacher plainly what went wrong.",
-                "card": {"type": "computer", "steps": done, "stopped": True}}
+        out["card"] = {"type": "computer", "steps": done, "stopped": True}
+        return out
 
+    out = with_screen(f"Done: {'; '.join(done)}.")
     computer.end("finished")
-    return {"text": f"Done: {'; '.join(done)}. " + computer.state_summary(),
-            "card": {"type": "computer", "steps": done, "stopped": False}}
+    out["card"] = {"type": "computer", "steps": done, "stopped": False}
+    return out
 
 
 # ---------------------------------------------------------------------------
