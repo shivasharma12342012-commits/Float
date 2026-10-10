@@ -23,14 +23,18 @@ display, the pointer overlay is skipped and the actions still run.
 
 from __future__ import annotations
 
+import os
 import platform
+import re
 import subprocess
 import threading
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from . import db
+from . import db, desktop
+
+desktop.make_dpi_aware()   # before pyautogui or Tk exist: clicks must land where the pointer is drawn
 
 try:  # pragma: no cover - depends on the host
     import pyautogui  # type: ignore
@@ -69,6 +73,7 @@ class Session:
     started: float = field(default_factory=time.time)
     steps: list[str] = field(default_factory=list)
     stop: threading.Event = field(default_factory=threading.Event)
+    target: Any = None            # the window Float is working in (desktop.Win)
 
 
 _current: Session | None = None
@@ -324,9 +329,14 @@ def current_status() -> dict[str, Any]:
     }
 
 
+_MAX_SECONDS = 300
+
+
 def _guard(session: Session) -> None:
     if session.stop.is_set():
         raise Stopped("Stopped.")
+    if time.time() - session.started > _MAX_SECONDS:
+        raise Stopped("This run took longer than five minutes, so I stopped it.")
 
 
 def _note(session: Session, text: str) -> None:
@@ -355,12 +365,60 @@ def _glide(session: Session, x: int, y: int) -> None:
         pyautogui.moveTo(x, y, duration=0.12)
 
 
+ACTIONS = frozenset({
+    "move", "click", "double_click", "right_click", "type", "press", "hotkey", "scroll", "wait",
+    "open", "open_app", "focus_window", "list_windows", "search_web", "click_control",
+    "focus_field", "describe",
+})
+
+
+def _truthy(value: Any) -> bool:
+    return value is True or str(value).strip().lower() in {"1", "true", "yes"}
+
+
+def _ensure_focus(session: Session, doing: str) -> None:
+    """Never type into the wrong place. If something else has taken the screen,
+    take it back once; if it still isn't right, stop and say so."""
+    if not desktop.can_verify():
+        return
+    cur = desktop.active_window()
+    target = session.target
+    if target is None:
+        if cur is not None and desktop.looks_like_float(cur):
+            raise desktop.ActionFailed(
+                "Float itself is in front, so I stopped before " + doing + " into it. "
+                "Open or switch to the app first (open, focus_window or search_web).")
+        return
+    if cur is None or desktop.same_app(cur, target):
+        return
+    desktop.bring_forward(target)
+    cur = desktop.active_window()
+    if cur is None or desktop.same_app(cur, target):
+        return
+    raise desktop.ActionFailed(
+        f"'{cur.title[:50]}' took over the screen, so I stopped before {doing} in the wrong window.")
+
+
+def _work_window(session: Session) -> "desktop.Win":
+    _ensure_focus(session, "going on")
+    win = session.target or desktop.active_window()
+    if win is None:
+        raise desktop.ActionFailed("I can't tell which window is in front. Open or switch to an app first.")
+    return win
+
+
+def _titles(limit: int = 10) -> str:
+    return "; ".join(w.title[:45] for w in desktop.list_windows()[:limit]) or "none I can read"
+
+
 def act(session: Session, action: str, **kwargs: Any) -> str:
     """Perform one step. Returns a sentence describing what happened."""
     _guard(session)
     ok, reason = available()
     if not ok:
         raise RuntimeError(reason)
+    if action not in ACTIONS:
+        raise ValueError(f"Float does not know the action '{action}'.")
 
     if action == "move":
         x, y = _clamp(int(kwargs["x"]), int(kwargs["y"]))
@@ -382,14 +440,29 @@ def act(session: Session, action: str, **kwargs: Any) -> str:
 
     elif action == "type":
         text = str(kwargs.get("text", ""))[:4000]
+        if not text:
+            raise ValueError("type needs text")
+        into = str(kwargs.get("into", "")).strip()
+        if into:
+            _note(session, desktop.focus_field(_work_window(session), into))
+        else:
+            _ensure_focus(session, "typing")
+        if _truthy(kwargs.get("clear")):
+            pyautogui.hotkey("command" if platform.system() == "Darwin" else "ctrl", "a")
+            time.sleep(0.05)
         _type_text(text)
+        if _truthy(kwargs.get("submit")):
+            time.sleep(0.15)
+            pyautogui.press("enter")
         preview = text[:40] + ("…" if len(text) > 40 else "")
-        _note(session, f"typed “{preview}”")
+        _note(session, f"typed “{preview}”" + (" and pressed Enter" if _truthy(kwargs.get("submit")) else ""))
 
     elif action == "press":
         key = str(kwargs.get("key", "")).strip().lower()
         if not key:
             raise ValueError("press needs a key")
+        if key not in {"win", "windows"}:
+            _ensure_focus(session, f"pressing {key}")
         pyautogui.press(key)
         _note(session, f"pressed {key}")
 
@@ -397,6 +470,8 @@ def act(session: Session, action: str, **kwargs: Any) -> str:
         keys = [str(k).strip().lower() for k in kwargs.get("keys", []) if str(k).strip()]
         if not keys:
             raise ValueError("hotkey needs keys")
+        if "win" not in keys and "windows" not in keys:
+            _ensure_focus(session, "pressing " + "+".join(keys))
         pyautogui.hotkey(*keys)
         _note(session, "pressed " + " + ".join(keys))
 
@@ -413,72 +488,129 @@ def act(session: Session, action: str, **kwargs: Any) -> str:
             time.sleep(0.1)
         _note(session, f"waited {seconds:g}s")
 
-    elif action == "open":
-        target = str(kwargs.get("target", "")).strip()
+    elif action in {"open", "open_app"}:
+        target = str(kwargs.get("target") or kwargs.get("name") or "").strip()
         if not target:
             raise ValueError("open needs something to open")
-        _open_target(target)
-        _note(session, f"opened {target}")
+        if target.lower().startswith(("http://", "https://")):
+            win, message = desktop.open_url(target)
+        elif _looks_like_path(target):
+            win, message = desktop.open_path(os.path.expanduser(target))
+        else:
+            win, message = desktop.open_app(target, fallback=_launch_via_search)
+        if win is not None:
+            session.target = win
+        _note(session, message)
 
-    else:
-        raise ValueError(f"Float does not know the action '{action}'.")
+    elif action == "focus_window":
+        title = str(kwargs.get("title") or kwargs.get("name") or kwargs.get("target") or "").strip()
+        if not title:
+            raise ValueError("focus_window needs part of the window's title")
+        win = desktop.find_window([title])
+        if win is None:
+            raise desktop.ActionFailed(f"No open window matches '{title}'. Open windows: {_titles()}.")
+        if not desktop.bring_forward(win):
+            raise desktop.ActionFailed(f"I found '{win.title[:40]}' but couldn't bring it to the front.")
+        session.target = win
+        _note(session, f"switched to {win.title[:50]}")
+
+    elif action == "list_windows":
+        cur = desktop.active_window()
+        _note(session, f"saw: in front “{cur.title[:50] if cur else 'unknown'}”; open: {_titles()}")
+
+    elif action == "search_web":
+        query = str(kwargs.get("query") or kwargs.get("text") or "").strip()
+        if not query:
+            raise ValueError("search_web needs a query")
+        win, _msg = desktop.open_url(desktop.search_url(query, str(kwargs.get("engine", "google"))))
+        if win is not None:
+            session.target = win
+        _note(session, f"searched {kwargs.get('engine') or 'google'} for “{query[:40]}”")
+
+    elif action == "focus_field":
+        label = str(kwargs.get("label") or kwargs.get("into") or "search").strip()
+        _note(session, desktop.focus_field(_work_window(session), label))
+
+    elif action == "click_control":
+        label = str(kwargs.get("label") or kwargs.get("name") or "").strip()
+        if not label:
+            raise ValueError("click_control needs the name of the button or link")
+        _note(session, desktop.click_control(_work_window(session), label))
+
+    elif action == "describe":
+        _note(session, "saw: " + desktop.describe(_work_window(session))[:300])
 
     db.audit("computer.step", user_id=session.user_id, actor=session.user_name,
              detail=session.steps[-1] if session.steps else action)
     return session.steps[-1] if session.steps else action
 
 
-def _type_text(text: str) -> None:
-    """Type text that may contain characters outside pyautogui's known key set
-    (accents, Devanagari and other Indic scripts, emoji). ``typewrite`` silently
-    drops anything it doesn't recognise as a key, which used to mean a teacher's
-    name or a Hindi sentence would arrive with holes in it and no error shown.
-    Fall back to the clipboard-paste method for any character it can't type
-    directly, so nothing is silently lost."""
+def state_summary() -> str:
+    """One line for the model after a run: what is in front now, so it can
+    report what actually happened instead of what it hoped would happen."""
     try:
-        pyautogui.typewrite(text, interval=_TYPE_INTERVAL)
-        return
-    except (KeyError, ValueError):
-        pass
+        if not desktop.can_verify():
+            return ""
+        cur = desktop.active_window()
+        return f"In front now: {cur.title[:60] if cur else 'unknown'}. Open windows: {_titles(8)}."
+    except Exception:
+        return ""
+
+
+def _looks_like_path(target: str) -> bool:
+    return (os.path.exists(os.path.expanduser(target)) or target.startswith(("~", "/", "\\\\"))
+            or re.match(r"^[A-Za-z]:[\\/]", target) is not None)
+
+
+def _launch_via_search(name: str) -> None:
+    """Last resort for an app Float can't find by name: the system search box."""
+    pyautogui.press("command" if platform.system() == "Darwin" else "win")
+    time.sleep(0.8)
+    _type_text(name)
+    time.sleep(1.0)
+    pyautogui.press("enter")
+
+
+def _paste_text(text: str) -> bool:
+    """Paste instead of typing: instant, never drops characters, handles Hindi
+    and accents. Returns False if there is no clipboard helper."""
     try:
         import pyperclip  # type: ignore
-
+    except Exception:
+        return False
+    try:
         previous = None
         try:
             previous = pyperclip.paste()
         except Exception:
-            previous = None
+            pass
         pyperclip.copy(text)
-        pyautogui.hotkey("ctrl", "v")
         time.sleep(0.05)
+        pyautogui.hotkey("command" if platform.system() == "Darwin" else "ctrl", "v")
+        time.sleep(0.2)
         if previous is not None:
             try:
                 pyperclip.copy(previous)
             except Exception:
                 pass
+        return True
     except Exception:
-        # No clipboard helper available either; type what we can character
-        # by character so at least the ASCII portion lands correctly.
-        for ch in text:
-            try:
-                pyautogui.typewrite(ch, interval=_TYPE_INTERVAL)
-            except Exception:
-                continue
+        return False
 
 
-def _open_target(target: str) -> None:
-    system = platform.system()
-    if target.startswith(("http://", "https://")):
-        import webbrowser
-
-        webbrowser.open(target)
+def _type_text(text: str) -> None:
+    if _paste_text(text):
         return
-    if system == "Windows":
-        subprocess.Popen(["cmd", "/c", "start", "", target], shell=False)
-    elif system == "Darwin":
-        subprocess.Popen(["open", target])
-    else:
-        subprocess.Popen(["xdg-open", target])
+    try:
+        pyautogui.typewrite(text, interval=_TYPE_INTERVAL)
+        return
+    except (KeyError, ValueError):
+        pass
+    for ch in text:                                         # at least the ASCII part lands
+        try:
+            pyautogui.typewrite(ch, interval=_TYPE_INTERVAL)
+        except Exception:
+            continue
 
 
 def screenshot_size() -> dict[str, int]:
