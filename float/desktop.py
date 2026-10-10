@@ -36,6 +36,7 @@ class Win:
     handle: int
     title: str
     pid: int = 0
+    exe: str = ""          # program file name without ".exe", lower case (Windows)
 
 
 def make_dpi_aware() -> None:
@@ -77,6 +78,31 @@ def _win_pid(hwnd: int) -> int:
     return int(pid.value)
 
 
+def _win_exe(pid: int) -> str:
+    """Name of the program that owns a window, so 'notepad' is found even when
+    its title is 'Untitled'. Empty when Windows won't say."""
+    if SYSTEM != "Windows" or not pid:
+        return ""
+    try:
+        import ctypes
+        from ctypes import wintypes
+        k = ctypes.windll.kernel32
+        k.OpenProcess.restype = wintypes.HANDLE
+        handle = k.OpenProcess(0x1000, False, pid)           # QUERY_LIMITED_INFORMATION
+        if not handle:
+            return ""
+        try:
+            size = wintypes.DWORD(520)
+            buf = ctypes.create_unicode_buffer(520)
+            if k.QueryFullProcessImageNameW(handle, 0, buf, ctypes.byref(size)):
+                return Path(buf.value).stem.lower()
+        finally:
+            k.CloseHandle(handle)
+    except Exception:
+        pass
+    return ""
+
+
 def _windows_list() -> list[Win]:
     import ctypes
     from ctypes import wintypes
@@ -99,7 +125,8 @@ def _windows_list() -> list[Win]:
                 return True
             title = _win_title(hwnd)
             if title and title.lower() not in _SKIP_TITLES:
-                out.append(Win(int(hwnd), title, _win_pid(hwnd)))
+                pid = _win_pid(hwnd)
+                out.append(Win(int(hwnd), title, pid, _win_exe(pid)))
         except Exception:
             pass
         return True
@@ -139,7 +166,10 @@ def active_window() -> Win | None:
         if SYSTEM == "Windows":
             import ctypes
             hwnd = int(ctypes.windll.user32.GetForegroundWindow() or 0)
-            return Win(hwnd, _win_title(hwnd), _win_pid(hwnd)) if hwnd else None
+            if not hwnd:
+                return None
+            pid = _win_pid(hwnd)
+            return Win(hwnd, _win_title(hwnd), pid, _win_exe(pid))
         if SYSTEM == "Darwin":
             name = _mac('tell application "System Events" to get name of first process whose frontmost is true')
             return Win(0, name, 0) if name else None
@@ -200,13 +230,64 @@ def bring_forward(w: Win, tries: int = 3) -> bool:
     return False
 
 
+def _matches(w: Win, wanted: list[str]) -> bool:
+    title = w.title.lower()
+    for n in wanted:
+        if n in title:
+            return True
+        if w.exe and (n == w.exe or (len(n) >= 3 and n in w.exe)):
+            return True
+    return False
+
+
 def find_window(needles: list[str], windows: list[Win] | None = None) -> Win | None:
     wanted = [n.lower() for n in needles if n]
-    for w in windows if windows is not None else list_windows():
-        title = w.title.lower()
-        if wanted and any(n in title for n in wanted) and not looks_like_float(w):
+    if not wanted:
+        return None
+    me = os.getpid()
+    pool = windows if windows is not None else list_windows()
+    for w in pool:                                          # the front-most match wins
+        if _matches(w, wanted) and not looks_like_float(w) and not (w.pid and w.pid == me):
             return w
     return None
+
+
+def window_rect(w: Win) -> tuple[int, int, int, int] | None:
+    """(left, top, right, bottom) of a window in screen pixels, or None."""
+    if SYSTEM != "Windows" or not w.handle:
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+        r = wintypes.RECT()
+        if ctypes.windll.user32.GetWindowRect(w.handle, ctypes.byref(r)):
+            return int(r.left), int(r.top), int(r.right), int(r.bottom)
+    except Exception:
+        pass
+    return None
+
+
+def window_at(x: int, y: int) -> Win | None:
+    """The top-level window under a screen point (Windows only). Float's own
+    click-through overlay never answers - it is transparent to hit-testing."""
+    if SYSTEM != "Windows":
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+        u = ctypes.windll.user32
+        u.WindowFromPoint.argtypes = [wintypes.POINT]
+        u.WindowFromPoint.restype = wintypes.HWND
+        u.GetAncestor.argtypes = [wintypes.HWND, wintypes.UINT]
+        u.GetAncestor.restype = wintypes.HWND
+        hwnd = u.WindowFromPoint(wintypes.POINT(int(x), int(y)))
+        if not hwnd:
+            return None
+        root = u.GetAncestor(hwnd, 2) or hwnd               # GA_ROOT
+        pid = _win_pid(root)
+        return Win(int(root), _win_title(root), pid, _win_exe(pid))
+    except Exception:
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -278,36 +359,37 @@ def find_start_shortcut(name: str, roots: list[Path] | None = None) -> Path | No
     return best[1] if best else None
 
 
-def _launch(raw: str, key: str, launch: list[str], fallback: Callable[[str], None] | None) -> None:
+def _launch(raw: str, key: str, launch: list[str], fallback: Callable[[str], None] | None) -> bool:
+    """Start an app. Returns True if the system search box was used to do it."""
     if SYSTEM == "Windows":
         start = getattr(os, "startfile", None)
         for cand in launch:
             try:
                 start(cand)                                  # type: ignore[misc]
-                return
+                return False
             except OSError:
                 continue
         lnk = find_start_shortcut(raw)
         if lnk:
             try:
                 start(str(lnk))                              # type: ignore[misc]
-                return
+                return False
             except OSError:
                 pass
         if fallback:
             fallback(raw)
-            return
+            return True
         raise ActionFailed(f"I couldn't find an app called '{raw}' on this computer.")
     if SYSTEM == "Darwin":
         r = subprocess.run(["open", "-a", raw], capture_output=True, timeout=20)
         if r.returncode != 0:
             raise ActionFailed(f"I couldn't find an app called '{raw}' on this Mac.")
-        return
+        return False
     for cand in dict.fromkeys(launch + [key.replace(" ", "-"), key.split(" ")[0] if key else ""]):
         exe = shutil.which(cand) if cand else None
         if exe:
             subprocess.Popen([exe], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-            return
+            return False
     raise ActionFailed(f"I couldn't find an app called '{raw}' on this computer.")
 
 
@@ -339,11 +421,17 @@ def open_app(name: str, fallback: Callable[[str], None] | None = None,
                 raise ActionFailed(f"{raw} is open but I couldn't bring it to the front.")
             return existing, f"Switched to {raw}"
     before = {w.handle for w in list_windows()}
-    _launch(raw, key, launch, fallback)
+    used_search = _launch(raw, key, launch, fallback)
     if not can_verify():
         time.sleep(1.5)
         return None, f"Opened {raw} (I can't confirm the window on this system)"
     found = _wait_for(hints, before, timeout)
+    if found is None and fallback is not None and SYSTEM == "Windows" and used_search is not True:
+        try:                                                # second chance: the system search box
+            fallback(raw)
+        except Exception:
+            pass
+        found = _wait_for(hints, before, min(timeout, 10.0))
     if found is None:
         raise ActionFailed(f"I tried to open {raw} but no window appeared within {int(timeout)} seconds. "
                            "It may not be installed, or it may still be loading.")
@@ -406,11 +494,31 @@ def open_url(url: str) -> tuple[Win | None, str]:
 
 
 # ---------------------------------------------------------------------------
-# Controls by name (Windows, needs pywinauto)
+# Eyes: what is on screen, by name and position (Windows, needs pywinauto)
 # ---------------------------------------------------------------------------
 _FIELD_KINDS = ("Edit", "ComboBox")
 _CLICK_KINDS = ("Button", "MenuItem", "ListItem", "TabItem", "Hyperlink", "CheckBox", "RadioButton",
                 "SplitButton", "TreeItem", "Edit", "ComboBox")
+_SEE_KINDS = frozenset(_CLICK_KINDS) | {"Document", "Slider", "DataItem"}
+MAX_ELEMENTS = 80
+_SNAPSHOT_SECONDS = 7.0
+
+
+@dataclass(frozen=True)
+class Element:
+    """One thing on screen Float can act on. ``x``/``y`` are the centre, in real
+    screen pixels - exactly where a click should land."""
+    id: int
+    kind: str
+    name: str
+    x: int
+    y: int
+    w: int
+    h: int
+    auto: str = ""
+
+    def line(self) -> str:
+        return f'[{self.id}] {self.kind} "{self.name[:60]}" at ({self.x},{self.y})'
 
 
 def uia_available() -> bool:
@@ -424,32 +532,79 @@ def _need_uia() -> None:
                            "keyboard shortcuts instead (for example Ctrl+L for a browser's address bar).")
 
 
-def _controls(win: Win, kinds: tuple[str, ...]) -> list[tuple[Any, str, str]]:
-    from pywinauto import Desktop                           # type: ignore
-    top = Desktop(backend="uia").window(handle=win.handle)
-    out = []
-    for kind in kinds:
-        try:
-            items = top.descendants(control_type=kind)
+def _walk(win: Win, out: list) -> None:
+    """Collect raw (kind, name, auto, rect) rows. Runs on a helper thread so a
+    huge page cannot hang the run."""
+    try:
+        try:                                                # COM must be initialised on this thread
+            import comtypes  # type: ignore
+            comtypes.CoInitialize()
         except Exception:
-            continue
-        for c in items:
+            pass
+        from pywinauto import Desktop as UiaDesktop         # type: ignore
+        top = UiaDesktop(backend="uia").window(handle=win.handle)
+        for info in top.element_info.descendants():
             try:
-                if not c.is_visible():
+                kind = str(info.control_type or "")
+                if kind not in _SEE_KINDS:
                     continue
-                name = (c.window_text() or c.element_info.name or "").strip()
-                auto = str(getattr(c.element_info, "automation_id", "") or "")
-                out.append((c, name, auto))
+                if getattr(info, "visible", True) is False:
+                    continue
+                rect = info.rectangle
+                width, height = int(rect.right - rect.left), int(rect.bottom - rect.top)
+                if width <= 1 or height <= 1:
+                    continue
+                name = str(info.name or "").strip()
+                auto = str(getattr(info, "automation_id", "") or "")
+                out.append((kind, name, auto, int(rect.left), int(rect.top), width, height))
             except Exception:
                 continue
-    return out
+    except Exception as exc:                                # pragma: no cover - depends on the host
+        out.append(exc)
 
 
-def _best(label: str, found: list[tuple[Any, str, str]]) -> Any | None:
+def snapshot(win: Win, limit: int = MAX_ELEMENTS, screen: tuple[int, int] = (0, 0)) -> list[Element]:
+    """Numbered list of what can be clicked or typed into in ``win``, in reading
+    order. Raises ActionFailed with a plain reason when it can't look."""
+    _need_uia()
+    import threading
+    rows: list = []
+    worker = threading.Thread(target=_walk, args=(win, rows), daemon=True, name="float-eyes")
+    worker.start()
+    worker.join(timeout=_SNAPSHOT_SECONDS)
+    if worker.is_alive():
+        raise ActionFailed(f"'{win.title[:40]}' is too busy or too large for me to read its buttons in "
+                           f"{int(_SNAPSHOT_SECONDS)} seconds. Use keyboard shortcuts or the screenshot.")
+    errors = [r for r in rows if isinstance(r, Exception)]
+    rows = [r for r in rows if not isinstance(r, Exception)]
+    if not rows and errors:
+        raise ActionFailed(f"I couldn't read '{win.title[:40]}': {errors[0]}")
+    sw, sh = screen
+    kept = []
+    for kind, name, auto, left, top, width, height in rows:
+        cx, cy = left + width // 2, top + height // 2
+        if cx < 0 or cy < 0 or (sw and cx >= sw) or (sh and cy >= sh):
+            continue                                        # off-screen
+        if not name and kind not in ("Edit", "ComboBox", "Document"):
+            continue                                        # nothing to call it by
+        if any(k[2] == kind and k[3] == (name or auto) and abs(k[4] - cx) < 8 and abs(k[5] - cy) < 8
+               for k in kept):
+            continue                                        # the same control reported twice
+        kept.append((cy // 12, cx, kind, name or auto or "(unnamed box)", cx, cy, width, height, auto))
+    kept.sort()
+    return [Element(i + 1, k[2], k[3], k[4], k[5], k[6], k[7], k[8]) for i, k in enumerate(kept[:limit])]
+
+
+def best_element(label: str, elements: list[Element], kinds: tuple[str, ...] | None = None) -> Element | None:
+    """The element whose name best matches ``label`` (exact > starts-with > contains)."""
     want = norm(label)
-    ranked = []
-    for c, name, auto in found:
-        n, a = norm(name), norm(auto)
+    if not want:
+        return None
+    ranked: list[tuple[int, int, Element]] = []
+    for e in elements:
+        if kinds and e.kind not in kinds:
+            continue
+        n, a = norm(e.name), norm(e.auto)
         if n == want:
             score = 3
         elif n and n.startswith(want):
@@ -458,46 +613,28 @@ def _best(label: str, found: list[tuple[Any, str, str]]) -> Any | None:
             score = 1
         else:
             continue
-        ranked.append((score, c))
-    return max(ranked, key=lambda r: r[0])[1] if ranked else None
+        ranked.append((score, -len(n), e))                  # shorter name = tighter match
+    return max(ranked, key=lambda r: (r[0], r[1]))[2] if ranked else None
 
 
-def find_control(win: Win, label: str, kinds: tuple[str, ...], timeout: float = 6.0) -> Any:
-    _need_uia()
+def find_element(win: Win, label: str, kinds: tuple[str, ...], timeout: float = 6.0,
+                 screen: tuple[int, int] = (0, 0)) -> Element:
     deadline = time.time() + timeout
     while True:
-        found = _controls(win, kinds)
-        hit = _best(label, found)
+        found = snapshot(win, screen=screen)
+        hit = best_element(label, found, kinds)
         if hit is not None:
             return hit
         if time.time() >= deadline:
-            names = [n for _c, n, _a in found if n][:12]
+            names = [e.name for e in found if e.name][:15]
             seen = ("; ".join(names)) if names else "none I could read"
             raise ActionFailed(f"I couldn't find '{label}' in '{win.title[:40]}'. Controls I can see: {seen}.")
         time.sleep(0.5)
 
 
-def focus_field(win: Win, label: str) -> str:
-    c = find_control(win, label or "search", _FIELD_KINDS)
-    c.click_input()
-    time.sleep(0.2)
-    try:
-        if not c.has_keyboard_focus():
-            c.set_focus()
-    except Exception:
-        pass
-    return f"clicked the '{label or 'search'}' box"
-
-
-def click_control(win: Win, label: str) -> str:
-    c = find_control(win, label, _CLICK_KINDS)
-    c.click_input()
-    return f"clicked '{label}'"
-
-
 def describe(win: Win, limit: int = 40) -> str:
-    _need_uia()
-    boxes = [n for _c, n, _a in _controls(win, _FIELD_KINDS) if n][:limit // 2]
-    clicks = [n for _c, n, _a in _controls(win, _CLICK_KINDS[:-2]) if n][:limit]
+    els = snapshot(win)
+    boxes = [e.name for e in els if e.kind in _FIELD_KINDS and e.name][:limit // 2]
+    clicks = [e.name for e in els if e.kind not in _FIELD_KINDS and e.name][:limit]
     return (f"In '{win.title[:40]}' — boxes: {'; '.join(dict.fromkeys(boxes)) or 'none named'}. "
             f"Buttons and links: {'; '.join(dict.fromkeys(clicks)) or 'none named'}.")
