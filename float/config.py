@@ -247,6 +247,11 @@ class Settings:
     #: School-wide kill switch for pointer control. The admin panel writes this.
     computer_control: bool = field(default_factory=lambda: env_bool("FLOAT_COMPUTER_CONTROL", True))
 
+    #: Whether Float sends a screenshot back to the model after a pointer run so
+    #: it can SEE the screen. "auto" = providers known to read images (Anthropic,
+    #: OpenAI, Google); "on" = every provider except the local one; "off" = text only.
+    computer_vision: str = field(default_factory=lambda: (env("FLOAT_COMPUTER_VISION") or "auto").lower())
+
     open_browser: bool = field(default_factory=lambda: env_bool("FLOAT_OPEN_BROWSER", True))
 
     def google_ready(self) -> bool:
