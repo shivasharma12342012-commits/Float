@@ -30,10 +30,10 @@ if "%PY%"=="" (
 )
 
 rem --- first run only: install the optional extras ----------------------
-if not exist "data\.deps_installed" (
+if not exist "data\.deps_v2" (
     %PY% -m pip install -r requirements.txt --quiet --disable-pip-version-check >"%TEMP%\float_pip.log" 2>&1
     if not exist "data" mkdir "data"
-    echo ok > "data\.deps_installed"
+    echo ok > "data\.deps_v2"
 )
 
 rem --- launch, with no console window if possible ------------------------
