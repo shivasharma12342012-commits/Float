@@ -188,11 +188,24 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "use_computer",
         "description": (
-            "Drive the teacher's computer: move Float's pointer, click, type, press keys, "
-            "scroll, open an application or a file. Float shows its own pointer and a banner "
-            "so the teacher can see and stop it. Only use this when the teacher has asked "
-            "Float to do something on the machine — never to 'check' or 'look at' something "
-            "you could ask about instead. Plan the whole sequence in one call."
+            "Work on the teacher's computer like a careful personal assistant: open apps, search, "
+            "click and type. Float shows a banner and its own pointer, and the teacher can press Esc.\n"
+            "HOW TO BE RELIABLE — follow in this order:\n"
+            "1. Open things by NAME, never by guessing where an icon is: open (app name, file path or "
+            "web address), search_web (query) for anything you would google, focus_window (part of a "
+            "title) to return to an app. These confirm the window is really in front before moving on.\n"
+            "2. Fill boxes by NAME: type with into='Search' (or 'Address and search bar', 'To', 'Subject') "
+            "finds that box and types in it; add submit=true to press Enter. Click buttons and links with "
+            "click_control (label). Keyboard shortcuts also work well: hotkey ctrl+l (browser address bar), "
+            "ctrl+f (find), ctrl+n, ctrl+s.\n"
+            "3. If unsure what is on screen, LOOK first: list_windows (what is open) or describe (the names "
+            "of boxes and buttons in the front window). Never invent a control name or a coordinate.\n"
+            "4. Use x,y clicking only as a last resort, when the teacher gave you the position.\n"
+            "5. Do small runs (about 3-8 steps), read the result, then continue. If a step fails, the run "
+            "stops and says why — do NOT repeat the same step; look, then take another route.\n"
+            "6. Afterwards tell the teacher in one plain sentence what is now on screen. Say so honestly if "
+            "something did not work. Only use this when the teacher asked Float to do something on the "
+            "machine, and never to send, submit, delete or pay without them saying so."
         ),
         "parameters": {
             "type": "object",
@@ -206,17 +219,25 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
                         "properties": {
                             "action": {
                                 "type": "string",
-                                "enum": ["move", "click", "double_click", "right_click",
-                                         "type", "press", "hotkey", "scroll", "wait", "open"],
+                                "enum": ["open", "open_app", "focus_window", "search_web", "list_windows",
+                                         "describe", "focus_field", "click_control", "type", "press", "hotkey",
+                                         "scroll", "wait", "click", "double_click", "right_click", "move"],
                             },
-                            "x": {"type": "integer"},
-                            "y": {"type": "integer"},
-                            "text": {"type": "string"},
+                            "target": {"type": "string", "description": "open: app name, file path or web address."},
+                            "title": {"type": "string", "description": "focus_window: part of the window title."},
+                            "query": {"type": "string", "description": "search_web: what to search for."},
+                            "engine": {"type": "string", "description": "search_web: google (default), bing, youtube, maps, images, duckduckgo."},
+                            "label": {"type": "string", "description": "focus_field / click_control: the name of the box or button."},
+                            "text": {"type": "string", "description": "type: the text to enter."},
+                            "into": {"type": "string", "description": "type: name of the box to click first, e.g. 'Search'."},
+                            "clear": {"type": "boolean", "description": "type: select all and replace what is there."},
+                            "submit": {"type": "boolean", "description": "type: press Enter afterwards."},
                             "key": {"type": "string"},
                             "keys": {"type": "array", "items": {"type": "string"}},
                             "amount": {"type": "integer"},
                             "seconds": {"type": "number"},
-                            "target": {"type": "string", "description": "App name, file path or URL for 'open'."},
+                            "x": {"type": "integer"},
+                            "y": {"type": "integer"},
                         },
                         "required": ["action"],
                     },
@@ -392,10 +413,13 @@ def _tool_use_computer(payload: dict[str, Any], user: dict[str, Any],
     except Exception as exc:
         computer.end(f"failed: {exc}")
         return {"text": f"Stopped after {len(done)} steps because: {exc}. Completed: "
-                        + "; ".join(done), "card": {"type": "computer", "steps": done, "stopped": True}}
+                        + ("; ".join(done) or "nothing yet") + ". " + computer.state_summary()
+                        + " Do not repeat the failed step: look (list_windows or describe) and try another route, "
+                        "or tell the teacher plainly what went wrong.",
+                "card": {"type": "computer", "steps": done, "stopped": True}}
 
     computer.end("finished")
-    return {"text": f"Done: {'; '.join(done)}",
+    return {"text": f"Done: {'; '.join(done)}. " + computer.state_summary(),
             "card": {"type": "computer", "steps": done, "stopped": False}}
 
 
