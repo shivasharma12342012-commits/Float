@@ -22,8 +22,56 @@ import sys
 import time
 import webbrowser
 
-from float import APP_NAME, APP_TAGLINE, VERSION
-from float import config, db, security, server
+import os
+import traceback
+from pathlib import Path
+
+_HERE = Path(__file__).resolve().parent
+
+
+def _tell_user(message: str) -> None:
+    """Float normally runs with no console window, so a failure would be invisible.
+    Show it in a plain message box (Windows) and keep a copy in data/."""
+    try:
+        data = _HERE / "data"
+        data.mkdir(exist_ok=True)
+        with open(data / "float_startup_error.log", "a", encoding="utf-8") as fh:
+            fh.write(time.strftime("%Y-%m-%d %H:%M:%S ") + message + "\n\n")
+    except OSError:
+        pass
+    try:
+        if sys.platform == "win32":
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(None, message[:900], "Float couldn't start", 0x10)
+        else:
+            print(message, file=sys.stderr)
+    except Exception:
+        pass
+
+
+def _fix_file_case() -> None:
+    """Windows keeps whatever capital letters a file was saved with, but Python's
+    imports are case-exact. If `Attachments.py` came through a zip or copy with a
+    capital A, rename it to the name the code expects."""
+    pkg = _HERE / "float"
+    try:
+        names = os.listdir(pkg)
+        if "attachments.py" not in names and "Attachments.py" in names:
+            os.rename(pkg / "Attachments.py", pkg / "attachments_tmp.py")
+            os.rename(pkg / "attachments_tmp.py", pkg / "attachments.py")
+    except OSError:
+        pass
+
+
+_fix_file_case()
+try:
+    from float import APP_NAME, APP_TAGLINE, VERSION
+    from float import config, db, security, server
+except Exception:
+    _tell_user("Float's files look damaged or incomplete, so it could not start.\n\n"
+               "Re-download Float and copy it over this folder.\n\nDetails:\n"
+               + traceback.format_exc(limit=3))
+    raise SystemExit(1)
 
 
 def _open_window(url: str) -> None:
@@ -59,7 +107,23 @@ def _open_window(url: str) -> None:
 def _cmd_run(args: argparse.Namespace) -> None:
     host = args.host or config.settings.host
     port = args.port or config.settings.port
-    srv = server.serve(host, port)
+    try:
+        srv = server.serve(host, port)
+    except OSError:
+        # Port already taken. Usually that's Float itself, already running: just open it.
+        url = f"http://{host}:{port}"
+        try:
+            import urllib.request
+            alive = b"Float" in urllib.request.urlopen(url, timeout=3).read(4000)
+        except Exception:
+            alive = False
+        if alive:
+            if not args.no_browser:
+                webbrowser.open(url) if args.tab else _open_window(url)
+            return
+        _tell_user(f"Port {port} is being used by another program, so Float could not start.\n\n"
+                   f"Close that program, or start Float with a different port:\npython main.py --port {port + 1}")
+        raise SystemExit(1)
     url = f"http://{host}:{srv.server_port}"
 
     print(f"{APP_NAME} {VERSION} — {APP_TAGLINE}")
