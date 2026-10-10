@@ -27,7 +27,7 @@ from typing import Any, Iterator
 from . import attachments as attachment_reader
 from . import config, db, providers, tools
 
-MAX_TOOL_ROUNDS = 6
+MAX_TOOL_ROUNDS = 10      # a pointer task is look -> act -> look; six rounds ran out mid-job
 TOOL_LABELS = {
     "create_file": "Making the file",
     "look_up_class": "Looking up the class",
@@ -47,6 +47,27 @@ def _history(conv_id: int, limit: int = 30) -> list[dict[str, Any]]:
         blocks = row["meta"].get("blocks")
         out.append({"role": row["role"], "content": blocks if blocks else row["content"]})
     return out
+
+
+def _sees_images(provider: str) -> bool:
+    """Does this provider get the screenshot a pointer run produces?"""
+    mode = config.settings.computer_vision
+    if mode == "off" or provider == "local":
+        return False
+    return mode == "on" or provider in {"anthropic", "openai", "google"}
+
+
+def _drop_old_screens(history: list[dict[str, Any]]) -> None:
+    """Only the newest screenshot is worth its tokens: an old one shows a screen
+    that no longer exists. Replace earlier ones with their text."""
+    for message in history:
+        content = message.get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if block.get("type") == "tool_result" and isinstance(block.get("content"), list):
+                block["content"] = "\n".join(
+                    b.get("text", "") for b in block["content"] if isinstance(b, dict) and b.get("type") == "text")
 
 
 def title_for(text: str) -> str:
@@ -186,6 +207,7 @@ def run(user: dict[str, Any], conv_id: int, message: str, model_choice: str = ""
                                                                "provider": provider, "model": model})
 
         results: list[dict[str, Any]] = []
+        shown: list[dict[str, Any]] = []
         step_queue: queue.Queue = queue.Queue()
 
         for call in pending:
@@ -197,16 +219,26 @@ def run(user: dict[str, Any], conv_id: int, message: str, model_choice: str = ""
                 yield item
             if outcome.get("card"):
                 yield {"type": "card", "card": outcome["card"]}
+            text = outcome["text"][:20_000]
+            image = outcome.get("image")
             results.append({
                 "type": "tool_result",
                 "tool_use_id": call["id"],
                 "name": call["name"],
-                "content": outcome["text"][:20_000],
+                "content": text,
             })
+            if image and _sees_images(provider):           # the model's eyes
+                shown.append({**results[-1], "content": [
+                    {"type": "text", "text": text},
+                    {"type": "image", "source": {"type": "base64", "media_type": image["media_type"],
+                                                 "data": image["data"]}}]})
+            else:
+                shown.append(results[-1])
 
-        history.append({"role": "user", "content": results})
+        _drop_old_screens(history)
+        history.append({"role": "user", "content": shown})
         db.add_message(conv_id, "tool", json.dumps([r["name"] for r in results]),
-                       {"blocks": results})
+                       {"blocks": results})                 # stored as text; screenshots are never saved
     else:
         yield {"type": "error",
                "message": "That took more tool steps than Float allows in one go. "
