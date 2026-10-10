@@ -335,6 +335,7 @@ def _to_openai_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         text_parts: list[str] = []
         tool_calls: list[dict[str, Any]] = []
         results: list[dict[str, Any]] = []
+        screens: list[dict[str, Any]] = []
         for block in content:
             btype = block.get("type")
             if btype == "text":
@@ -352,6 +353,11 @@ def _to_openai_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "tool_call_id": block.get("tool_use_id"),
                     "content": _as_text(block.get("content")),
                 })
+                for part in block.get("content") if isinstance(block.get("content"), list) else []:
+                    if isinstance(part, dict) and part.get("type") == "image":
+                        src = part.get("source", {})
+                        screens.append({"type": "image_url", "image_url": {
+                            "url": f"data:{src.get('media_type', 'image/jpeg')};base64,{src.get('data', '')}"}})
             elif btype == "image":
                 source = block.get("source", {})
                 text_parts.append(f"[image: {source.get('media_type', 'attached')}]")
@@ -363,6 +369,9 @@ def _to_openai_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
             out.append(entry)
         elif results:
             out.extend(results)
+            if screens:                                     # tool messages can't carry pictures
+                out.append({"role": "user", "content": [
+                    {"type": "text", "text": "The screen as it is now (from the tool above):"}] + screens})
             if any(p.strip() for p in text_parts):
                 out.append({"role": "user", "content": "\n".join(text_parts)})
         else:
@@ -440,6 +449,11 @@ def _to_google_contents(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "name": block.get("name") or block.get("tool_use_id", "tool"),
                     "response": {"result": _as_text(block.get("content"))},
                 }})
+                for part in block.get("content") if isinstance(block.get("content"), list) else []:
+                    if isinstance(part, dict) and part.get("type") == "image":
+                        src = part.get("source", {})
+                        parts.append({"inlineData": {"mimeType": src.get("media_type", "image/jpeg"),
+                                                     "data": src.get("data", "")}})
         if parts:
             out.append({"role": role, "parts": parts})
     return out
