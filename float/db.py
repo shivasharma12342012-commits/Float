@@ -247,6 +247,71 @@ def cursor() -> Iterator[sqlite3.Connection]:
         conn.close()
 
 
+# ---------------------------------------------------------------------------
+# Schema versions. A database made before versions existed counts as version 1.
+# To change a table later: add ONE entry to MIGRATIONS (next number, never edit
+# an old one). Each runs once, inside a transaction, after an automatic backup.
+# ---------------------------------------------------------------------------
+BASE_VERSION = 1
+
+
+class MigrationError(Exception):
+    """A database upgrade failed (or could not be backed up first). Old data is untouched."""
+
+
+def _m2_usage_monthly(conn: sqlite3.Connection) -> None:
+    """Monthly cost totals, so old usage rows can be pruned without losing the history."""
+    conn.execute("""CREATE TABLE IF NOT EXISTS usage_monthly (
+        month      TEXT NOT NULL,
+        user_id    INTEGER NOT NULL,
+        provider   TEXT NOT NULL,
+        model      TEXT NOT NULL,
+        calls      INTEGER NOT NULL DEFAULT 0,
+        tokens_in  INTEGER NOT NULL DEFAULT 0,
+        tokens_out INTEGER NOT NULL DEFAULT 0,
+        paise      REAL NOT NULL DEFAULT 0,
+        PRIMARY KEY (month, user_id, provider, model)
+    )""")
+
+
+MIGRATIONS: list[tuple[int, str, Any]] = [
+    (2, "monthly usage summary table", _m2_usage_monthly),
+]
+
+
+def schema_version(conn: sqlite3.Connection) -> int:
+    return max(BASE_VERSION, int(conn.execute("PRAGMA user_version").fetchone()[0]))
+
+
+def run_migrations(conn: sqlite3.Connection, migrations: list | None = None) -> int:
+    """Apply pending migrations in order. Returns the final version.
+
+    Each one is its own transaction: on any error it is rolled back, the
+    failure is written to data/float_errors.log, and MigrationError is raised.
+    """
+    from . import maintenance
+
+    migrations = MIGRATIONS if migrations is None else migrations
+    version = schema_version(conn)
+    for number, label, fn in sorted(migrations, key=lambda m: m[0]):
+        if number <= version:
+            continue
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            fn(conn)
+            conn.execute(f"PRAGMA user_version={int(number)}")
+            conn.execute("COMMIT")
+        except Exception as exc:  # noqa: BLE001
+            conn.execute("ROLLBACK")
+            maintenance.log_error(f"Database upgrade to version {number} ({label}) failed and was undone: {exc!r}")
+            raise MigrationError(
+                f"Float could not update your data to the newer format (step {number}: {label}). "
+                f"Nothing was changed and your data is safe. A copy was saved in the 'backups' "
+                f"folder inside 'data'. Details are in data/float_errors.log.") from exc
+        version = number
+    return version
+
+
 def init() -> None:
     global _initialised
     if _initialised:
@@ -254,9 +319,21 @@ def init() -> None:
     with _init_lock:
         if _initialised:
             return
+        from . import maintenance
+
+        config.ensure_dirs()
+        had_data = Path(config.DB_PATH).exists() and Path(config.DB_PATH).stat().st_size > 0
         conn = _connect()
         try:
             conn.executescript(SCHEMA)
+            if had_data and schema_version(conn) < max([m[0] for m in MIGRATIONS] or [0]):
+                # Safety copy BEFORE touching the structure. No copy, no upgrade.
+                if maintenance.safe_backup(f"before-v{max(m[0] for m in MIGRATIONS)}") is None:
+                    raise MigrationError(
+                        "Float could not make a safety copy of your data before updating it, so it "
+                        "did not update anything. Free some disk space and start Float again. "
+                        "Details are in data/float_errors.log.")
+            run_migrations(conn)
             _seed_org(conn)
         finally:
             conn.close()
