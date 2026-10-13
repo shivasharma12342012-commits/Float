@@ -112,7 +112,7 @@ function viewOverview(wrap) {
     ["Signed in now", t.signed_in, ""],
     ["Answers · 30 days", t.calls, ""],
     ["Tokens · 30 days", t.tokens.toLocaleString("en-IN"), ""],
-    ["Estimated spend", "₹" + t.rupees.toFixed(2), "published rates"],
+    ["Spend (estimate)", "₹" + t.rupees.toFixed(2), "from listed prices"],
   ].forEach(([label, value, sub]) => {
     const card = make("div", "stat");
     card.append(make("b", null, String(value)));
@@ -120,6 +120,8 @@ function viewOverview(wrap) {
     grid.append(card);
   });
   wrap.append(grid);
+  addBackupPanel(wrap);
+  addPricesPanel(wrap);
 
   const chart = make("div", "panel");
   const chartHead = make("div", "panel-head");
@@ -185,6 +187,73 @@ function viewOverview(wrap) {
 
 /* ── teachers ──────────────────────────────────────────────────────────── */
 
+function addBackupPanel(wrap) {
+  const b = DATA.backup || {};
+  const panel = make("div", "panel");
+  const head = make("div", "panel-head");
+  head.append(make("b", null, "Backup"));
+  panel.append(head);
+  const body = make("div", "panel-body");
+  const line = make("p", "hint", b.last ? `Last backup: ${b.last} (${b.count} kept)` : "Last backup: none yet");
+  body.append(line);
+  body.append(button("Back up now", async () => {
+    try {
+      const r = await api("/api/admin/backup", { body: {} });
+      DATA.backup = r.backup;
+      line.textContent = `Last backup: ${r.backup.last} (${r.backup.count} kept)`;
+      toast("Backup saved.");
+    } catch (err) { toast(err.message || "The backup did not work.", true); }
+  }));
+  body.append(make("p", "hint", "Float also backs up by itself when it opens, and once a day while open. " +
+    "The newest 14 are kept in the data/backups folder. To restore one, close Float and run: python main.py restore"));
+  panel.append(body);
+  wrap.append(panel);
+}
+
+function addPricesPanel(wrap) {
+  const pr = DATA.prices;
+  if (!pr) return;
+  const panel = make("div", "panel");
+  const head = make("div", "panel-head");
+  head.append(make("b", null, "Model prices (₹ per million tokens, estimate)"));
+  panel.append(head);
+  const body = make("div", "panel-body");
+  if (pr.stale) {
+    const warn = make("p", "hint", `Warning: prices were last checked on ${pr.checked} (${pr.age_days} days ago, more than ${pr.limit_days}). ` +
+      "Rupee figures in Float may be out of date. Compare them with each provider's pricing page.");
+    warn.style.color = "var(--danger, #b3261e)";
+    body.append(warn);
+  } else {
+    body.append(make("p", "hint", `Prices last checked: ${pr.checked}.`));
+  }
+  const table = document.createElement("table");
+  table.innerHTML = "<tr><th>Model</th><th class=num>In</th><th class=num>Out</th><th></th></tr>";
+  pr.rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    const name = make("td", null, row.label + (row.overridden ? " (your price)" : ""));
+    const mk = (v) => { const i = document.createElement("input"); i.type = "number"; i.min = "0"; i.step = "any"; i.value = v; i.style.width = "80px"; return i; };
+    const inI = mk(row.cost_in), outI = mk(row.cost_out);
+    const a = make("td", "num"); a.append(inI);
+    const o = make("td", "num"); o.append(outI);
+    const act = make("td");
+    act.append(button("Save", async () => {
+      try {
+        const r = await api("/api/admin/prices", { body: { provider: row.provider, model: row.model, cost_in: inI.value, cost_out: outI.value } });
+        DATA.prices = r.prices; toast("Price saved."); render();
+      } catch (err) { toast(err.message || "Could not save.", true); }
+    }));
+    tr.append(name, a, o, act);
+    table.append(tr);
+  });
+  body.append(table);
+  body.append(button("Mark prices as checked today", async () => {
+    try { const r = await api("/api/admin/prices", { body: { checked: true } }); DATA.prices = r.prices; toast("Marked as checked."); render(); }
+    catch (err) { toast(err.message || "Could not save.", true); }
+  }));
+  panel.append(body);
+  wrap.append(panel);
+}
+
 function viewTeachers(wrap) {
   const head = make("div", "panel");
   const headBody = make("div", "panel-body");
@@ -225,7 +294,7 @@ function viewTeachers(wrap) {
   table.className = "grid";
   const thead = document.createElement("thead");
   thead.innerHTML = "<tr><th>Teacher</th><th>Role</th><th>Usage</th><th class=num>Sign-ins</th>" +
-    "<th class=num>Answers</th><th class=num>Tokens</th><th class=num>Est. ₹</th><th></th></tr>";
+    "<th class=num>Answers</th><th class=num>Tokens</th><th class=num>₹ (estimate)</th><th></th></tr>";
   table.append(thead);
   const tbody = document.createElement("tbody");
 
@@ -344,7 +413,7 @@ function viewFair(wrap) {
     ["Yet to start", `${f.not_started} of ${f.accounts}`, "a walkthrough helps more than a nudge"],
     ["Top fifth's share of spend", f.top_fifth_share + "%", "near 20% would be even"],
     ["Near their limit", f.near_cap, "80% or more used"],
-    ["School spend this month", "₹" + (f.pool_spent / 100).toFixed(2), pct],
+    ["School spend this month (estimate)", "₹" + (f.pool_spent / 100).toFixed(2), pct],
   ].forEach(([label, value, sub]) => {
     const card = make("div", "stat");
     card.append(make("b", null, String(value)));
