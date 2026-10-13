@@ -20,7 +20,6 @@ What guards it:
 
 from __future__ import annotations
 
-import io
 import json
 import math
 import mimetypes
@@ -970,7 +969,7 @@ def admin_add_user(ctx: Route) -> dict[str, Any]:
             raise HttpError(400, " ".join(problems))
     if db.get_user_by_email(email):
         raise HttpError(409, "There is already an account with that email.")
-    user = db.create_user(email, name, password, role=role,
+    db.create_user(email, name, password, role=role,
                           must_change=True, school=db.org_get("school_name"))
     db.audit("admin.user.add", user_id=int(admin["id"]), actor=admin["name"],
              detail=f"added {email}", level="warn", ip=ctx.ip)
@@ -1316,7 +1315,9 @@ class FloatHandler(BaseHTTPRequestHandler):
     _PAGES = {"/": "index.html", "/login": "login.html", "/admin": "admin.html"}
 
     def _serve_static(self, path: str) -> None:
-        if path in self._PAGES:
+        if path == "/float.ico":
+            target = Path(config.WEB_ROOT).resolve().parent.parent / "float.ico"
+        elif path in self._PAGES:
             target = Path(config.WEB_ROOT) / self._PAGES[path]
         else:
             decoded = urllib.parse.unquote(path)
