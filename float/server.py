@@ -35,7 +35,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Callable
 
-from . import agent, artifacts, computer, config, db, google, greeting, providers, security, tools
+from . import agent, artifacts, computer, config, db, google, greeting, maintenance, providers, security, stats, tools
 
 Handler = Callable[["Route"], Any]
 _routes: list[tuple[str, re.Pattern[str], Handler, str]] = []
@@ -546,7 +546,10 @@ def toolkit_run(ctx: Route) -> dict[str, Any]:
     values = ctx.body.get("values")
     if not isinstance(values, dict):
         values = {}
-    prompt = tools.fill_prompt(entry, values)
+    try:
+        prompt = tools.fill_prompt(entry, values)
+    except stats.MarksError as exc:
+        raise HttpError(400, f"I couldn't read those marks. {exc}") from None
     title = f"{entry['name']}" + (
         f" — {values.get('topic') or values.get('klass', '')}" if values else ""
     )
@@ -948,7 +951,41 @@ def admin_overview(ctx: Route) -> dict[str, Any]:
             for p in config.PROVIDER_ORDER
         ],
         "notices": db.active_notices(),
+        "backup": maintenance.last_backup(),
+        "prices": providers.price_status(),
     }
+
+
+@route("POST", "/api/admin/backup", auth="admin")
+def admin_backup(ctx: Route) -> dict[str, Any]:
+    admin = ctx.require_admin()
+    try:
+        path = maintenance.backup_now()
+    except Exception as exc:  # noqa: BLE001
+        maintenance.log_error(f"Manual backup failed: {exc!r}")
+        raise HttpError(500, "The backup did not work. Check there is free disk space, "
+                             "then try again. Details are in data/float_errors.log.") from None
+    db.audit("admin.backup", user_id=int(admin["id"]), actor=admin["name"], detail=path.name, ip=ctx.ip)
+    return {"ok": True, "backup": maintenance.last_backup()}
+
+
+@route("POST", "/api/admin/prices", auth="admin")
+def admin_prices(ctx: Route) -> dict[str, Any]:
+    admin = ctx.require_admin()
+    body = ctx.body
+    if body.get("checked"):
+        providers.mark_prices_checked()
+        db.audit("admin.prices", user_id=int(admin["id"]), actor=admin["name"],
+                 detail="marked as checked", level="warn", ip=ctx.ip)
+        return {"ok": True, "prices": providers.price_status()}
+    try:
+        providers.set_price_override(str(body.get("provider", "")), str(body.get("model", "")),
+                                     body.get("cost_in"), body.get("cost_out"))
+    except ValueError as exc:
+        raise HttpError(400, str(exc)) from None
+    db.audit("admin.prices", user_id=int(admin["id"]), actor=admin["name"],
+             detail=f"{body.get('provider')}/{body.get('model')}", level="warn", ip=ctx.ip)
+    return {"ok": True, "prices": providers.price_status()}
 
 
 @route("POST", "/api/admin/users", auth="admin")
@@ -1354,6 +1391,8 @@ def serve(host: str | None = None, port: int | None = None) -> FloatServer:
     config.ensure_dirs()
     db.init()
     db.purge_stale_sessions()
+    maintenance.start_daily_backups()      # one now, then at most one a day; never raises
+    maintenance.prune_in_background()      # old audit/usage rows, in small batches
     server = FloatServer((host or config.settings.host, config.settings.port if port is None else port), FloatHandler)
     threading.Thread(target=server.serve_forever, daemon=True, name="float-http").start()
     return server
