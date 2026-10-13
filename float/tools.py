@@ -22,7 +22,7 @@ import datetime as dt
 import json
 from typing import Any
 
-from . import artifacts, computer, config, db
+from . import artifacts, computer, config, db, stats
 
 # ---------------------------------------------------------------------------
 # System prompt
@@ -803,6 +803,11 @@ Create it as an Excel file named "{klass} {subject} pacing".""",
 
 {data}
 
+Float has already worked out every number in the block above, in code. Use those \
+numbers exactly as given and do NOT recalculate any average, spread, percentage or \
+list of students. Your job is the teaching interpretation, not the arithmetic. If a \
+number you need is not in the block, say it is not available rather than working it out.
+
 Question topics: {topics}
 
 Give me: the class average and the spread · which question the class did worst on, with \
@@ -997,6 +1002,10 @@ def toolkit_entry(entry_id: str) -> dict[str, Any] | None:
 
 def fill_prompt(entry: dict[str, Any], values: dict[str, Any]) -> str:
     prompt = entry["prompt"]
+    if entry["id"] == "analysis":
+        # Numbers come from Python, not the model. MarksError carries a plain message.
+        values = dict(values)
+        values["data"] = stats.analyse(str(values.get("data", "")))
     for field in entry["fields"]:
         key = field["key"]
         raw = values.get(key, "")
