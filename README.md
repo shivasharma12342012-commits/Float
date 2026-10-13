@@ -513,3 +513,15 @@ For licensing, support or purchase enquiries, contact the authors at **[your ema
 Made for the teacher at the board, not the office above them.
 
 </div>
+
+## Backups and restoring your data
+
+Float backs up `data/float.sqlite3` by itself: once when it opens, then at most once a day while it stays open. Backups go in `data/backups/` (named with the date) and the newest 14 are kept. The admin panel (Overview) shows "Last backup" and has a **Back up now** button. A safety copy is also taken before any database upgrade.
+
+To go back to an earlier backup:
+1. Close Float completely.
+2. Open a terminal in the Float folder and run `python main.py restore` to list the backups.
+3. Run `python main.py restore float-2026-10-13.sqlite3` (use the name you want).
+4. Start Float again. Your previous data is kept as `data/float-before-restore.sqlite3`.
+
+Old audit records (over 12 months) and usage records (over 24 months) are cleared automatically; monthly cost totals are kept. Chats, classes, marks and accounts are never deleted this way. Problems are logged in `data/float_errors.log`.
