@@ -536,13 +536,92 @@ def stream(provider: str, key: str, model: str, system: str,
     yield from streamer(key, model, system, messages, tools, temperature, max_tokens, timeout)
 
 
-def estimate_paise(provider: str, model: str, tokens_in: int, tokens_out: int) -> float:
-    spec = config.PROVIDERS.get(provider, None)
+def _overrides() -> dict[str, list[float]]:
+    from . import db
+
+    try:
+        raw = json.loads(db.org_get("price_overrides", "{}"))
+        return {str(k): [float(v[0]), float(v[1])] for k, v in raw.items()}
+    except (ValueError, TypeError, IndexError, AttributeError):
+        return {}
+
+
+def model_prices(provider: str, model: str) -> tuple[float, float] | None:
+    """(₹ per million tokens in, out): the admin's override if set, else the table in config.py."""
+    spec = config.PROVIDERS.get(provider)
     model_spec = spec.model(model) if spec else None
     if model_spec is None:
+        return None
+    over = _overrides().get(f"{provider}/{model}")
+    return (over[0], over[1]) if over else (model_spec.cost_in, model_spec.cost_out)
+
+
+def estimate_paise(provider: str, model: str, tokens_in: int, tokens_out: int) -> float:
+    """An ESTIMATE in paise from per-token prices; the provider's bill is the real number."""
+    prices = model_prices(provider, model)
+    if prices is None:
         return 0.0
-    return (tokens_in / 1_000_000) * model_spec.cost_in * 100 + \
-           (tokens_out / 1_000_000) * model_spec.cost_out * 100
+    return (tokens_in / 1_000_000) * prices[0] * 100 + (tokens_out / 1_000_000) * prices[1] * 100
+
+
+def _checked_date() -> "datetime.date":
+    import datetime
+    from . import db
+
+    for raw in (db.org_get("prices_checked", ""), config.PRICES_LAST_CHECKED):
+        try:
+            return datetime.date.fromisoformat(raw)
+        except ValueError:
+            continue
+    return datetime.date(2000, 1, 1)
+
+
+def price_status() -> dict:
+    """Everything the admin panel needs to show prices, the check date and the stale warning."""
+    import datetime
+
+    checked = _checked_date()
+    age = (datetime.date.today() - checked).days
+    over = _overrides()
+    rows = []
+    for pid in config.PROVIDER_ORDER:
+        for m in config.PROVIDERS[pid].models:
+            key = f"{pid}/{m.id}"
+            cin, cout = model_prices(pid, m.id) or (0.0, 0.0)
+            rows.append({"provider": pid, "model": m.id, "label": m.label, "cost_in": cin,
+                         "cost_out": cout, "overridden": key in over})
+    return {"checked": checked.isoformat(), "age_days": age,
+            "stale": age > config.PRICE_STALE_AFTER_DAYS, "limit_days": config.PRICE_STALE_AFTER_DAYS,
+            "rows": rows}
+
+
+def set_price_override(provider: str, model: str, cost_in, cost_out) -> None:
+    """Set (or, with both blank, clear) one model's price. Raises ValueError for bad input."""
+    from . import db
+
+    spec = config.PROVIDERS.get(provider)
+    if spec is None or spec.model(model) is None:
+        raise ValueError("Unknown model.")
+    over = _overrides()
+    key = f"{provider}/{model}"
+    if str(cost_in).strip() == "" and str(cost_out).strip() == "":
+        over.pop(key, None)
+    else:
+        try:
+            a, b = float(cost_in), float(cost_out)
+        except (TypeError, ValueError):
+            raise ValueError("Prices must be numbers (rupees per million tokens).") from None
+        if not (0 <= a <= 100000 and 0 <= b <= 100000) or a != a or b != b:
+            raise ValueError("Prices must be between 0 and 100000 rupees per million tokens.")
+        over[key] = [a, b]
+    db.org_set("price_overrides", json.dumps(over))
+
+
+def mark_prices_checked() -> None:
+    import datetime
+    from . import db
+
+    db.org_set("prices_checked", datetime.date.today().isoformat())
 
 
 def verify_key(provider: str, key: str) -> tuple[bool, str]:
