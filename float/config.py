@@ -82,6 +82,36 @@ def env_bool(name: str, default: bool) -> bool:
 
 
 # ----------------------------------------------------------------------------
+# MODEL PRICES — the one place to update them.
+#
+# Rupees per million tokens: (input, output). These are ESTIMATES from published
+# per-token prices; the provider's own bill is the real number. Prices change, so
+# the admin panel warns when PRICES_LAST_CHECKED is more than 90 days old, and the
+# admin can override any model's price from the panel without editing this file.
+#
+# PRICES_LAST_CHECKED is a placeholder: these figures carried no recorded check
+# date. After comparing them with each provider's pricing page, set the date here
+# (or press "Mark prices as checked" in the admin panel).
+# ----------------------------------------------------------------------------
+PRICES_LAST_CHECKED = "2025-01-01"
+PRICE_STALE_AFTER_DAYS = 90
+MODEL_PRICES: dict[str, tuple[float, float]] = {
+    "claude-sonnet-4-5": (250, 1250),
+    "claude-opus-4-1": (1250, 6250),
+    "claude-haiku-4-5": (80, 400),
+    "gpt-4.1": (165, 660),
+    "gpt-4.1-mini": (33, 132),
+    "gpt-4o": (210, 840),
+    "gpt-4o-mini": (12, 50),
+    "openrouter/auto": (0, 0),
+    "openai/gpt-4o-mini": (0, 0),
+    "gemini-2.0-flash": (8, 33),
+    "gemini-2.5-pro": (105, 840),
+    "gemini-2.5-flash": (25, 210),
+}
+
+
+# ----------------------------------------------------------------------------
 # Model providers.
 #
 # Three are offered in the interface, each keyed by the school's own API key.
@@ -125,9 +155,9 @@ PROVIDERS: dict[str, Provider] = {
         console_url="https://console.anthropic.com/settings/keys",
         default_model="claude-sonnet-4-5",
         models=(
-            ModelSpec("claude-sonnet-4-5", "Claude Sonnet 4.5", 200_000, 250, 1250, True),
-            ModelSpec("claude-opus-4-1", "Claude Opus 4.1", 200_000, 1250, 6250, True),
-            ModelSpec("claude-haiku-4-5", "Claude Haiku 4.5", 200_000, 80, 400, True),
+            ModelSpec("claude-sonnet-4-5", "Claude Sonnet 4.5", 200_000, *MODEL_PRICES["claude-sonnet-4-5"], vision=True),
+            ModelSpec("claude-opus-4-1", "Claude Opus 4.1", 200_000, *MODEL_PRICES["claude-opus-4-1"], vision=True),
+            ModelSpec("claude-haiku-4-5", "Claude Haiku 4.5", 200_000, *MODEL_PRICES["claude-haiku-4-5"], vision=True),
         ),
     ),
     "openai": Provider(
@@ -138,10 +168,10 @@ PROVIDERS: dict[str, Provider] = {
         console_url="https://platform.openai.com/api-keys",
         default_model="gpt-4.1-mini",
         models=(
-            ModelSpec("gpt-4.1", "GPT-4.1", 128_000, 165, 660, True),
-            ModelSpec("gpt-4.1-mini", "GPT-4.1 mini", 128_000, 33, 132, True),
-            ModelSpec("gpt-4o", "GPT-4o", 128_000, 210, 840, True),
-            ModelSpec("gpt-4o-mini", "GPT-4o mini", 128_000, 12, 50, True),
+            ModelSpec("gpt-4.1", "GPT-4.1", 128_000, *MODEL_PRICES["gpt-4.1"], vision=True),
+            ModelSpec("gpt-4.1-mini", "GPT-4.1 mini", 128_000, *MODEL_PRICES["gpt-4.1-mini"], vision=True),
+            ModelSpec("gpt-4o", "GPT-4o", 128_000, *MODEL_PRICES["gpt-4o"], vision=True),
+            ModelSpec("gpt-4o-mini", "GPT-4o mini", 128_000, *MODEL_PRICES["gpt-4o-mini"], vision=True),
         ),
     ),
     "openrouter": Provider(
@@ -152,8 +182,8 @@ PROVIDERS: dict[str, Provider] = {
         console_url="https://openrouter.ai/settings/keys",
         default_model="openrouter/auto",
         models=(
-            ModelSpec("openrouter/auto", "OpenRouter Auto", 128_000, 0, 0, True),
-            ModelSpec("openai/gpt-4o-mini", "GPT-4o mini (via OpenRouter)", 128_000, 0, 0, True),
+            ModelSpec("openrouter/auto", "OpenRouter Auto", 128_000, *MODEL_PRICES["openrouter/auto"], vision=True),
+            ModelSpec("openai/gpt-4o-mini", "GPT-4o mini (via OpenRouter)", 128_000, *MODEL_PRICES["openai/gpt-4o-mini"], vision=True),
         ),
     ),
     "google": Provider(
@@ -164,9 +194,9 @@ PROVIDERS: dict[str, Provider] = {
         console_url="https://aistudio.google.com/app/apikey",
         default_model="gemini-2.0-flash",
         models=(
-            ModelSpec("gemini-2.0-flash", "Gemini 2.0 Flash", 1_000_000, 8, 33, True),
-            ModelSpec("gemini-2.5-pro", "Gemini 2.5 Pro", 1_000_000, 105, 840, True),
-            ModelSpec("gemini-2.5-flash", "Gemini 2.5 Flash", 1_000_000, 25, 210, True),
+            ModelSpec("gemini-2.0-flash", "Gemini 2.0 Flash", 1_000_000, *MODEL_PRICES["gemini-2.0-flash"], vision=True),
+            ModelSpec("gemini-2.5-pro", "Gemini 2.5 Pro", 1_000_000, *MODEL_PRICES["gemini-2.5-pro"], vision=True),
+            ModelSpec("gemini-2.5-flash", "Gemini 2.5 Flash", 1_000_000, *MODEL_PRICES["gemini-2.5-flash"], vision=True),
         ),
     ),
 }
