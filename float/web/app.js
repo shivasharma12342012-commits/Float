@@ -482,7 +482,7 @@ async function send(prompt, convId) {
           turn.prose.innerHTML = markdown(raw);
           const usage = event.usage || {};
           $("composer-note").textContent =
-            `${usage.seconds}s · ₹${((usage.paise || 0) / 100).toFixed(2)}`;
+            `${usage.seconds}s · ₹${((usage.paise || 0) / 100).toFixed(2)} (estimate)`;
         }
       }
     }
@@ -1317,7 +1317,7 @@ function tabModels() {
   const ledger = make("div", "ledger");
   ledger.append(make("span", null, ""));
   const one = make("span"); one.append(make("b", null, String(usage.calls || 0))); one.append(" answers");
-  const two = make("span"); two.append(make("b", null, "₹" + ((usage.paise || 0) / 100).toFixed(2))); two.append(" estimated");
+  const two = make("span"); two.append(make("b", null, "₹" + ((usage.paise || 0) / 100).toFixed(2))); two.append(" (estimate)");
   ledger.append(one, two);
   spendBody.append(ledger);
 
@@ -1328,7 +1328,7 @@ function tabModels() {
   if (capPaise > 0) {
     const pct = Math.min(100, Math.round((usedPaise / capPaise) * 100));
     share.append(make("b", null, "Your share this month: "));
-    share.append(`₹${(usedPaise / 100).toFixed(2)} of ₹${(capPaise / 100).toFixed(2)} used (${pct}%). Resets on the 1st.`);
+    share.append(`₹${(usedPaise / 100).toFixed(2)} of ₹${(capPaise / 100).toFixed(2)} used (${pct}%) — estimate. Resets on the 1st.`);
     const track = make("div");
     track.style.cssText = "height:6px;border-radius:3px;background:var(--line);margin-top:6px;overflow:hidden";
     const fill = make("div");
