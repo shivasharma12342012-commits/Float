@@ -108,6 +108,11 @@ def _cmd_run(args: argparse.Namespace) -> None:
     host = args.host or config.settings.host
     port = args.port or config.settings.port
     try:
+        db.init()           # runs any pending database upgrade (after a safety backup)
+    except db.MigrationError as exc:
+        _tell_user(str(exc))
+        raise SystemExit(1)
+    try:
         srv = server.serve(host, port)
     except OSError:
         # Port already taken. Usually that's Float itself, already running: just open it.
@@ -174,7 +179,36 @@ def _cmd_make_admin(args: argparse.Namespace) -> None:
     print(f"{args.email} is now an admin.")
 
 
-_KNOWN_COMMANDS = {"run", "set-password", "make-admin"}
+def _cmd_restore(args: argparse.Namespace) -> None:
+    """python main.py restore            -> list backups
+       python main.py restore <file>     -> put that backup back (Float must be closed)"""
+    from float import maintenance
+
+    backups = maintenance.list_backups()
+    if not args.file:
+        if not backups:
+            print("There are no backups yet in", maintenance.backup_dir())
+            return
+        print("Backups (newest first). To restore one, CLOSE Float and run:")
+        print("  python main.py restore <file name>\n")
+        for p in backups:
+            print("  ", p.name)
+        return
+    chosen = Path(args.file)
+    if not chosen.exists():
+        chosen = maintenance.backup_dir() / args.file
+    if not chosen.exists():
+        print(f"Could not find {args.file}. Run 'python main.py restore' to see the list.", file=sys.stderr)
+        raise SystemExit(1)
+    try:
+        kept = maintenance.restore(chosen)
+    except Exception as exc:  # noqa: BLE001
+        print(f"Restore did not work, and your current data was left alone: {exc}", file=sys.stderr)
+        raise SystemExit(1)
+    print(f"Restored {chosen.name}. Your previous data was kept as {kept.name}. Start Float again.")
+
+
+_KNOWN_COMMANDS = {"run", "set-password", "make-admin", "restore"}
 
 
 def main() -> None:
@@ -197,6 +231,10 @@ def main() -> None:
     admin_p = sub.add_parser("make-admin", help="Promote an existing account to admin.")
     admin_p.add_argument("email")
     admin_p.set_defaults(func=_cmd_make_admin)
+
+    rest_p = sub.add_parser("restore", help="List backups, or restore one (close Float first).")
+    rest_p.add_argument("file", nargs="?", default=None)
+    rest_p.set_defaults(func=_cmd_restore)
 
     # `python main.py [--host ...] [--port ...] [--no-browser]` with no
     # subcommand named should just start Float — that's the common case a
