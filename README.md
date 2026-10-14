@@ -6,7 +6,7 @@
 
 ### Your teaching, lighter.
 
-*A working companion for schoolteachers: the paperwork gets faster, the teaching stays yours.*
+*Some tools ask for your attention. Float gives it back.*
 
 <br>
 
@@ -16,7 +16,7 @@
 
 ![Data](https://img.shields.io/badge/your%20data-stays%20on%20your%20computer-1E3A32?style=flat-square)
 ![Providers](https://img.shields.io/badge/works%20with-Anthropic%20%7C%20OpenAI%20%7C%20Google-E8A33D?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-33%2F33%20unit%20%C2%B7%2065%2F65%20live-2E7D5B?style=flat-square)
+![Tests](https://img.shields.io/badge/unit%20tests-65%2F65%20passing-2E7D5B?style=flat-square)
 ![Privacy](https://img.shields.io/badge/admin%20can%20read%20teacher%20content-never-B3412E?style=flat-square)
 
 <br>
@@ -31,9 +31,15 @@
 
 ---
 
-Float is not a school portal, and it isn't trying to run your school. It is built around **one teacher at a time**: the six periods, the hundred and twenty exercise books, the parent messages that all need to sound a little different, the report card remarks due Friday.
+> *It is seven in the morning. The staff room is quiet, the kettle has just clicked off, and there is a stack of exercise books waiting beside a half-written question paper.*
+>
+> *This is the moment Float was made for.*
 
-It drafts the paperwork, keeps your classes straight, and, if you let it, can even move the mouse for the tedious on-screen parts of a task. Everything runs on your own computer. There is no Float server anywhere collecting anything.
+Float is a calm, capable companion for the person at the front of the classroom. It takes on the paperwork that crowds a teacher's evenings (the lesson plans, the report card remarks, the notice that has to go out today) and hands it back as a first draft you can shape in minutes.
+
+It never tries to run your school, and it never tries to replace your judgement. The teaching stays yours, and so does the voice, the decisions and the relationship with every child in the room. Float simply clears the desk so you have room for all of that.
+
+Everything happens on your own computer. There is no Float server collecting anything, and nobody is quietly watching from above.
 
 <br>
 
@@ -46,6 +52,7 @@ It drafts the paperwork, keeps your classes straight, and, if you let it, can ev
 | 🔑 [Choosing a model](#-choosing-a-model) | 🎚️ [How much Float does for you](#️-how-much-float-does-for-you) |
 | 📂 [Files, Drive and Desktop](#-files-drive-and-desktop) | 🛡️ [The admin panel](#️-the-admin-panel) |
 | ⚖️ [Fairness and privacy by design](#️-fairness-and-privacy-by-design) | 🔒 [Security](#-security) |
+| 🏫 [One server for the whole school](#-one-server-for-the-whole-school) | 💾 [Backups and restoring](#-backups-and-restoring-your-data) |
 | 🧪 [How Float was tested](#-how-float-was-tested) | 🗂️ [Project layout](#️-project-layout) |
 | 🪟 [Running it on Windows](#-running-it-on-windows) | 🩺 [Troubleshooting](#-troubleshooting) |
 | 🗺️ [Known limits and what's next](#️-known-limits-and-whats-next) | 📜 [License](#-license) |
@@ -54,21 +61,23 @@ It drafts the paperwork, keeps your classes straight, and, if you let it, can ev
 
 ## 🌱 Why Float exists
 
-Most classroom software is built for the institution: attendance systems, gradebooks, timetabling engines. Float is built for the person standing at the board. It doesn't ask which vendor your school has a contract with, doesn't need an IT rollout, and doesn't put anyone above you except the one admin your own school chooses.
+Most classroom software is built for the institution: attendance systems, gradebooks, timetabling engines. Float is built for the person standing at the board, with six periods in the day, forty-odd faces in every room, and a hundred and twenty books to get through before the weekend.
 
-It also tries hard **not to make you worse at your job**. An assistant that quietly does all your thinking isn't really helping, so Float defaults to a **first draft that clearly wants your read-through**, not a finished product you'd never think to check.
+It doesn't ask which vendor your school has a contract with. It doesn't need an IT rollout. It doesn't place anyone above you except the one admin your own school chooses.
 
-> **The three promises**
+Float also takes care **not to make you worse at your job**. An assistant that quietly does all your thinking is not really helping, so Float begins with a **first draft that invites your read-through** rather than a finished page you would never think to check. The goal is a teacher who is rested and still entirely in charge.
+
+> **Three promises**
 >
-> 🧑‍🏫 **It's yours.** Every screen is scoped to one teacher's own classes, drafts and files.
-> ⚖️ **It's fair.** Every teacher gets the same share of the school's AI budget. Exceptions are visible and explained.
-> 🔐 **It's private.** The admin manages *accounts*, never *content*. There is no screen or API for reading what a teacher wrote.
+> 🧑‍🏫 **It's yours.** Every screen belongs to one teacher: their classes, their drafts, their files.
+> ⚖️ **It's fair.** Every teacher receives the same share of the school's AI budget, and every exception is visible and explained.
+> 🔐 **It's private.** The admin manages *accounts*, never *content*. There is no screen and no route for reading what a teacher has written.
 
 <br>
 
 ## 🚀 Getting started
 
-You need **Windows** and **Python 3.10 or later**. Nothing else is required, because Float runs entirely on the standard library.
+You need **Windows** and **Python 3.10 or later**. Nothing else is required, because Float runs entirely on the Python standard library.
 
 ```bash
 git clone https://github.com/shivasharma12342012-commits/Float.git
@@ -77,9 +86,9 @@ pip install -r requirements.txt   # optional, see below
 python main.py
 ```
 
-A browser tab opens at `http://127.0.0.1:8765`. **The first account you create becomes your school's admin.** After that, the admin adds every teacher (self sign-up is off by default).
+A browser tab opens at `http://127.0.0.1:8765`, and a short opening screen with the Float logo welcomes you in. **The first account you create becomes your school's admin.** After that, the admin adds every teacher (self sign-up is off by default).
 
-> 💡 Once it's set up you can skip the terminal entirely. Double-click [`Start Float.vbs`](#-running-it-on-windows) for a launcher with no console window.
+> 💡 Once Float is set up, you can leave the terminal behind. Double-click [`Start Float.vbs`](#-running-it-on-windows) to open it with no console window.
 
 ### The first ten minutes
 
@@ -93,35 +102,39 @@ flowchart LR
     F --> G[Teacher signs in<br/>and chooses their own]
 ```
 
-### What the optional packages buy you
+### What the optional packages add
 
 | Package | Without it | With it |
 |---|---|---|
-| `cryptography` | API keys are still encrypted, with a standard-library fallback | Encrypted with **AES-256-GCM** instead *(strongly recommended)* |
-| `pyautogui` | Everything else works normally | Float can move the mouse and type: the "use my computer" tool |
+| `cryptography` | API keys are still encrypted, using a standard-library fallback | Encrypted with **AES-256-GCM** instead *(strongly recommended)* |
+| `pyautogui` | Everything else works as normal | Float can move the mouse and type: the "use my computer" tool |
 | `keyboard` | The stop button still works | Pressing **Esc** interrupts a running "use my computer" task |
 | `pyperclip` | Only characters that are real keys can be typed | Hindi and other Indian-script text types correctly in "use my computer" tasks |
-| `pypdf` | Only simple text PDFs can be attached | Float can read text out of PDFs such as an NCERT chapter |
+| `pywinauto` | Float relies on screen position to find controls | Float finds buttons and search boxes by name in Windows apps and browsers *(recommended on Windows)* |
+| `Pillow` | Float works without seeing the screen | Float can take a screenshot with numbered controls so it can see what it is doing |
+| `pypdf` | Only simple text PDFs can be attached | Float can read text from PDFs such as an NCERT chapter |
 
 Skip any of them freely. Nothing else in Float depends on them.
 
 ### Where your data lives
 
-Everything Float needs sits in a `data/` folder next to `main.py`:
+Everything Float needs sits in a `data/` folder beside `main.py`:
 
 ```
 data/
 ├── float.sqlite3      accounts, classes, conversations, tasks, usage, audit log
-└── files/             documents Float has made, until you save them elsewhere
+├── backups/           automatic daily copies of the database
+├── files/             documents Float has made, until you save them elsewhere
+└── float_errors.log   a plain record of anything that went wrong
 ```
 
-Delete `data/` at any point to start completely fresh.
+Delete `data/` at any point to begin completely fresh.
 
 <br>
 
 ## 🧰 The toolkit
 
-**Nineteen** ready-made workflows, each a short form that turns into a real first draft: a Word document, a PDF, or a spreadsheet, depending on what makes sense.
+**Nineteen** ready-made workflows. Each is a short form that becomes a real first draft: a Word document, a PDF or a spreadsheet, whichever suits the task.
 
 <table>
 <tr>
@@ -165,7 +178,7 @@ Delete `data/` at any point to start completely fresh.
 </td>
 <td valign="top" width="25%">
 
-**🇮🇳 Built in**
+**🇮🇳 Built for Indian classrooms**
 - CBSE, ICSE, state boards, IB, Cambridge
 - Blueprints and marking schemes that add up
 - Parent messages in **13 Indian languages**
@@ -185,12 +198,12 @@ Float keeps the small records a teacher touches every day, **scoped to you and n
 |---|---|
 | **Create a class** | Give it a name (`8B`), grade, section, subject and board. |
 | **Paste a roster** | Paste a list straight from a register or WhatsApp. Numbered lines (`1,` or `2.`), blank lines, Hindi names such as आर्यन गुप्ता, and names like `Mohd.` or `D'Souza` all import cleanly. |
-| **Save marks** | Scores are checked: negative marks, a score above the maximum, and a maximum of zero are refused with a friendly message. Marks for a student who isn't in the class are refused too. |
+| **Save marks** | Scores are checked. Negative marks, a score above the maximum and a maximum of zero are refused with a friendly message, and so are marks for a student who isn't in the class. |
 | **Take attendance** | Mark who is absent, once, in a single step. |
 | **Keep tasks** | A simple to-do list with due dates, such as "Check UT-1 copies". |
-| **Set a timetable** | Your periods feed the greeting when you open Float. |
+| **Set a timetable** | Your periods shape the greeting you see when you open Float. |
 
-A teacher can never see, change or delete another teacher's classes, marks, tasks or chats. Attempts get a plain *"No such class."* and nothing is touched.
+A teacher can never see, change or delete another teacher's classes, marks, tasks or chats. Any attempt receives a plain *"No such class."* and nothing is touched.
 
 <br>
 
@@ -198,13 +211,13 @@ A teacher can never see, change or delete another teacher's classes, marks, task
 
 Float doesn't ship with a model of its own. Open **Settings → Model & keys** and paste in a key from whichever provider you already use.
 
-| Provider | Fast, cheap default | Best available | Get a key |
+| Provider | Fast, economical default | Best available | Get a key |
 |---|---|---|---|
 | **Anthropic** | Claude Sonnet 4.5 | Claude Opus 4.1 | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
 | **OpenAI** | GPT-4.1 mini | GPT-4.1 | [platform.openai.com](https://platform.openai.com/api-keys) |
 | **Google** | Gemini 2.0 Flash | Gemini 2.5 Pro | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
 
-*Approximate cost per million tokens is shown in Settings and on the admin dashboard. Check each provider's own pricing page for the current rate.*
+*Approximate cost per million tokens is shown in Settings and on the admin dashboard. Please check each provider's own pricing page for the current rate.*
 
 ### Two ways to pay
 
@@ -218,44 +231,44 @@ Float doesn't ship with a model of its own. Open **Settings → Model & keys** a
 
 ## 🎚️ How much Float does for you
 
-Under **Settings → How Float helps**, three levels change how Float actually behaves. This is not just a label: it changes the instructions Float works from.
+Under **Settings → How Float helps**, three levels change how Float actually behaves. This is more than a label, because each level changes the instructions Float works from.
 
 | Level | What happens |
 |---|---|
-| 🧭 **Coach me** | Float asks questions and reacts to what you write. You do the writing. |
-| ✍️ **Draft it** *(default)* | Float writes a first version and says plainly where it guessed, so you know what to check. |
-| ⚡ **Do it all** | Float finishes routine paperwork outright, useful for notices, seating charts and mark sheets. |
+| 🧭 **Coach me** | Float asks questions and responds to what you write. You do the writing. |
+| ✍️ **Draft it** *(default)* | Float writes a first version and says plainly where it guessed, so you know exactly what to check. |
+| ⚡ **Do it all** | Float finishes routine paperwork outright, which suits notices, seating charts and mark sheets. |
 
-Once a week, Float also shows roughly how much of what went out was in your own words versus drafted for you. It isn't there to police you, but because a teacher who edits everything usually teaches better than one who forwards it unread.
+Once a week, Float also shows roughly how much of what went out was in your own words and how much was drafted for you. It is not there to police anyone. It is there because a teacher who shapes every draft usually teaches better than one who forwards it unread.
 
 <br>
 
 ## 📂 Files, Drive and Desktop
 
-When Float makes something, it appears as a file card with three choices: **Desktop**, **Drive**, **Download**. Nothing saves anywhere on its own. You decide where it goes, every time.
+When Float makes something, it appears as a file card with three choices: **Desktop**, **Drive** and **Download**. Nothing is saved anywhere on its own, and you decide where each file goes, every time.
 
 <br>
 
 ## 🛡️ The admin panel
 
-Visit **`/admin`**, or use the shield icon in the sidebar if your account is an admin. Six tabs, built for a head of department rather than an IT department:
+Visit **`/admin`**, or use the shield icon in the sidebar if your account is an admin. There are six tabs, built for a head of department rather than an IT department.
 
 | Tab | What it's for |
 |---|---|
-| 📈 **Overview** | School-wide totals: teachers, who is signed in, answers and tokens in the last 30 days, estimated spend, and a 14-day activity chart. |
-| 👩‍🏫 **Teachers** | Add a teacher (Float generates a temporary password), reset a password, sign someone out, make an admin or teacher, **adjust a monthly limit**, deactivate, reactivate, or delete. |
+| 📈 **Overview** | School-wide totals: teachers, who is signed in, answers and tokens in the last 30 days, estimated spend, a 14-day activity chart, and the time of the last backup (with a **Back up now** button). |
+| 👩‍🏫 **Teachers** | Add a teacher (Float generates a temporary password), reset a password, sign someone out, make someone an admin or teacher, **adjust a monthly limit**, deactivate, reactivate or delete. |
 | ⚖️ **Fairness & privacy** | The equal monthly share, the school budget, what the admin can see about each teacher, and a plain statement of what the admin cannot see. |
 | 🏫 **School settings** | School name, which AI providers are allowed, the school-wide key, whether teachers may add their own key, self sign-up, quick-PIN, and the "use the computer" switch. |
 | 📣 **Notices** | A message that appears for every teacher, which you can retire later. |
-| 🧾 **Audit log** | Who did what and when: sign-ins, resets, role changes, limit exceptions, exports. |
+| 🧾 **Audit log** | Who did what and when: sign-ins, resets, role changes, limit exceptions and exports. |
 
-There is also a one-click **usage report** (Excel). It contains **no email addresses**, follows your privacy setting, and each download is written to the audit log.
+There is also a one-click **usage report** (Excel). It contains **no email addresses**, follows your privacy setting, and every download is written to the audit log.
 
 <br>
 
 ## ⚖️ Fairness and privacy by design
 
-Float's admin panel exists to **manage accounts and share a budget fairly**. It deliberately cannot become a way to watch teachers.
+The admin panel exists to **manage accounts and share a budget fairly**. It was deliberately designed so that it can never become a way to watch teachers.
 
 ### Equality: an equal share, with honest exceptions
 
@@ -272,13 +285,13 @@ flowchart TD
 ```
 
 - **One equal limit for everyone.** Set a monthly rupee amount per teacher in **Fairness & privacy**. `0` means no limit.
-- **Exceptions need a reason.** A head of department who writes papers for four classes, or a teacher with accessibility needs, can be given a different limit from the Teachers tab. Float **refuses the change without a written reason**, and the reason is recorded in the audit log, so exceptions stay visible and fair.
-- **One teacher's use never blocks another.** Limits are per person. The school-wide budget is a **warning only** and never cuts anyone off.
+- **Exceptions need a reason.** A head of department who writes papers for four classes, or a teacher with accessibility needs, can be given a different limit from the Teachers tab. Float **declines the change without a written reason**, and the reason is recorded in the audit log, so exceptions stay visible and fair.
+- **One teacher's use never blocks another's.** Limits are per person. The school-wide budget is a **warning only** and never cuts anyone off.
 - **Teachers see their own share.** In **Settings**, each teacher sees *"Your share this month: ₹X of ₹Y"* with a progress bar, a gentle heads-up at 80%, and a reminder that their own API key is never counted. Nobody sees anyone else's.
 - **Nobody is locked out of their work.** Even at the limit, classes, marks, attendance, tasks and saved files keep working.
-- **Fairness is measured without naming people.** The panel shows how many teachers haven't started yet, how concentrated spending is (the top fifth's share), and how many are near their limit, all as school-wide numbers.
+- **Fairness is measured without naming people.** The panel shows how many teachers haven't started yet, how concentrated spending is (the top fifth's share) and how many are near their limit, all as school-wide numbers.
 
-> 🌿 **Why "yet to start" is shown as a number, not a list.** A teacher who hasn't tried Float usually needs a short walkthrough, not a nudge from the principal. The panel is built to suggest that.
+> 🌿 **Why "yet to start" is a number and not a list.** A teacher who hasn't tried Float usually needs a short walkthrough, not a nudge from the principal. The panel is designed to point toward the walkthrough.
 
 ### Privacy: what the admin can and cannot see
 
@@ -289,7 +302,7 @@ flowchart TD
 | Usage as a **band** (No use / Light / Regular / Frequent) | Anything a teacher typed |
 | School-wide totals and estimated spend | *There is no screen or API route that returns these.* |
 
-- **Bands by default.** Exact per-teacher counts and rupees are hidden unless the admin deliberately switches to *Exact counts and ₹*.
+- **Bands by default.** Exact per-teacher counts and rupees stay hidden unless the admin deliberately switches to *Exact counts and ₹*.
 - **No rankings, ever.** Teachers are listed alphabetically, never by spend.
 - **Everything sensitive is logged:** limit changes (with the reason), exports, password resets, role changes and school-setting changes.
 
@@ -300,28 +313,68 @@ flowchart TD
 | Protection | How it works |
 |---|---|
 | **Sessions end when you close the app** | A fresh random key is generated every time Float starts and mixed into every session token. Restarting invalidates every open session. |
-| **No cookies, no CSRF surface** | The session token lives in the browser tab's memory and travels as a bearer token. There is nothing for a cross-site request to ride on. |
+| **No cookies, no CSRF surface** | The session token lives in the browser tab's memory and travels as a bearer token, never in a URL. There is nothing for a cross-site request to ride on. |
 | **Strong passwords only** | Weak choices such as `12345678` and `password` are refused. Passwords are hashed with scrypt. |
 | **Guess-proof sign-in** | Repeated wrong passwords are rate-limited. |
-| **Temporary passwords** | A teacher added by the admin must choose their own password on first sign-in. |
+| **Temporary passwords** | A teacher added by the admin must choose their own password on first sign-in. Until then, the server permits only three things: loading the app, changing the password and signing out. |
 | **Instant lock-out** | Deactivating a teacher ends their sessions immediately. |
 | **API keys encrypted at rest** | Using a device-specific key that never leaves your machine. |
 | **Teachers are isolated** | Every query is scoped to the signed-in teacher. Admin routes return `403` to non-admins. |
 | **Your files, your call** | Nothing is written to Drive or the Desktop unless you press the button. |
-| **Hardened web server** | Standard security headers, and path-traversal URLs return `404`. |
+| **Calm errors** | If something unexpected goes wrong, the teacher sees a gentle message with a short reference. The technical detail goes to `data/float_errors.log` and never to the screen. |
+| **Hardened web server** | Standard security headers, a `Host` header check, and path-traversal URLs return `404`. |
+
+<br>
+
+## 🏫 One server for the whole school
+
+Float can also serve an entire staff from a single computer. **One PC holds every account, class and file, and every other PC simply opens Float in a browser.** A teacher is the same person at any desk, because there is only one copy to sign in to.
+
+| Step | What to do |
+|---|---|
+| **1. Choose the server PC** | Pick one always-on computer and give it a fixed address in your router. |
+| **2. Start it** | Double-click **`Start Float School Server.bat`**. Float prints the address teachers should use. |
+| **3. Create the admin** | On the server PC itself, create the first account. Float refuses to do this from any other computer, so nobody on the network can claim the school. |
+| **4. Add teachers** | Use the admin panel, or switch on self sign-up. |
+| **5. Turn on HTTPS** | Strongly recommended before real use, otherwise passwords cross the network as plain text. Float warns you while it is off. |
+
+A few rules protect everyone in this mode: teachers sign out automatically after 20 idle minutes, Google sign-in and Drive are switched off so no personal login is stored on the shared server, and computer control and "save to Desktop" work only for someone sitting at the server PC. No teacher can ever move another's mouse or see the server's screen.
+
+The full walkthrough, including the certificate command and firewall advice, is in [`School Serve.md`](School%20Serve.md).
+
+<br>
+
+## 💾 Backups and restoring your data
+
+A school's year of work deserves a safety net, so Float keeps one without being asked.
+
+- Float backs up `data/float.sqlite3` once when it opens, then at most once a day while it stays open.
+- Backups live in `data/backups/`, named with the date. The newest 14 are kept.
+- The admin panel's **Overview** shows the last backup time and has a **Back up now** button.
+- A safety copy is also taken before any database upgrade.
+
+**To return to an earlier backup:**
+
+1. Close Float completely.
+2. Open a terminal in the Float folder and run `python main.py restore` to list the backups.
+3. Run `python main.py restore float-2026-10-13.sqlite3`, using the name you want.
+4. Start Float again. Your previous data is kept as `data/float-before-restore.sqlite3`.
+
+To keep the database light, audit records older than 12 months and usage records older than 24 months are cleared automatically, while monthly cost totals are kept. Chats, classes, marks and accounts are never removed this way.
 
 <br>
 
 ## 🧪 How Float was tested
 
-Float has been tested like a real school would use it: an AI-assisted script played a **principal**, a **Class 8B Maths teacher** and a **second teacher**, step by step.
+Float has been tested the way a real school would use it. An AI-assisted script played a **principal**, a **Class 8B Maths teacher** and a **second teacher**, step by step, and every report records plainly what was run and what was not.
 
 | Measure | Result |
 |---|---|
-| Unit tests | **33 / 33 pass** |
-| Live teacher + admin + security + speed checks | **65 / 65 pass** |
-| Server errors during the run | **0** |
+| Unit tests (latest run) | **65 / 65 pass** |
+| Live teacher, admin, security and speed checks | **65 / 65 pass** |
+| Server errors during the runs | **0** |
 | Load: 300 requests from 30 simultaneous users | **0 errors**, slowest request under 2 seconds |
+| Soak: 2,400 requests from 8 parallel clients | **0 errors** |
 | Another teacher reading, editing or deleting your data | **Refused every time** |
 
 <details>
@@ -332,23 +385,23 @@ Float has been tested like a real school would use it: an AI-assisted script pla
 |---|---|
 | **Setup** | First account becomes admin; weak passwords refused; strangers can't self-sign-up |
 | **Admin** | Adding teachers; duplicate emails refused; invalid settings refused |
-| **Teacher's day** | Temporary password then own password; email typed in capitals with a space; 45-name roster with Hindi names; bad marks refused; attendance; tasks; timetable |
+| **Teacher's day** | Temporary password, then their own; email typed in capitals with a space; 45-name roster with Hindi names; bad marks refused; attendance; tasks; timetable |
 | **AI chat** | A calm message when no API key is set |
 | **Privacy** | Teacher-to-teacher isolation; admin routes blocked for teachers; forged and missing tokens refused; no content in the admin payload; export has no emails and is logged |
 | **Equity** | Equal limit enforced kindly; an under-limit teacher is unaffected; limit exception refused without a reason, accepted with one; reason visible in the audit log |
-| **Security** | Sign-in rate limiting; sessions dead after sign-out; deactivated teachers kicked out; 3 MB input; SQL-style input |
+| **Security** | Sign-in rate limiting; sessions dead after sign-out; deactivated teachers signed out; 3 MB input; SQL-style input |
 | **Speed** | 30 parallel users, 300 requests |
 
 </details>
 
-Full write-ups, including bugs found and fixed, are in the repository: `Float Test Report 4.md` (marks and maths) and `Float Test Report 5.md` (average-teacher run and the admin panel).
+The full write-ups, including the bugs found and fixed along the way, are in the repository as the `Float Test Report` files. The most recent is `Test Report 8.md`.
 
-> **Honest note.** Tests ran with no AI key, so real AI answers (worksheet quality, true spend against the limit) were not part of them. See [Known limits](#️-known-limits-and-whats-next).
+> **A note on honesty.** The tests ran without an AI key, so real AI answers (worksheet quality, true spend against the limit) were not part of them. See [Known limits](#️-known-limits-and-whats-next).
 
 To run the unit tests yourself:
 
 ```bash
-python -m unittest tests.test_float
+python -m unittest discover -s tests
 ```
 
 <br>
@@ -357,31 +410,38 @@ python -m unittest tests.test_float
 
 ```
 Float/
-├── main.py                 CLI entry point: start here
+├── main.py                       CLI entry point: start here
 ├── requirements.txt
-├── Start Float.bat         double-click launcher (shows messages)
-├── Start Float.vbs         double-click launcher (no console window)
+├── Start Float.bat               double-click launcher (shows messages)
+├── Start Float.vbs               double-click launcher (no console window)
+├── Start Float School Server.bat one-server-for-the-school launcher
+├── float.ico                     the Float logo
 ├── float/
-│   ├── config.py           providers, models, Indian-schools context
-│   ├── security.py         password hashing, session tokens, encryption, rate limits
-│   ├── db.py               SQLite schema and every query, including fair-share limits
-│   ├── providers.py        streaming client for each AI provider
-│   ├── artifacts.py        builds real .docx / .pdf / .xlsx files, zero dependencies
-│   ├── attachments.py      reads files you attach in chat
-│   ├── computer.py         mouse and keyboard control, with an on-screen indicator
-│   ├── greeting.py         the opening screen
-│   ├── tools.py            the 19-entry toolkit and the tool-calling system prompt
-│   ├── agent.py            the conversation loop
-│   ├── google.py           OAuth sign-in and Drive upload
-│   ├── server.py           the HTTP server and every API route
+│   ├── config.py                 providers, models, Indian-schools context
+│   ├── security.py               password hashing, session tokens, encryption, rate limits
+│   ├── db.py                     SQLite schema and every query, including fair-share limits
+│   ├── maintenance.py            backups, restore and housekeeping
+│   ├── providers.py              streaming client for each AI provider
+│   ├── artifacts.py              builds real .docx / .pdf / .xlsx files, zero dependencies
+│   ├── attachments.py            reads files you attach in chat
+│   ├── computer.py               mouse and keyboard control, with an on-screen indicator
+│   ├── desktop.py                finds windows and controls by name
+│   ├── greeting.py               the opening screen's greeting
+│   ├── stats.py                  class statistics, calculated in code
+│   ├── tools.py                  the 19-entry toolkit and the tool-calling system prompt
+│   ├── agent.py                  the conversation loop
+│   ├── google.py                 OAuth sign-in and Drive upload
+│   ├── server.py                 the HTTP server and every API route
 │   └── web/
 │       ├── index.html, app.js, app.css     the teacher's app
 │       ├── login.html, login.js            sign-in
-│       └── admin.html, admin.js            the admin panel
-├── docs/DESIGN.md          the reasoning behind the design and security choices
-├── tests/test_float.py     the test suite
-├── Float Test Report*.md   test write-ups
-└── Float License           licence terms
+│       ├── admin.html, admin.js            the admin panel
+│       └── splash.js                       the opening logo screen
+├── docs/DESIGN.md                the reasoning behind the design and security choices
+├── School Serve.md               running Float for a whole school
+├── tests/                        the test suites
+├── Float Test Report*.md         test write-ups
+└── Float License                 licence terms
 ```
 
 <br>
@@ -400,7 +460,7 @@ Float is built for and supported on **Windows**.
 | **Use a different port** | `python main.py --port 9000` |
 | **Close Float** | Close its window, or press `Ctrl + C`. Everyone is signed out. |
 
-> Float is built for and tested on Windows. The server and tests also run on Linux (the file-name case problem that used to stop it is fixed and guarded by a test), but the launchers, window mode and "use my computer" tool have only been checked on Windows.
+> The server and tests also run on Linux, but the launchers, window mode and "use my computer" tool have only been checked on Windows.
 
 <br>
 
@@ -410,7 +470,7 @@ Float is built for and supported on **Windows**.
 <summary><strong>Float says the address is already in use</strong></summary>
 <br>
 
-It's probably already running. Check for an existing browser tab first. If not, something else is using port 8765, so start Float on a different one:
+It is probably already running, so check for an existing browser tab first. If it isn't, something else is using port 8765. Start Float on a different one:
 
 ```bash
 python main.py --port 9000
@@ -444,14 +504,14 @@ python main.py make-admin teacher@school.edu.in
 <summary><strong>Float says I've used my share of the school's AI budget</strong></summary>
 <br>
 
-Every teacher gets an equal monthly allowance, and it resets on the 1st. Your classes, marks, attendance and saved files all still work. Ask your admin to adjust your limit if you have a heavy month (they'll note a reason), or add your own API key under **Settings → Model & keys**, which is never counted against the school's share.
+Every teacher receives an equal monthly allowance, and it resets on the 1st. Your classes, marks, attendance and saved files all keep working. If you have a heavy month, ask your admin to adjust your limit (they will note a reason), or add your own API key under **Settings → Model & keys**, which is never counted against the school's share.
 </details>
 
 <details>
 <summary><strong>Nothing happens when I double-click the launcher</strong></summary>
 <br>
 
-Run `Start Float.bat` directly instead of the `.vbs` shortcut. That one shows its output, so you can read the actual error. It's almost always Python not being installed, or not added to `PATH` during setup.
+Run `Start Float.bat` directly instead of the `.vbs` file. It shows its output, so you can read the actual error. It is almost always Python not being installed, or not added to `PATH` during setup.
 </details>
 
 <details>
@@ -459,6 +519,13 @@ Run `Start Float.bat` directly instead of the `.vbs` shortcut. That one shows it
 <br>
 
 Float needs an API key from Anthropic, OpenAI or Google. Ask your admin whether the school has a shared key, or add your own under **Settings → Model & keys**.
+</details>
+
+<details>
+<summary><strong>I see "Float isn't reachable"</strong></summary>
+<br>
+
+The Float window was probably closed, or the computer went to sleep. Open Float again and sign in. Your work is safe in the `data/` folder.
 </details>
 
 <details>
@@ -472,16 +539,16 @@ No. The admin panel has no screen and no route that returns chats, drafts, files
 
 ## 🗺️ Known limits and what's next
 
-**Be aware of**
+**Worth knowing**
 
-- **The monthly limit uses estimates.** Spend is calculated from published per-token prices, so it is a fair-share guide, not an invoice. Your provider's bill is the real number.
+- **The monthly limit uses estimates.** Spend is calculated from published per-token prices, so it is a fair-share guide and not an invoice. If a provider changes its prices, the price table in `config.py` needs updating. Your provider's bill is always the real number.
 - **Real-AI behaviour at the limit** was tested with simulated usage rather than live spending.
-- **Windows only.** Launchers, tray behaviour and the "use my computer" tool are built for Windows.
+- **Windows first.** The launchers, window mode and the "use my computer" tool are built for Windows.
 - **Google sign-in, PIN sign-in and the Windows launchers** have not yet been through a written test report.
 
 **Ideas on the shelf**
 
-- A short, in-app walkthrough for teachers who haven't started yet
+- A short in-app walkthrough for teachers who haven't started yet
 - Per-subject or per-department allowances
 - A printable one-page "staff room guide" for new teachers
 
@@ -498,7 +565,7 @@ Licensed to **New Era Public School** under a separate written agreement. Nothin
 | **Owners** | Shiva Sharma, Prabhjot Singh, Yatharth Joshi |
 | **Licensee** | New Era Public School |
 | **Data** | Stays on the school's own computers; the authors hold none of it |
-| **Third-party packages** | Optional (`cryptography`, `pyautogui`, `keyboard`, `pyperclip`, `pypdf`), each under its own licence |
+| **Third-party packages** | Optional (`cryptography`, `pyautogui`, `keyboard`, `pyperclip`, `pywinauto`, `Pillow`, `pypdf`), each under its own licence |
 
 For licensing, support or purchase enquiries, contact the authors at **[your email]**.
 
@@ -510,18 +577,6 @@ For licensing, support or purchase enquiries, contact the authors at **[your ema
 
 **Float** · *Your teaching, lighter.*
 
-Made for the teacher at the board, not the office above them.
+Made for the teacher at the board, and for the quiet hour before the bell.
 
 </div>
-
-## Backups and restoring your data
-
-Float backs up `data/float.sqlite3` by itself: once when it opens, then at most once a day while it stays open. Backups go in `data/backups/` (named with the date) and the newest 14 are kept. The admin panel (Overview) shows "Last backup" and has a **Back up now** button. A safety copy is also taken before any database upgrade.
-
-To go back to an earlier backup:
-1. Close Float completely.
-2. Open a terminal in the Float folder and run `python main.py restore` to list the backups.
-3. Run `python main.py restore float-2026-10-13.sqlite3` (use the name you want).
-4. Start Float again. Your previous data is kept as `data/float-before-restore.sqlite3`.
-
-Old audit records (over 12 months) and usage records (over 24 months) are cleared automatically; monthly cost totals are kept. Chats, classes, marks and accounts are never deleted this way. Problems are logged in `data/float_errors.log`.
