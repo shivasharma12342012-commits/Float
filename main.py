@@ -104,9 +104,26 @@ def _open_window(url: str) -> None:
     webbrowser.open(url)
 
 
+def _lan_address() -> str:
+    """The address teachers on other PCs should type."""
+    import socket
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+            probe.connect(("10.255.255.255", 1))
+            return probe.getsockname()[0]
+    except OSError:
+        return socket.gethostname()
+
+
 def _cmd_run(args: argparse.Namespace) -> None:
+    if getattr(args, "lan", False):
+        config.settings.lan = True
+        if not args.host and config.settings.host == "127.0.0.1":
+            config.settings.host = "0.0.0.0"
     host = args.host or config.settings.host
     port = args.port or config.settings.port
+    scheme = "https" if config.tls_files() else "http"
+    shown = "127.0.0.1" if host in ("0.0.0.0", "::") else host   # where THIS computer opens it
     try:
         db.init()           # runs any pending database upgrade (after a safety backup)
     except db.MigrationError as exc:
@@ -116,10 +133,12 @@ def _cmd_run(args: argparse.Namespace) -> None:
         srv = server.serve(host, port)
     except OSError:
         # Port already taken. Usually that's Float itself, already running: just open it.
-        url = f"http://{host}:{port}"
+        url = f"{scheme}://{shown}:{port}"
         try:
+            import ssl
             import urllib.request
-            alive = b"Float" in urllib.request.urlopen(url, timeout=3).read(4000)
+            alive = b"Float" in urllib.request.urlopen(
+                url, timeout=3, context=ssl._create_unverified_context()).read(4000)
         except Exception:
             alive = False
         if alive:
@@ -129,10 +148,14 @@ def _cmd_run(args: argparse.Namespace) -> None:
         _tell_user(f"Port {port} is being used by another program, so Float could not start.\n\n"
                    f"Close that program, or start Float with a different port:\npython main.py --port {port + 1}")
         raise SystemExit(1)
-    url = f"http://{host}:{srv.server_port}"
+    url = f"{scheme}://{shown}:{srv.server_port}"
 
     print(f"{APP_NAME} {VERSION} — {APP_TAGLINE}")
     print(f"Running at {url}")
+    if config.settings.lan:
+        print(f"School server: teachers on other PCs open {scheme}://{_lan_address()}:{srv.server_port}")
+        if scheme == "http":
+            print("WARNING: no HTTPS configured - passwords cross the network unencrypted. See docs/SCHOOL_SERVER.md")
     print("Close this window, or press Ctrl+C, to sign everyone out and stop Float.")
 
     if not args.no_browser:
@@ -220,6 +243,7 @@ def main() -> None:
     run_p.add_argument("--host", default=None)
     run_p.add_argument("--port", type=int, default=None)
     run_p.add_argument("--no-browser", action="store_true")
+    run_p.add_argument("--lan", action="store_true", help="School-server mode: let other PCs on the network use this Float.")
     run_p.add_argument("--tab", action="store_true", help="Open in a normal browser tab instead of an app window.")
     run_p.set_defaults(func=_cmd_run)
 
