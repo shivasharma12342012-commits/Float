@@ -99,11 +99,6 @@ async function boot() {
     document.title = `Sign in · Float · ${state.school}`;
   }
 
-  // Google buttons only appear when the installation actually has credentials.
-  // Always offered. If Google is not set up yet, clicking it walks you through it once.
-  for (const id of ["google-signin", "google-signup"]) el(id).hidden = false;
-  el("signin-or").hidden = false;
-  el("signup-or").hidden = false;
 
   if (state.setup_needed) {
     el("signup-switch").hidden = true;
@@ -193,71 +188,6 @@ el("form-signup").addEventListener("submit", async (event) => {
   } finally {
     lock(false);
   }
-});
-
-/* ------------------------------------------------------------------ Google */
-
-async function google() {
-  if (busy) return;
-  if (!state.google) { openSetup(); return; }
-  // Open the window first, inside the click, so the browser never blocks it.
-  const popup = window.open("about:blank", "float-google", "width=520,height=640,menubar=no,toolbar=no");
-  if (!popup) { say("Your browser blocked the Google window. Allow pop-ups for Float."); return; }
-  lock(true);
-  try {
-    const { url } = await api("/api/auth/google/start");
-    popup.location.href = url;
-    say("Choose your Google account in the window that opened…", "good");
-  } catch (err) {
-    popup.close();
-    say(err.message);
-  } finally {
-    lock(false);
-  }
-}
-
-/* One-time Google setup, right on the sign-in page. */
-function openSetup() {
-  if (!state.local) {
-    say("Google sign-in has not been set up yet. Ask whoever installed Float to open it on the school computer and click Continue with Google once.");
-    return;
-  }
-  el("gsetup-uri").textContent = state.redirect || "";
-  el("gsetup").hidden = false;
-  el("gs-id").focus();
-}
-el("gsetup-cancel").addEventListener("click", () => (el("gsetup").hidden = true));
-el("gsetup-copy").addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText(el("gsetup-uri").textContent); el("gsetup-copy").textContent = "Copied"; }
-  catch { el("gsetup-copy").textContent = "Select and copy"; }
-});
-el("gsetup-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const save = el("gsetup-save");
-  save.disabled = true;
-  try {
-    await api("/api/auth/google/setup", { client_id: el("gs-id").value, client_secret: el("gs-secret").value });
-    state.google = true;
-    el("gsetup").hidden = true;
-    say("Google is ready. Click Continue with Google.", "good");
-  } catch (err) {
-    say(err.message);
-    el("gsetup").hidden = true;
-    setTimeout(() => (el("gsetup").hidden = false), 50);
-  } finally {
-    save.disabled = false;
-  }
-});
-
-el("google-signin").addEventListener("click", google);
-el("google-signup").addEventListener("click", google);
-
-window.addEventListener("message", (event) => {
-  if (event.origin !== location.origin) return;
-  const payload = event.data || {};
-  if (typeof payload.ok !== "boolean") return;
-  if (payload.ok && payload.token) enter({ token: payload.token });
-  else say(payload.message || "Google sign-in did not complete.");
 });
 
 /* ------------------------------------------------------------------ chrome */
