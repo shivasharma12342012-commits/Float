@@ -254,7 +254,13 @@ RT_MODEL = env("FLOAT_RT_MODEL", "llama3.1:8b")
 # ----------------------------------------------------------------------------
 @dataclass
 class Settings:
-    host: str = field(default_factory=lambda: env("FLOAT_HOST", "127.0.0.1"))
+    #: School-server mode: one Float computer holds every account; teachers on other
+    #: PCs just open it in a browser. Nothing needs syncing because there is one copy.
+    lan: bool = field(default_factory=lambda: env_bool("FLOAT_LAN", False))
+    host: str = field(default_factory=lambda: env("FLOAT_HOST", "0.0.0.0" if env_bool("FLOAT_LAN", False) else "127.0.0.1"))
+    allowed_hosts: str = field(default_factory=lambda: env("FLOAT_ALLOWED_HOSTS", ""))
+    tls_cert: str = field(default_factory=lambda: env("FLOAT_TLS_CERT", ""))
+    tls_key: str = field(default_factory=lambda: env("FLOAT_TLS_KEY", ""))
     port: int = field(default_factory=lambda: env_int("FLOAT_PORT", 8765))
 
     school_name: str = field(default_factory=lambda: env("FLOAT_SCHOOL", "Your School"))
@@ -263,7 +269,7 @@ class Settings:
     #: ceiling while it is running.
     session_hours: float = field(default_factory=lambda: env_float("FLOAT_SESSION_HOURS", 10.0))
     #: An idle tab is signed out after this long, whatever the ceiling says.
-    idle_minutes: float = field(default_factory=lambda: env_float("FLOAT_IDLE_MINUTES", 45.0))
+    idle_minutes: float = field(default_factory=lambda: env_float("FLOAT_IDLE_MINUTES", 20.0 if env_bool("FLOAT_LAN", False) else 45.0))
 
     max_attempts: int = field(default_factory=lambda: env_int("FLOAT_MAX_ATTEMPTS", 7))
     lockout_seconds: float = field(default_factory=lambda: env_float("FLOAT_LOCKOUT", 90.0))
@@ -301,6 +307,14 @@ def _load_google_file() -> None:
     if not settings.google_client_id:
         settings.google_client_id = str(saved.get("client_id", "")).strip()
         settings.google_client_secret = str(saved.get("client_secret", "")).strip()
+
+
+def tls_files() -> tuple[str, str] | None:
+    """(certificate, key) when HTTPS is configured and both files exist."""
+    cert, key = settings.tls_cert, settings.tls_key
+    if cert and key and Path(cert).is_file() and Path(key).is_file():
+        return cert, key
+    return None
 
 
 def save_google(client_id: str, client_secret: str) -> None:
