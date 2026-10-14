@@ -22,6 +22,9 @@ from __future__ import annotations
 
 import json
 import math
+import ssl
+import socket
+import ipaddress
 import mimetypes
 import posixpath
 import re
@@ -104,6 +107,25 @@ class Route:
     def ip(self) -> str:
         return self.request.client_address[0]
 
+    @property
+    def local(self) -> bool:
+        """True only when the request comes from the Float computer itself.
+
+        Anything that touches the machine Float runs on (moving its mouse, saving
+        to its Desktop) is allowed only for such requests, so a teacher on another
+        PC can never act on - or see - what happens on the server. A request that
+        carries proxy headers is never treated as local."""
+        headers = self.request.headers
+        if any(headers.get(k) for k in ("X-Forwarded-For", "Forwarded", "X-Real-IP")):
+            return False
+        peer = self.ip
+        if peer in ("127.0.0.1", "::1", "::ffff:127.0.0.1"):
+            return True
+        try:   # opened through the machine's own network address
+            return peer == self.request.connection.getsockname()[0]
+        except OSError:
+            return False
+
     def require_user(self) -> dict[str, Any]:
         if self.user is None:
             raise HttpError(401, "Sign in to continue.")
@@ -140,7 +162,7 @@ def route(method: str, pattern: str, auth: str = "user") -> Callable[[Handler], 
 def auth_state(ctx: Route) -> dict[str, Any]:
     return {
         "setup_needed": db.count_users() == 0,
-        "google": google.configured(),
+        "local": ctx.local,
         "self_signup": db.org_get("self_signup", "0") == "1",
         "school": db.org_get("school_name", config.settings.school_name),
         "app": {"name": config.APP_NAME, "version": config.VERSION, "tagline": config.APP_TAGLINE},
@@ -155,6 +177,9 @@ def auth_signup(ctx: Route) -> dict[str, Any]:
     password = str(body.get("password", ""))
 
     first_user = db.count_users() == 0
+    if first_user and config.settings.lan and not ctx.local:
+        raise HttpError(403, "The first account must be created on the Float computer itself, "
+                             "so nobody on the network can claim the school.")
     if not first_user and db.org_get("self_signup", "0") != "1":
         raise HttpError(403, "Your school creates accounts from the admin panel. Ask your admin to add you.")
     if "@" not in email or len(email) < 6:
@@ -221,9 +246,13 @@ def auth_signout(ctx: Route) -> dict[str, Any]:
 
 @route("GET", "/api/auth/google/start", auth="none")
 def google_start(ctx: Route) -> dict[str, Any]:
-    if not google.configured():
-        raise HttpError(400, "Google sign-in is not set up for this installation.")
     want_drive = ctx.query.get("drive") == "1"
+    if not want_drive:
+        raise HttpError(400, "Google sign-in has been removed. Sign in with your Float email and password.")
+    if config.settings.lan:
+        raise HttpError(400, "Google Drive is switched off on a school server, so one teacher's files never touch another's account.")
+    if not google.configured():
+        raise HttpError(400, "Google Drive is not set up for this installation.")
     user_id = None
     if want_drive:
         user = ctx.require_user()
@@ -262,29 +291,7 @@ def google_callback(ctx: Route) -> Any:
         db.audit("google.drive", user_id=int(result["user_id"]), detail="Drive connected", ip=ctx.ip)
         return _close_window("Google Drive connected. You can close this tab.", ok=True)
 
-    user = db.get_user_by_google(result["sub"]) or db.get_user_by_email(result["email"])
-    if user is None:
-        if db.count_users() == 0:
-            user = db.create_user(result["email"], result["name"], role="admin",
-                                  google_sub=result["sub"])
-        elif db.org_get("self_signup", "0") == "1":
-            user = db.create_user(result["email"], result["name"], google_sub=result["sub"])
-        else:
-            return _close_window(
-                "There is no Float account for that Google address. Ask your admin to add you.",
-                ok=False,
-            )
-    elif not user["google_sub"]:
-        db.update_user(int(user["id"]), google_sub=result["sub"])
-
-    if not user["active"]:
-        return _close_window("That account has been switched off. Speak to your admin.", ok=False)
-
-    google.remember(int(user["id"]), result)
-    token = db.create_session(int(user["id"]), ctx.ip, ctx.request.headers.get("User-Agent", ""))
-    db.touch_user(int(user["id"]), count_sign_in=True)
-    db.audit("auth.signin", user_id=int(user["id"]), actor=user["name"], detail="google", ip=ctx.ip)
-    return _close_window("Signed in. You can close this tab.", ok=True, token=token)
+    return _close_window("Google sign-in has been removed. Sign in with your Float email and password.", ok=False)
 
 
 def _close_window(message: str, ok: bool, token: str = "") -> tuple[str, str]:
@@ -394,8 +401,13 @@ def me_pin(ctx: Route) -> dict[str, Any]:
 def bootstrap(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
     user_id = int(user["id"])
-    can_drive = google.has_drive(user_id)
+    can_drive = google.has_drive(user_id) and not config.settings.lan
     control_ok, control_why = computer.available()
+    if not ctx.local:
+        control_ok = False
+        control_why = ("Float can only use a computer when you are sitting at the Float "
+                       "computer itself. On this PC it works through your browser, so it "
+                       "cannot move your mouse. Everything else works as normal.")
 
     models: list[dict[str, Any]] = []
     for provider_id in db.allowed_providers():
@@ -443,7 +455,10 @@ def bootstrap(ctx: Route) -> dict[str, Any]:
         },
         "capabilities": {
             "drive": can_drive,
-            "google": google.configured(),
+            "google": google.configured() and not config.settings.lan,
+            "local": ctx.local,
+            "lan": config.settings.lan,
+            "secure": bool(config.tls_files()),
             "computer": control_ok,
             "computer_why": control_why,
             "screen": computer.screenshot_size(),
@@ -484,7 +499,7 @@ def chat(ctx: Route) -> Any:
         conv_id,
         message,
         model_choice=str(body.get("model", "")),
-        allow_computer=bool(body.get("allow_computer", True)),
+        allow_computer=bool(body.get("allow_computer", True)) and ctx.local,
         attachments=body.get("attachments") or [],
     )
     return ("sse", stream)
@@ -588,6 +603,10 @@ def artifact_save(ctx: Route) -> dict[str, Any]:
         raise HttpError(404, "No such file.")
     where = str(ctx.body.get("where", "desktop"))
 
+    if where in ("desktop", "drive") and (not ctx.local if where == "desktop" else config.settings.lan):
+        raise HttpError(400, "On a school-server PC, use Download - the file then goes to the "
+                             "computer you are sitting at, and nowhere else.")
+
     if where == "desktop":
         try:
             path = artifacts.save_to_desktop(artifact)
@@ -623,6 +642,8 @@ def artifact_save(ctx: Route) -> dict[str, Any]:
 @route("GET", "/api/computer/status")
 def computer_status(ctx: Route) -> dict[str, Any]:
     ctx.require_user()
+    if not ctx.local:   # never reveal what is happening on the Float computer
+        return {"available": False, "why": "Computer control works only on the Float computer."}
     ok, why = computer.available()
     return {"available": ok, "why": why, **computer.current_status()}
 
@@ -630,6 +651,8 @@ def computer_status(ctx: Route) -> dict[str, Any]:
 @route("POST", "/api/computer/stop")
 def computer_stop(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
+    if not ctx.local:
+        raise HttpError(403, "Only someone at the Float computer can stop a computer task.")
     stopped = computer.stop_current()
     if stopped:
         db.audit("computer.stop", user_id=int(user["id"]), actor=user["name"], level="warn")
@@ -1207,7 +1230,19 @@ class FloatHandler(BaseHTTPRequestHandler):
 
     def _host_ok(self) -> bool:
         host = (self.headers.get("Host") or "").split(":")[0]
-        return host in {"127.0.0.1", "localhost", "[::1]", "::1", config.settings.host}
+        if host in {"127.0.0.1", "localhost", "[::1]", "::1", config.settings.host}:
+            return True
+        if not config.settings.lan:
+            return False
+        allowed = {h.strip().lower() for h in config.settings.allowed_hosts.split(",") if h.strip()}
+        allowed.add(socket.gethostname().lower())
+        if host.lower() in allowed:
+            return True
+        try:   # a bare IP address cannot be a DNS-rebinding name
+            ipaddress.ip_address(host.strip("[]"))
+            return True
+        except ValueError:
+            return False
 
     # -- verbs -------------------------------------------------------------
     def do_GET(self) -> None:
@@ -1386,6 +1421,13 @@ class FloatServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
+    def handle_error(self, request, client_address) -> None:
+        # A browser that gave up, or someone typing http:// at the https port,
+        # is not a Float fault - do not spray a traceback for it.
+        if isinstance(sys.exc_info()[1], (ssl.SSLError, ConnectionError)):
+            return
+        super().handle_error(request, client_address)
+
 
 def serve(host: str | None = None, port: int | None = None) -> FloatServer:
     config.ensure_dirs()
@@ -1394,5 +1436,15 @@ def serve(host: str | None = None, port: int | None = None) -> FloatServer:
     maintenance.start_daily_backups()      # one now, then at most one a day; never raises
     maintenance.prune_in_background()      # old audit/usage rows, in small batches
     server = FloatServer((host or config.settings.host, config.settings.port if port is None else port), FloatHandler)
+    tls = config.tls_files()
+    if tls:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.load_cert_chain(*tls)
+        server.socket = context.wrap_socket(server.socket, server_side=True,
+                                            do_handshake_on_connect=False)
+    elif config.settings.lan:
+        db.audit("server.insecure", level="warn",
+                 detail="School-server mode is running without HTTPS: passwords cross the network in plain text.")
     threading.Thread(target=server.serve_forever, daemon=True, name="float-http").start()
     return server
