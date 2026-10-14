@@ -622,17 +622,19 @@ function fileCard(artifact) {
 
   const acts = make("div", "acts");
 
-  const desktop = make("button", "btn gold", "Desktop");
-  desktop.title = "Save into a Float folder on your Desktop";
-  desktop.addEventListener("click", () => saveFile(artifact, "desktop", acts));
-  acts.append(desktop);
-
-  const drive = make("button", "btn", "Drive");
-  drive.title = S.boot.capabilities.drive
-    ? "Save to your Google Drive"
-    : "Connect Google Drive first — Settings → Google";
-  drive.addEventListener("click", () => saveFile(artifact, "drive", acts));
-  acts.append(drive);
+  const caps = S.boot.capabilities;
+  if (caps.local !== false) {   // on a school-server PC only Download is offered
+    const desktop = make("button", "btn gold", "Desktop");
+    desktop.title = "Save into a Float folder on your Desktop";
+    desktop.addEventListener("click", () => saveFile(artifact, "desktop", acts));
+    acts.append(desktop);
+  }
+  if (!caps.lan) {
+    const drive = make("button", "btn", "Drive");
+    drive.title = caps.drive ? "Save to your Google Drive" : "Connect Google Drive first — Settings → Google";
+    drive.addEventListener("click", () => saveFile(artifact, "drive", acts));
+    acts.append(drive);
+  }
 
   const down = make("button", "btn", "Download");
   down.addEventListener("click", () => {
@@ -654,7 +656,7 @@ function fileCard(artifact) {
         anchor.click();
         setTimeout(() => URL.revokeObjectURL(url), 4000);
       })
-      .catch(() => toast("Could not download that file. Try again, or save it to your Desktop instead.", true));
+      .catch(() => toast("Could not download that file. Please try again.", true));
   });
   acts.append(down);
 
@@ -1484,6 +1486,12 @@ function tabGoogle() {
   body.innerHTML = "";
   const caps = S.boot.capabilities;
 
+  if (caps.lan) {
+    body.append(make("p", "inline-note",
+      "Google Drive is switched off on this school server, so one teacher's files never touch " +
+      "another's account. Use Download to save a file to the computer you are sitting at."));
+    return;
+  }
   if (!caps.google) {
     body.append(make("p", "inline-note",
       "Google isn't set up on this installation. Float works perfectly without it — " +
