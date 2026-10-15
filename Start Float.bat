@@ -37,10 +37,11 @@ if "%PY%"=="" (
 )
 
 rem --- first run only: install the optional extras ----------------------
-if not exist "data\.deps_v2" (
+if not exist "data\.deps_v3" (
+    %PY% -m pip install "cryptography>=42.0" --quiet --disable-pip-version-check >"%TEMP%\float_pip0.log" 2>&1
     %PY% -m pip install -r requirements.txt --quiet --disable-pip-version-check >"%TEMP%\float_pip.log" 2>&1
     if not exist "data" mkdir "data"
-    echo ok > "data\.deps_v2"
+    echo ok > "data\.deps_v3"
 )
 
 rem --- showing the output on purpose? ---------------------------------------
@@ -64,9 +65,9 @@ if not defined PYW (
 )
 
 if defined PYW (
-    start "" "%PYW%" "main.py"
+    start "" /b "%PYW%" "main.py"
 ) else (
-    start "" %PY% "main.py"
+    start "" /b %PY% "main.py"
 )
 
 exit /b 0
