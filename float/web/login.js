@@ -26,7 +26,7 @@ let busy = false;
 async function api(path, body) {
   let res;
   try {
-    res = await fetch(path, {
+    res = await FloatSecure.fetch(path, {
       method: body === undefined ? "GET" : "POST",
       headers: { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body || {}),
