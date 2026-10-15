@@ -31,7 +31,7 @@ async function api(path, options = {}) {
   }
   let res;
   try {
-    res = await fetch(path, init);
+    res = await FloatSecure.fetch(path, init);
   } catch (err) {
     throw new Error("Float can't be reached right now. If you closed its window, open Float again.");
   }
