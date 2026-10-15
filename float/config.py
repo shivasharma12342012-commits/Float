@@ -314,7 +314,52 @@ def tls_files() -> tuple[str, str] | None:
     cert, key = settings.tls_cert, settings.tls_key
     if cert and key and Path(cert).is_file() and Path(key).is_file():
         return cert, key
+    if settings.lan and not (cert or key):
+        return _auto_cert()          # school-server mode: never run on plain HTTP
     return None
+
+
+def _auto_cert() -> tuple[str, str] | None:
+    """Self-signed certificate for school-server mode (browsers warn once per PC)."""
+    crt, key = DATA_DIR / "float-auto.crt", DATA_DIR / "float-auto.key"
+    if crt.is_file() and key.is_file():
+        return str(crt), str(key)
+    try:
+        import datetime, ipaddress, socket
+        from cryptography import x509
+        from cryptography.x509.oid import NameOID
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import ec
+    except ImportError:
+        return None
+    host = socket.gethostname()
+    names, ips = {host, "localhost"}, {"127.0.0.1"}
+    try:
+        ips.update(socket.gethostbyname_ex(host)[2])
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+            probe.connect(("10.255.255.255", 1))
+            ips.add(probe.getsockname()[0])
+    except OSError:
+        pass
+    private = ec.generate_private_key(ec.SECP256R1())
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Float school server")])
+    now = datetime.datetime.now(datetime.timezone.utc)
+    san = [x509.DNSName(n) for n in sorted(names)] + [x509.IPAddress(ipaddress.ip_address(i)) for i in sorted(ips)]
+    cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name)
+            .public_key(private.public_key()).serial_number(x509.random_serial_number())
+            .not_valid_before(now - datetime.timedelta(days=1))
+            .not_valid_after(now + datetime.timedelta(days=3650))
+            .add_extension(x509.SubjectAlternativeName(san), critical=False)
+            .sign(private, hashes.SHA256()))
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    crt.write_bytes(cert.public_bytes(serialization.Encoding.PEM))
+    key.write_bytes(private.private_bytes(serialization.Encoding.PEM,
+                                          serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
+    try:
+        key.chmod(0o600)
+    except OSError:
+        pass
+    return str(crt), str(key)
 
 
 def save_google(client_id: str, client_secret: str) -> None:
