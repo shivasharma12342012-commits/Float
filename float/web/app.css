@@ -1160,3 +1160,10 @@ button.rail-foot-name { position: relative; overflow: visible; padding: 6px 8px;
   .shell.rail-mini [data-tip]:hover::after { content: attr(data-tip); position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%); z-index: 100; padding: 6px 10px; border-radius: 8px; background: #2B2A28; border: 1px solid rgba(255,255,255,.09); color: #F3F1EA; font-size: 12px; font-weight: 500; white-space: nowrap; pointer-events: none; box-shadow: 0 10px 26px -10px rgba(0,0,0,.65); animation: tipin .14s .4s ease-out both; }
 }
 @media (prefers-reduced-motion: reduce) { .rail *, .rail-new { transition: none !important; animation: none !important; } }
+
+/* Float logo (float.ico) in the sidebar and on Float's replies */
+.rail .wordmark { align-items: center; }
+.wordmark .wm-logo { width: 30px; height: 30px; margin-right: 8px; flex: none; border-radius: 7px; object-fit: contain; }
+.float-logo { width: 21px; height: 21px; padding: 0; border-radius: 50%; object-fit: cover; background: transparent !important; }
+.shell.rail-mini .wordmark .wm-text { display: none; }
+.shell.rail-mini .wordmark .wm-logo { margin: 0; width: 34px; height: 34px; }
