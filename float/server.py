@@ -38,7 +38,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Callable
 
-from . import agent, artifacts, computer, config, db, google, greeting, maintenance, providers, security, stats, tools
+from . import agent, artifacts, computer, config, db, google, greeting, maintenance, providers, security, stats, tools, transport
 
 Handler = Callable[["Route"], Any]
 _routes: list[tuple[str, re.Pattern[str], Handler, str]] = []
@@ -138,6 +138,11 @@ class Route:
         return user
 
 
+# Endpoints that carry passwords, PINs or API keys. Their bodies must arrive
+# AES-256-GCM encrypted (see transport.py); plain bodies are refused.
+_SEALED = re.compile(r"^/api/(auth/signin|auth/signup|me/password|me/pin|keys|unlock|admin/users(/\d+)?)$")
+
+
 def route(method: str, pattern: str, auth: str = "user") -> Callable[[Handler], Handler]:
     """auth: 'none' | 'user' | 'admin'."""
     def _param(m: "re.Match[str]") -> str:
@@ -158,6 +163,11 @@ def route(method: str, pattern: str, auth: str = "user") -> Callable[[Handler], 
 # ---------------------------------------------------------------------------
 # Auth
 # ---------------------------------------------------------------------------
+@route("GET", "/api/crypto/key", auth="none")
+def crypto_key(ctx: Route) -> dict[str, Any]:
+    return transport.public_info()
+
+
 @route("POST", "/api/auth/state", auth="none")
 def auth_state(ctx: Route) -> dict[str, Any]:
     return {
@@ -1218,7 +1228,16 @@ class FloatHandler(BaseHTTPRequestHandler):
             raw = self.rfile.read(length)
             try:
                 parsed = json.loads(raw.decode("utf-8"))
-                self._body_cache = parsed if isinstance(parsed, dict) else {"value": parsed}
+                parsed = parsed if isinstance(parsed, dict) else {"value": parsed}
+                if set(parsed) == {"enc"}:      # sealed: AES-256-GCM envelope
+                    try:
+                        parsed, self._enc_key = transport.open_request(
+                            parsed["enc"], urllib.parse.urlparse(self.path).path)
+                    except transport.TransportError as exc:
+                        if exc.rekey:
+                            raise HttpError(409, str(exc), rekey=True) from None
+                        raise HttpError(400, str(exc)) from None
+                self._body_cache = parsed
             except ValueError:
                 raise HttpError(400, "The request body was not valid JSON.") from None
         return self._body_cache
@@ -1263,6 +1282,7 @@ class FloatHandler(BaseHTTPRequestHandler):
     # -- dispatch ----------------------------------------------------------
     def _dispatch(self, method: str) -> None:
         self._body_cache = None
+        self._enc_key = None
         try:
             if not self._host_ok():
                 raise HttpError(403, "Refused: unexpected Host header.")
@@ -1274,6 +1294,11 @@ class FloatHandler(BaseHTTPRequestHandler):
                 match = pattern.match(path)
                 if not match:
                     continue
+                if method == "POST" and _SEALED.match(path):
+                    self.json_body()
+                    if self._enc_key is None and not transport.plaintext_allowed():
+                        raise HttpError(400, "Please reload Float. This page is out of date and "
+                                             "would send your password unprotected.")
                 ctx = Route(self, match.groupdict())
                 ctx.token = self._bearer()
                 if ctx.token:
@@ -1346,6 +1371,8 @@ class FloatHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _send_json(self, payload: Any, status: int = 200) -> None:
+        if status == 200 and getattr(self, "_enc_key", None):   # answer a sealed request sealed
+            payload = transport.seal_response(self._enc_key, urllib.parse.urlparse(self.path).path, payload)
         data = json.dumps(payload, default=str).encode("utf-8")
         self._headers(status, "application/json; charset=utf-8", len(data))
         self.wfile.write(data)
