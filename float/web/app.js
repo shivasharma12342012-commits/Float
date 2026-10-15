@@ -351,7 +351,9 @@ function addUserTurn(text, attachments) {
 function addFloatTurn() {
   const turn = make("div", "turn");
   const who = make("div", "turn-who");
-  who.append(make("span", "float-mark", "F"));
+  const mark = make("img", "float-mark float-logo");
+  mark.src = "/float.ico"; mark.alt = "";
+  who.append(mark);
   who.append(make("span", null, "Float"));
   turn.append(who);
 
