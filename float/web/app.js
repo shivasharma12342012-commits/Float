@@ -49,7 +49,7 @@ async function api(path, options = {}) {
   }
   let res;
   try {
-    res = await fetch(path, init);
+    res = await FloatSecure.fetch(path, init);
   } catch (err) {
     // The browser could not reach Float at all (it was closed, or the laptop slept).
     throw new Error(OFFLINE_MESSAGE);
