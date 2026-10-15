@@ -46,7 +46,7 @@ shortcut.WindowStyle = 7
 shortcut.Save
 
 ' Launch the BAT invisibly, just like the original VBS launcher.
-shell.Run """" & batPath & """", 0, False
+shell.Run "cmd /c """"" & batPath & """ --hidden""", 0, False
 
 Set shortcut = Nothing
 Set shell = Nothing
