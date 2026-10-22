@@ -10,6 +10,7 @@ port and talk to it exactly the way the browser does.
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import shutil
@@ -30,6 +31,7 @@ sys.path.insert(0, str(ROOT))
 def _fresh_data_dir() -> Path:
     path = Path(tempfile.mkdtemp(prefix="float-test-"))
     os.environ["FLOAT_DATA_DIR"] = str(path)
+    os.environ["FLOAT_ALLOW_PLAINTEXT"] = "1"
     return path
 
 
@@ -59,10 +61,7 @@ class ArtifactTests(unittest.TestCase):
     def test_docx_is_a_valid_zip_with_expected_parts(self):
         data = artifacts.render("docx", self.SAMPLE_MD, "Weekly Notice", "Anita Sharma")
         self.assertGreater(len(data), 500)
-        with tempfile.NamedTemporaryFile(suffix=".docx") as f:
-            f.write(data)
-            f.flush()
-            zf = zipfile.ZipFile(f.name)
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
             self.assertIsNone(zf.testzip())
             names = zf.namelist()
             for expected in ("[Content_Types].xml", "word/document.xml", "word/styles.xml"):
@@ -72,10 +71,7 @@ class ArtifactTests(unittest.TestCase):
 
     def test_xlsx_is_a_valid_zip_with_a_sheet(self):
         data = artifacts.render("xlsx", self.SAMPLE_MD, "Notice", "")
-        with tempfile.NamedTemporaryFile(suffix=".xlsx") as f:
-            f.write(data)
-            f.flush()
-            zf = zipfile.ZipFile(f.name)
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
             self.assertIsNone(zf.testzip())
             self.assertIn("xl/worksheets/sheet1.xml", zf.namelist())
 
@@ -179,6 +175,7 @@ class ServerTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.srv.shutdown()
+        cls.srv.server_close()
         shutil.rmtree(cls.data_dir, ignore_errors=True)
 
     def call(self, path, body=None, token=None, method=None):

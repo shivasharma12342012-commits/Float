@@ -105,6 +105,14 @@ function render() {
 /* ── overview ──────────────────────────────────────────────────────────── */
 
 function viewOverview(wrap) {
+  if (DATA.lan_url) {
+    const lan = make("div", "panel");
+    lan.append(
+      make("h2", null, "School server address"),
+      make("p", null, `Teachers on other PCs on the network open ${DATA.lan_url} in their browser.`),
+    );
+    wrap.append(lan);
+  }
   const t = DATA.totals;
   const grid = make("div", "stat-grid");
   [

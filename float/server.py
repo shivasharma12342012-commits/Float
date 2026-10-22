@@ -959,6 +959,20 @@ def _fairness(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "near_cap": near, "pool_budget": budget, "pool_spent": round(db.pool_paise())}
 
 
+def _lan_url(port: int) -> str:
+    """The address teachers on other PCs type when school-server mode is on."""
+    if not config.settings.lan:
+        return ""
+    scheme = "https" if config.tls_files() else "http"
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+            probe.connect(("10.255.255.255", 1))
+            host = probe.getsockname()[0]
+    except OSError:
+        host = socket.gethostname()
+    return f"{scheme}://{host}:{port}"
+
+
 @route("GET", "/api/admin/overview", auth="admin")
 def admin_overview(ctx: Route) -> dict[str, Any]:
     ctx.require_admin()
@@ -966,6 +980,7 @@ def admin_overview(ctx: Route) -> dict[str, Any]:
     total_paise = sum(r["paise"] for r in rows)
     return {
         "org": db.org_all(),
+        "lan_url": _lan_url(ctx.request.server.server_port),
         "users": _admin_users(rows),
         "fairness": _fairness(rows),
         "sessions": db.active_sessions(),
@@ -1203,10 +1218,16 @@ class FloatHandler(BaseHTTPRequestHandler):
     def setup(self) -> None:
         super().setup()
         try:   # send each streamed chunk immediately instead of waiting to batch it
-            import socket
             self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         except OSError:
             pass
+        if isinstance(self.connection, ssl.SSLSocket):
+            # Perform the TLS handshake on the worker thread (with a timeout) rather
+            # than inside accept(), so one stalled socket cannot freeze the server.
+            self.connection.settimeout(min(self.timeout or 10, 10))
+            self.connection.do_handshake()
+            if self.timeout is not None:
+                self.connection.settimeout(self.timeout)
 
     def log_message(self, fmt: str, *args: Any) -> None:
         return  # the audit log is the log
@@ -1248,13 +1269,18 @@ class FloatHandler(BaseHTTPRequestHandler):
         return {k: v[0] for k, v in urllib.parse.parse_qs(parsed.query).items()}
 
     def _host_ok(self) -> bool:
-        host = (self.headers.get("Host") or "").split(":")[0]
+        raw_host = (self.headers.get("Host") or "").strip()
+        if raw_host.startswith("["):
+            host = raw_host.split("]")[0] + "]" if "]" in raw_host else raw_host
+        else:
+            host = raw_host.split(":")[0]
         if host in {"127.0.0.1", "localhost", "[::1]", "::1", config.settings.host}:
             return True
         if not config.settings.lan:
             return False
+        hostname = socket.gethostname().lower()
         allowed = {h.strip().lower() for h in config.settings.allowed_hosts.split(",") if h.strip()}
-        allowed.add(socket.gethostname().lower())
+        allowed.update({hostname, f"{hostname}.local"})
         if host.lower() in allowed:
             return True
         try:   # a bare IP address cannot be a DNS-rebinding name
@@ -1446,12 +1472,23 @@ class FloatHandler(BaseHTTPRequestHandler):
 
 class FloatServer(ThreadingHTTPServer):
     daemon_threads = True
-    allow_reuse_address = True
+    # On Windows SO_REUSEADDR lets a second process steal an already-bound port
+    # (for example 0.0.0.0 alongside 127.0.0.1). Keep exclusive port ownership
+    # on Windows so "port already in use" is detected reliably.
+    allow_reuse_address = sys.platform != "win32"
+
+    def server_bind(self) -> None:
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            try:
+                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            except OSError:
+                pass
+        super().server_bind()
 
     def handle_error(self, request, client_address) -> None:
         # A browser that gave up, or someone typing http:// at the https port,
         # is not a Float fault - do not spray a traceback for it.
-        if isinstance(sys.exc_info()[1], (ssl.SSLError, ConnectionError)):
+        if isinstance(sys.exc_info()[1], (ssl.SSLError, ConnectionError, TimeoutError)):
             return
         super().handle_error(request, client_address)
 
@@ -1463,7 +1500,7 @@ def serve(host: str | None = None, port: int | None = None) -> FloatServer:
     maintenance.start_daily_backups()      # one now, then at most one a day; never raises
     maintenance.prune_in_background()      # old audit/usage rows, in small batches
     server = FloatServer((host or config.settings.host, config.settings.port if port is None else port), FloatHandler)
-    tls = config.tls_files()
+    tls = config.tls_files() if port != 0 else None
     if tls:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.minimum_version = ssl.TLSVersion.TLSv1_2

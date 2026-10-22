@@ -151,7 +151,8 @@ def run(user: dict[str, Any], conv_id: int, message: str, model_choice: str = ""
 
     history = _history(conv_id)
     system = tools.system_prompt(user)
-    schemas = tools.tools_for(user, allow_computer and config.settings.computer_control)
+    can_use_computer = bool(allow_computer and config.settings.computer_control)
+    schemas = tools.tools_for(user, can_use_computer)
 
     total_in = total_out = 0
     reply_text: list[str] = []
@@ -214,7 +215,7 @@ def run(user: dict[str, Any], conv_id: int, message: str, model_choice: str = ""
             def emit(payload: dict[str, Any]) -> None:
                 step_queue.put(payload)
 
-            outcome = _call_tool(call, user, conv_id, emit, step_queue)
+            outcome = _call_tool(call, user, conv_id, emit, step_queue, allow_computer=can_use_computer)
             for item in _drain(step_queue):
                 yield item
             if outcome.get("card"):
@@ -271,12 +272,13 @@ def _drain(step_queue: "queue.Queue") -> list[dict[str, Any]]:
 
 
 def _call_tool(call: dict[str, Any], user: dict[str, Any], conv_id: int,
-               emit: Any, step_queue: "queue.Queue") -> dict[str, Any]:
+               emit: Any, step_queue: "queue.Queue", allow_computer: bool = True) -> dict[str, Any]:
     """Run a tool on a worker thread so a long pointer run still streams steps."""
     result: dict[str, Any] = {}
 
     def work() -> None:
-        result.update(tools.execute(call["name"], call.get("input", {}), user, conv_id, emit))
+        result.update(tools.execute(call["name"], call.get("input", {}), user, conv_id, emit,
+                                    allow_computer=allow_computer))
 
     thread = threading.Thread(target=work, daemon=True, name=f"float-tool-{call['name']}")
     thread.start()

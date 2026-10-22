@@ -91,6 +91,7 @@ class RobustnessTests(unittest.TestCase):
     def setUpClass(cls):
         cls.data_dir = Path(tempfile.mkdtemp(prefix="float-robust-"))
         os.environ["FLOAT_DATA_DIR"] = str(cls.data_dir)
+        os.environ["FLOAT_ALLOW_PLAINTEXT"] = "1"
         import importlib
         import float.config as config
         import float.db as db
@@ -119,6 +120,7 @@ class RobustnessTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.srv.shutdown()
+        cls.srv.server_close()
         shutil.rmtree(cls.data_dir, ignore_errors=True)
 
     @classmethod

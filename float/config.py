@@ -261,7 +261,7 @@ class Settings:
     allowed_hosts: str = field(default_factory=lambda: env("FLOAT_ALLOWED_HOSTS", ""))
     tls_cert: str = field(default_factory=lambda: env("FLOAT_TLS_CERT", ""))
     tls_key: str = field(default_factory=lambda: env("FLOAT_TLS_KEY", ""))
-    port: int = field(default_factory=lambda: env_int("FLOAT_PORT", 8765))
+    port: int = field(default_factory=lambda: env_int("FLOAT_PORT", 8766))
 
     school_name: str = field(default_factory=lambda: env("FLOAT_SCHOOL", "Your School"))
 
@@ -290,6 +290,17 @@ class Settings:
 
     open_browser: bool = field(default_factory=lambda: env_bool("FLOAT_OPEN_BROWSER", True))
 
+    def __setattr__(self, name: str, value: object) -> None:
+        object.__setattr__(self, name, value)
+        if name == "lan" and not env("FLOAT_IDLE_MINUTES"):
+            # `python main.py --lan` sets settings.lan after import; keep the
+            # 20-minute lab-PC idle timeout unless the school set FLOAT_IDLE_MINUTES.
+            current = getattr(self, "idle_minutes", None)
+            if value and current == 45.0:
+                object.__setattr__(self, "idle_minutes", 20.0)
+            elif not value and current == 20.0:
+                object.__setattr__(self, "idle_minutes", 45.0)
+
     def google_ready(self) -> bool:
         return bool(self.google_client_id)
 
@@ -314,6 +325,8 @@ def tls_files() -> tuple[str, str] | None:
     cert, key = settings.tls_cert, settings.tls_key
     if cert and key and Path(cert).is_file() and Path(key).is_file():
         return cert, key
+    if env_bool("FLOAT_ALLOW_PLAINTEXT", False):
+        return None
     if settings.lan and not (cert or key):
         return _auto_cert()          # school-server mode: never run on plain HTTP
     return None
@@ -322,33 +335,70 @@ def tls_files() -> tuple[str, str] | None:
 def _auto_cert() -> tuple[str, str] | None:
     """Self-signed certificate for school-server mode (browsers warn once per PC)."""
     crt, key = DATA_DIR / "float-auto.crt", DATA_DIR / "float-auto.key"
-    if crt.is_file() and key.is_file():
-        return str(crt), str(key)
     try:
         import datetime, ipaddress, socket
         from cryptography import x509
-        from cryptography.x509.oid import NameOID
+        from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
         from cryptography.hazmat.primitives import hashes, serialization
         from cryptography.hazmat.primitives.asymmetric import ec
     except ImportError:
-        return None
+        return (str(crt), str(key)) if crt.is_file() and key.is_file() else None
     host = socket.gethostname()
-    names, ips = {host, "localhost"}, {"127.0.0.1"}
+    names = {n for n in (host, "localhost", f"{host}.local" if host and not host.endswith(".local") else "") if n}
+    ips = {"127.0.0.1", "::1"}
+    for extra in settings.allowed_hosts.split(","):
+        extra = extra.strip().strip("[]")
+        if not extra:
+            continue
+        try:
+            ips.add(str(ipaddress.ip_address(extra)))
+        except ValueError:
+            names.add(extra)
     try:
         ips.update(socket.gethostbyname_ex(host)[2])
+    except OSError:
+        pass
+    try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
             probe.connect(("10.255.255.255", 1))
             ips.add(probe.getsockname()[0])
     except OSError:
         pass
-    private = ec.generate_private_key(ec.SECP256R1())
-    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Float school server")])
     now = datetime.datetime.now(datetime.timezone.utc)
+    if crt.is_file() and key.is_file():
+        try:
+            existing = x509.load_pem_x509_certificate(crt.read_bytes())
+            ext = existing.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+            have_names = {n.lower() for n in ext.get_values_for_type(x509.DNSName)}
+            have_ips = {str(i) for i in ext.get_values_for_type(x509.IPAddress)}
+            bc = existing.extensions.get_extension_for_class(x509.BasicConstraints).value
+            span = (existing.not_valid_after_utc - existing.not_valid_before_utc).days
+            if (bc.ca and span <= 826 and existing.not_valid_after_utc > now + datetime.timedelta(days=30)
+                    and {n.lower() for n in names} <= have_names and ips <= have_ips):
+                return str(crt), str(key)
+        except Exception:
+            pass
+    try:
+        private = serialization.load_pem_private_key(key.read_bytes(), password=None) if key.is_file() else None
+    except Exception:
+        private = None
+    if not isinstance(private, ec.EllipticCurvePrivateKey):
+        private = ec.generate_private_key(ec.SECP256R1())
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Float school server")])
     san = [x509.DNSName(n) for n in sorted(names)] + [x509.IPAddress(ipaddress.ip_address(i)) for i in sorted(ips)]
+    # 825 days is the modern browser ceiling (Apple / Chrome reject longer leaf
+    # lifetimes); BasicConstraints(ca=True) + KeyUsage lets the same .crt file be
+    # installed into the Trusted Root store on lab PCs so warnings disappear.
     cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name)
             .public_key(private.public_key()).serial_number(x509.random_serial_number())
             .not_valid_before(now - datetime.timedelta(days=1))
-            .not_valid_after(now + datetime.timedelta(days=3650))
+            .not_valid_after(now + datetime.timedelta(days=824))
+            .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
+            .add_extension(x509.KeyUsage(
+                digital_signature=True, content_commitment=False, key_encipherment=True,
+                data_encipherment=False, key_agreement=False, key_cert_sign=True,
+                crl_sign=True, encipher_only=False, decipher_only=False), critical=True)
+            .add_extension(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH]), critical=False)
             .add_extension(x509.SubjectAlternativeName(san), critical=False)
             .sign(private, hashes.SHA256()))
     DATA_DIR.mkdir(parents=True, exist_ok=True)

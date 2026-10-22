@@ -86,7 +86,7 @@ pip install -r requirements.txt   # optional, see below
 python main.py
 ```
 
-A browser tab opens at `http://127.0.0.1:8765`, and a short opening screen with the Float logo welcomes you in. **The first account you create becomes your school's admin.** After that, the admin adds every teacher (self sign-up is off by default).
+A browser tab opens at `http://127.0.0.1:8766`, and a short opening screen with the Float logo welcomes you in. **The first account you create becomes your school's admin.** After that, the admin adds every teacher (self sign-up is off by default).
 
 > 💡 Once Float is set up, you can leave the terminal behind. Double-click [`Start Float.vbs`](#-running-it-on-windows) to open it with no console window.
 
@@ -336,11 +336,11 @@ Float can also serve an entire staff from a single computer. **One PC holds ever
 | **2. Start it** | Double-click **`Start Float School Server.bat`**. Float prints the address teachers should use. |
 | **3. Create the admin** | On the server PC itself, create the first account. Float refuses to do this from any other computer, so nobody on the network can claim the school. |
 | **4. Add teachers** | Use the admin panel, or switch on self sign-up. |
-| **5. Turn on HTTPS** | Strongly recommended before real use, otherwise passwords cross the network as plain text. Float warns you while it is off. |
+| **5. HTTPS is on automatically** | When `cryptography` is installed, Float generates a self-signed certificate in `data/float-auto.crt` on first launch so passwords never cross the network in plain text. Install `data/float-auto.crt` on lab PCs (or use `mkcert`) to remove the one-time browser warning. |
 
 A few rules protect everyone in this mode: teachers sign out automatically after 20 idle minutes, Google sign-in and Drive are switched off so no personal login is stored on the shared server, and computer control and "save to Desktop" work only for someone sitting at the server PC. No teacher can ever move another's mouse or see the server's screen.
 
-The full walkthrough, including the certificate command and firewall advice, is in [`School Serve.md`](School%20Serve.md).
+The full walkthrough, including the certificate command and firewall advice, is in [`docs/SCHOOL_SERVER.md`](docs/SCHOOL_SERVER.md) (also at [`School Serve.md`](School%20Serve.md)).
 
 <br>
 
@@ -470,7 +470,7 @@ Float is built for and supported on **Windows**.
 <summary><strong>Float says the address is already in use</strong></summary>
 <br>
 
-It is probably already running, so check for an existing browser tab first. If it isn't, something else is using port 8765. Start Float on a different one:
+It is probably already running, so check for an existing browser tab first. If it isn't, something else is using port 8766. Start Float on a different one:
 
 ```bash
 python main.py --port 9000

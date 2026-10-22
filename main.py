@@ -133,18 +133,28 @@ def _cmd_run(args: argparse.Namespace) -> None:
         srv = server.serve(host, port)
     except OSError:
         # Port already taken. Usually that's Float itself, already running: just open it.
+        import ssl
+        import urllib.request
         url = f"{scheme}://{shown}:{port}"
+        ctx = ssl._create_unverified_context()
         try:
-            import ssl
-            import urllib.request
-            alive = b"Float" in urllib.request.urlopen(
-                url, timeout=3, context=ssl._create_unverified_context()).read(4000)
+            alive = b"Float" in urllib.request.urlopen(url, timeout=3, context=ctx).read(4000)
         except Exception:
             alive = False
         if alive:
             if not args.no_browser:
                 webbrowser.open(url) if args.tab else _open_window(url)
             return
+        alt_scheme = "http" if scheme == "https" else "https"
+        try:
+            alt_alive = b"Float" in urllib.request.urlopen(
+                f"{alt_scheme}://{shown}:{port}", timeout=3, context=ctx).read(4000)
+        except Exception:
+            alt_alive = False
+        if alt_alive and config.settings.lan:
+            _tell_user(f"Float is already running in single-computer mode on port {port}.\n\n"
+                       "Close that Float window first, then start the School Server again.")
+            raise SystemExit(1)
         _tell_user(f"Port {port} is being used by another program, so Float could not start.\n\n"
                    f"Close that program, or start Float with a different port:\npython main.py --port {port + 1}")
         raise SystemExit(1)

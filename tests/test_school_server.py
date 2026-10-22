@@ -26,6 +26,7 @@ class SchoolServerTests(unittest.TestCase):
     def setUpClass(cls):
         cls.data_dir = Path(tempfile.mkdtemp(prefix="float-lan-"))
         os.environ["FLOAT_DATA_DIR"] = str(cls.data_dir)
+        os.environ["FLOAT_ALLOW_PLAINTEXT"] = "1"
         import importlib
         import float.config as config
         import float.db as db
@@ -41,6 +42,7 @@ class SchoolServerTests(unittest.TestCase):
     def tearDownClass(cls):
         cls.config.settings.lan = False
         cls.srv.shutdown()
+        cls.srv.server_close()
         shutil.rmtree(cls.data_dir, ignore_errors=True)
 
     def call(self, path, body=None, token=None, method=None, headers=None):
@@ -116,11 +118,15 @@ class SchoolServerTests(unittest.TestCase):
         return status
 
     def test_07_host_check_allows_lan_addresses_but_not_made_up_names(self):
+        import socket
         self.assertEqual(self._host(f"192.168.1.20:{self.port}"), 200)
+        self.assertEqual(self._host(f"[::1]:{self.port}"), 200)
+        self.assertEqual(self._host(f"{socket.gethostname().lower()}.local:{self.port}"), 200)
         self.assertNotEqual(self._host("evil.example.com"), 200)
         self.config.settings.lan = False
         try:
             self.assertNotEqual(self._host(f"192.168.1.20:{self.port}"), 200)
+            self.assertEqual(self._host(f"[::1]:{self.port}"), 200)
         finally:
             self.config.settings.lan = True
 
@@ -131,6 +137,66 @@ class SchoolServerTests(unittest.TestCase):
             def __init__(self, h): self.headers = h
         self.assertTrue(server.Route.local.fget(type("R", (), {"request": Req({}), "ip": "127.0.0.1"})()))
         self.assertFalse(server.Route.local.fget(type("R", (), {"request": Req({"X-Real-IP": "1.2.3.4"}), "ip": "127.0.0.1"})()))
+
+    def test_09_lan_flag_sets_twenty_minute_idle_timeout(self):
+        self.config.settings.lan = False
+        self.assertEqual(self.config.settings.idle_minutes, 45.0)
+        self.config.settings.lan = True
+        self.assertEqual(self.config.settings.idle_minutes, 20.0)
+
+    def test_10_remote_chat_blocks_use_computer_tool_execution(self):
+        import unittest.mock as mock
+        import float.agent as agent
+        import float.db as db
+        user = db.get_user_by_email("admin@school.in")
+        conv_id = db.new_conversation(int(user["id"]), "Test", "chat")
+        fake_turns = [
+            [{"type": "tool", "id": "t1", "name": "use_computer",
+              "input": {"intent": "test", "steps": [{"action": "wait", "seconds": 0.01}]}},
+             {"type": "done", "stop": "tool_use"}],
+            [{"type": "text", "text": "Done"}, {"type": "done", "stop": "end_turn"}],
+        ]
+        with mock.patch("float.providers.stream", side_effect=fake_turns), \
+             mock.patch("float.tools._tool_use_computer") as mock_uc:
+            list(agent.run(user, conv_id, "open notepad", allow_computer=False))
+            self.assertFalse(mock_uc.called)
+
+    def test_11_tls_stalled_connection_does_not_block_other_teachers(self):
+        import socket
+        import ssl
+        import float.server as server
+        saved = os.environ.pop("FLOAT_ALLOW_PLAINTEXT", None)
+        self.config.settings.allowed_hosts = "float.school.lan"
+        try:
+            tls = self.config.tls_files()
+            if not tls:
+                self.skipTest("cryptography not installed")
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+                probe.bind(("127.0.0.1", 0))
+                tls_port = probe.getsockname()[1]
+            tls_srv = server.serve("127.0.0.1", tls_port)
+            try:
+                stalled = socket.create_connection(("127.0.0.1", tls_port), timeout=3)
+                try:
+                    ctx = ssl._create_unverified_context()
+                    with urllib.request.urlopen(f"https://127.0.0.1:{tls_port}/login",
+                                                context=ctx, timeout=3) as resp:
+                        self.assertEqual(resp.status, 200)
+                finally:
+                    stalled.close()
+            finally:
+                tls_srv.shutdown()
+                tls_srv.server_close()
+        finally:
+            self.config.settings.allowed_hosts = ""
+            if saved is not None:
+                os.environ["FLOAT_ALLOW_PLAINTEXT"] = saved
+
+    def test_12_duplicate_port_bind_is_refused(self):
+        import float.server as server
+        with self.assertRaises(OSError):
+            dup = server.FloatServer(("0.0.0.0", self.port), server.FloatHandler)
+            dup.server_close()
 
 
 if __name__ == "__main__":

@@ -274,8 +274,13 @@ def tools_for(user: dict[str, Any], allow_computer: bool) -> list[dict[str, Any]
 # Execution
 # ---------------------------------------------------------------------------
 def execute(name: str, payload: dict[str, Any], user: dict[str, Any],
-            conv_id: int | None, emit: Any = None) -> dict[str, Any]:
+            conv_id: int | None, emit: Any = None, *, allow_computer: bool = True) -> dict[str, Any]:
     """Run a tool. Returns ``{"text": <for the model>, "card": <for the UI or None>}``."""
+    if name == "use_computer" and not (allow_computer and config.settings.computer_control):
+        return {
+            "text": "Computer control is only available when sitting at the Float computer itself.",
+            "card": None,
+        }
     handler = {
         "create_file": _tool_create_file,
         "look_up_class": _tool_look_up_class,

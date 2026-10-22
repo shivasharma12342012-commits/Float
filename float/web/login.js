@@ -103,6 +103,10 @@ async function boot() {
   if (state.setup_needed) {
     el("signup-switch").hidden = true;
     show("signup");
+    if (state.local === false) {
+      say("Create the first account (the admin) on the Float computer itself. Once that is done, refresh this page to sign in.");
+      lock(true);
+    }
     return;
   }
 
