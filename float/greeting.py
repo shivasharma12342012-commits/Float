@@ -111,7 +111,7 @@ def _first_name(name: str) -> str:
     name = (name or "").strip()
     if not name:
         return ""
-    parts = name.replace(".", " ").split()
+    parts = [p for p in name.replace(".", " ").split() if p]
     # "Mrs Anita Sharma" → "Anita"; a lone honorific is not a name.
     honorifics = {"mr", "mrs", "ms", "miss", "dr", "prof", "shri", "smt", "sir", "madam"}
     for part in parts:
