@@ -69,6 +69,8 @@ def _pdf_basic(data: bytes) -> str:
 
 
 def _readable(text: str) -> bool:
+    if not text:
+        return False
     letters = sum(c.isalpha() or c.isspace() or c.isdigit() or c in ".,;:-()'\"?!" for c in text)
     return len(text.strip()) >= 40 and letters / max(len(text), 1) > 0.85
 
