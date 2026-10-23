@@ -1605,5 +1605,14 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.retire_notice(nid)
 
+    def test_hardening_188(self):
+        db.set_cap_override(999888, 25000)
+        cap, over = db.cap_for(999888)
+        self.assertEqual(cap, 25000)
+        self.assertTrue(over)
+        db.set_cap_override(999888, None)
+        cap_def, over_def = db.cap_for(999888)
+        self.assertFalse(over_def)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
