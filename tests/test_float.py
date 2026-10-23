@@ -378,6 +378,12 @@ class SecurityTests(unittest.TestCase):
         self.assertTrue(agent.title_for(long_msg).endswith('…'))
         self.assertLessEqual(len(agent.title_for(long_msg)), 53)
 
+    def test_agent_drop_old_screens_strips_earlier_images(self):
+        import float.agent as agent
+        hist = [{'role': 'user', 'content': [{'type': 'tool_result', 'content': [{'type': 'text', 'text': 'screen 1'}, {'type': 'image', 'source': {'data': 'abc'}}]}]}]
+        agent._drop_old_screens(hist)
+        self.assertEqual(hist[0]['content'][0]['content'], 'screen 1')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
