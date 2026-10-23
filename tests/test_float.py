@@ -1435,5 +1435,9 @@ class HardeningTests(unittest.TestCase):
         for k in artifacts.KINDS:
             self.assertGreater(len(artifacts.render(k, '# Test\n\nNotes', 'Doc')), 0)
 
+    def test_hardening_151(self):
+        enc = security.encrypt_secret('sk-sample-test-key-12345')
+        self.assertTrue(len(enc) > 20)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
