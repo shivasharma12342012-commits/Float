@@ -1200,5 +1200,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_079(self):
         self.assertIn('hi', config.LANGUAGES)
 
+    def test_hardening_080(self):
+        self.assertIn('bn', config.LANGUAGES)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
