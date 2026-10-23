@@ -1159,5 +1159,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_067(self):
         self.assertIsNotNone(config.PROVIDERS['anthropic'].model('claude-sonnet-4-5'))
 
+    def test_hardening_068(self):
+        self.assertIsNone(config.PROVIDERS['anthropic'].model('non-existent-model'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
