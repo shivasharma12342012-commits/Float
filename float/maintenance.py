@@ -162,6 +162,7 @@ def prune(connect=None, audit_months: int = AUDIT_MONTHS, usage_months: int = US
     """
     from . import db
 
+    batch = max(1, int(batch))
     conn = (connect or db._connect)()
     removed = {"audit": 0, "usage": 0}
     try:
