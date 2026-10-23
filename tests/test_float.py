@@ -119,6 +119,10 @@ class ArtifactTests(unittest.TestCase):
         kinds = [b.kind for b in artifacts.parse_markdown('# H1\n## H2\n### H3\n#### H4')]
         self.assertEqual(kinds, ['h1', 'h2', 'h3', 'h4'])
 
+    def test_parse_markdown_horizontal_rules(self):
+        kinds = [b.kind for b in artifacts.parse_markdown('---\n\n***\n\n___')]
+        self.assertEqual(kinds, ['rule', 'rule', 'rule'])
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
