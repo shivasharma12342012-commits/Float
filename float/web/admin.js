@@ -667,8 +667,10 @@ async function viewAudit(wrap) {
 
 $("back-app").addEventListener("click", () => (location.href = "/"));
 $("toggle-theme").addEventListener("click", () => {
-  document.documentElement.dataset.theme =
-    document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = next === "dark" ? "#000000" : "#FAF9F5";
 });
 
 const dark = window.matchMedia("(prefers-color-scheme: dark)");
