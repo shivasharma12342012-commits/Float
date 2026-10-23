@@ -1185,5 +1185,11 @@ class HardeningTests(unittest.TestCase):
             self.assertGreaterEqual(ci, 0)
             self.assertGreaterEqual(co, 0)
 
+    def test_hardening_076(self):
+        s = config.Settings()
+        self.assertEqual(s.host, '127.0.0.1')
+        self.assertEqual(s.port, 8766)
+        self.assertFalse(s.lan)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
