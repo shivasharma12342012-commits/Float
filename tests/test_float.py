@@ -1132,5 +1132,9 @@ class HardeningTests(unittest.TestCase):
         rl.reset('u1')
         self.assertTrue(rl.check('u1')[0])
 
+    def test_hardening_060(self):
+        enc = security.encrypt_secret('sk-test-secret-value-12345')
+        self.assertEqual(security.decrypt_secret(enc), 'sk-test-secret-value-12345')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
