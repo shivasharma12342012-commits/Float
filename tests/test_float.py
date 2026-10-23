@@ -1215,5 +1215,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_084(self):
         self.assertIsNone(db.get_user_by_google('unknown_google_sub_id'))
 
+    def test_hardening_085(self):
+        self.assertIsNone(db.resolve_session('completely_unknown_token_xyz'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
