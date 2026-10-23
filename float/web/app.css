@@ -73,6 +73,7 @@
 }
 
 * { box-sizing: border-box; }
+::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
 [hidden] { display: none !important; }
 
 html, body {
