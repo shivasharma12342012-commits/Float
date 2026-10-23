@@ -66,7 +66,10 @@ function lock(on) {
 }
 
 function known() {
-  try { return JSON.parse(localStorage.getItem(KNOWN) || "null"); } catch { return null; }
+  try {
+    const v = JSON.parse(localStorage.getItem(KNOWN) || "null");
+    return v && typeof v === "object" ? v : null;
+  } catch { return null; }
 }
 
 function remember(user) {
