@@ -8,7 +8,7 @@
   var css = document.createElement("style");
   css.textContent =
     "#float-splash{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;" +
-    "align-items:center;justify-content:center;gap:22px;background:#FBF9F4;color:#2B2A27;" +
+    "align-items:center;justify-content:center;gap:22px;background:#FAF9F5;color:#141413;" +
     "transition:opacity .45s ease,visibility .45s ease}" +
     "@media (prefers-color-scheme:dark){#float-splash{background:#000000;color:#EDEBE4}}" +
     "#float-splash.out{opacity:0;visibility:hidden}" +
