@@ -446,6 +446,13 @@ class SecurityTests(unittest.TestCase):
         res = tools.execute('nonexistent_tool', {}, {'id': 1}, None)
         self.assertIn('No tool called', res['text'])
 
+    def test_db_org_get_and_set_roundtrip(self):
+        import float.db as db
+        db.init()
+        db.org_set('school_name', 'DPS RK Puram')
+        self.assertEqual(db.org_get('school_name'), 'DPS RK Puram')
+        self.assertEqual(db.org_get('missing_key', 'fallback'), 'fallback')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
