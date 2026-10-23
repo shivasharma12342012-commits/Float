@@ -1365,8 +1365,8 @@ class FloatHandler(BaseHTTPRequestHandler):
                 pass
 
     def _bearer(self) -> str:
-        header = self.headers.get("Authorization", "")
-        if header.startswith("Bearer "):
+        header = (self.headers.get("Authorization") or "").strip()
+        if header[:7].lower() == "bearer ":
             return header[7:].strip()
         # Tokens are deliberately NOT read from the URL: they would end up in
         # browser history and logs, and the app never sends them that way.
