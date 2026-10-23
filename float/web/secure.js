@@ -10,7 +10,8 @@
 
   async function setup(force) {
     if (cache && !force) return cache;
-    const info = await (await fetch("/api/crypto/key", { cache: "no-store" })).json();
+    const keyRes = await fetch("/api/crypto/key", { cache: "no-store" });
+    const info = keyRes.ok ? await keyRes.json() : {};
     if (!info.available || !(window.crypto && crypto.subtle)) {
       if (info.plaintext_allowed) return (cache = { plain: true });
       throw new Error(!info.available
