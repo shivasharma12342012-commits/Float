@@ -1033,5 +1033,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_029(self):
         self.assertEqual(artifacts.strip_markdown('**Bold** and *Italic* text'), 'Bold and Italic text')
 
+    def test_hardening_030(self):
+        self.assertGreater(len(artifacts.build_csv('Name, Marks\nAarav, 90')), 10)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
