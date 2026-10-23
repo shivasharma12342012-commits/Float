@@ -545,7 +545,7 @@ function markdown(src) {
       const body = [];
       i++;
       while (i < lines.length && !/^```/.test(lines[i])) body.push(lines[i++]);
-      i++;
+      if (i < lines.length) i++;
       out.push(`<pre><code>${escapeHtml(body.join("\n"))}</code></pre>`);
       continue;
     }
