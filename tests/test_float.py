@@ -1342,5 +1342,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn('Aarav', res)
         self.assertIn('Class average', res)
 
+    def test_hardening_125(self):
+        res = stats.analyse('Aarav, 80\nDiya, 90\nRohan, 70')
+        self.assertIn('Class average', res)
+        self.assertIn('Highest', res)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
