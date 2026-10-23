@@ -1492,5 +1492,8 @@ class HardeningTests(unittest.TestCase):
         for pid, p in config.PROVIDERS.items():
             self.assertTrue(p.console_url.startswith('https://'))
 
+    def test_hardening_166(self):
+        self.assertEqual(config.APP_NAME, 'Float')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
