@@ -1165,5 +1165,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_069(self):
         self.assertEqual(config.PROVIDER_ORDER, ('anthropic', 'openai', 'openrouter', 'google'))
 
+    def test_hardening_070(self):
+        self.assertIn('CBSE', config.BOARDS)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
