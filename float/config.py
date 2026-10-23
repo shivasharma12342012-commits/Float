@@ -46,7 +46,9 @@ def _load_dotenv() -> None:
             if not line or line.startswith("#") or "=" not in line:
                 continue
             key, _, value = line.partition("=")
-            key = key.strip()
+            key = key.removeprefix("export ").strip()
+            if not key:
+                continue
             value = value.strip().strip('"').strip("'")
             os.environ.setdefault(key, value)
     except OSError:
