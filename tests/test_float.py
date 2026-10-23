@@ -1224,5 +1224,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_087(self):
         self.assertFalse(db.has_own_key(999999))
 
+    def test_hardening_088(self):
+        self.assertIsNone(db.get_conversation(999999, 1))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
