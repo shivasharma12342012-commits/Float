@@ -1181,7 +1181,7 @@ def admin_notice(ctx: Route) -> dict[str, Any]:
         except (TypeError, ValueError):
             raise HttpError(400, "Which notice? Send its number.") from None
     else:
-        title = str(body.get("title", "")).strip()
+        title = str(body.get("title", "")).strip()[:200]
         if not title:
             raise HttpError(400, "A notice needs a title.")
         db.add_notice(title, str(body.get("body", "")), str(body.get("level", "info")),
