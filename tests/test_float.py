@@ -1142,5 +1142,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_062(self):
         self.assertEqual(config.env_float('FLOAT_TEST_NONEXISTENT_VAR', 4.5), 4.5)
 
+    def test_hardening_063(self):
+        self.assertFalse(config.rt_phrase_matches(None))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
