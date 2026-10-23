@@ -493,6 +493,18 @@ class SecurityTests(unittest.TestCase):
         db.delete_conversation(cid, uid)
         self.assertIsNone(db.get_conversation(cid, uid))
 
+    def test_db_attendance_save_and_range(self):
+        import importlib, float.config as config, float.db as db
+        importlib.reload(config); importlib.reload(db); db.init()
+        uid = db.create_user('att@school.in', 'Att Teacher', 'passphrase123')['id']
+        klid = db.add_class(uid, '7A', '7', 'A', 'English', 'CBSE')
+        db.add_students(klid, [{'roll': '1', 'name': 'Aarav'}, {'roll': '2', 'name': 'Diya'}])
+        students = db.list_students(klid)
+        db.save_attendance(klid, '2026-10-23', [students[0]['id']], [students[1]['id']])
+        att = db.attendance_range(klid)
+        self.assertEqual(len(att), 1)
+        self.assertEqual(att[0]['absent'], [students[1]['id']])
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
