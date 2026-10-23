@@ -754,6 +754,17 @@ class ServerTests(unittest.TestCase):
         finally:
             hc.close()
 
+    def test_server_rejects_invalid_json_body(self):
+        import http.client
+        hc = http.client.HTTPConnection('127.0.0.1', self.srv.server_port, timeout=5)
+        try:
+            hc.request('POST', '/api/auth/signin', body=b'{not-json', headers={'Content-Type': 'application/json'})
+            resp = hc.getresponse()
+            resp.read()
+            self.assertEqual(resp.status, 400)
+        finally:
+            hc.close()
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
