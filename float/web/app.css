@@ -725,6 +725,7 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
   border-top: 1px solid var(--line);
   margin: 1.5em 0;
 }
+.prose img { max-width: 100%; height: auto; border-radius: var(--r-sm); }
 .prose table {
   font-family: var(--sans);
   border-collapse: collapse;
