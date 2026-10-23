@@ -1039,5 +1039,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_031(self):
         self.assertIn(b'<!doctype html>', artifacts.build_html('# Title\n\nContent', 'Page'))
 
+    def test_hardening_032(self):
+        self.assertGreater(len(artifacts.build_docx('# Notice\n\nKV Sector 8', 'Notice')), 500)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
