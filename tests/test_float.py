@@ -1717,5 +1717,14 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_user(u['id'])
 
+    def test_hardening_200(self):
+        u = db.create_user('temp_touch_200@school.in', 'Temp Touch', 'TempPass123!')
+        try:
+            db.touch_user(u['id'])
+            u_touched = db.get_user(u['id'])
+            self.assertIsNotNone(u_touched['last_seen'])
+        finally:
+            db.delete_user(u['id'])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
