@@ -1752,7 +1752,7 @@ function popMenu(anchor, items, up = false) {
   const r = anchor.getBoundingClientRect();
   if (up) box.style.bottom = (window.innerHeight - r.top + 8) + "px";
   else box.style.top = (r.bottom + 6) + "px";
-  box.style.left = Math.max(8, Math.min(r.left, window.innerWidth - box.offsetWidth - 8)) + "px";
+  box.style.left = Math.max(8, Math.min(r.left, window.innerWidth - (box.offsetWidth || 220) - 8)) + "px";
 }
 
 // ---- Lenses: change HOW Float thinks with you, not just what it knows. ----
