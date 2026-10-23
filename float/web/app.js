@@ -1684,7 +1684,8 @@ async function attach(files) {
     chip.append(make("span", null, file.name));
     const drop = make("button", null, "×");
     drop.addEventListener("click", () => {
-      S.attachments = S.attachments.filter((a) => a.name !== file.name);
+      const idx = S.attachments.indexOf(entry);
+      if (idx !== -1) S.attachments.splice(idx, 1);
       chip.remove();
       if (!S.attachments.length) $("attach-bar").hidden = true;
       syncSend();
