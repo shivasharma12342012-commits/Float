@@ -1351,5 +1351,10 @@ class HardeningTests(unittest.TestCase):
         with self.assertRaises(stats.MarksError):
             stats.analyse('Just random text without numbers')
 
+    def test_hardening_127(self):
+        res = stats.analyse('Aarav, 85\nDiya, 95')
+        self.assertIn('Aarav', res)
+        self.assertIn('Diya', res)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
