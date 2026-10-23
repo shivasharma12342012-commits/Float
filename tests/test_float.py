@@ -219,6 +219,9 @@ class SecurityTests(unittest.TestCase):
         self.assertFalse(security.verify_password('validpass123', ''))
         self.assertFalse(security.verify_password('validpass123', 'not-a-valid-hash'))
 
+    def test_verify_password_rejects_unknown_algorithm(self):
+        self.assertFalse(security.verify_password('chalkboard sunrise', 'md5$1$00$00'))
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
