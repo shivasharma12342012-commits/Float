@@ -1295,5 +1295,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_110(self):
         self.assertEqual(server._as_list('["math", "science"]'), ['math', 'science'])
 
+    def test_hardening_111(self):
+        self.assertEqual(server._as_list('invalid-json-text'), [])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
