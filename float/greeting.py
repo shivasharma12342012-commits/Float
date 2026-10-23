@@ -166,7 +166,7 @@ def build(user: dict[str, Any], now: dt.datetime | None = None) -> dict[str, Any
         if name:
             headline = line.replace("{name}", name)
         else:
-            headline = line.replace(", {name}", "").replace(" {name}", "")
+            headline = line.replace(", {name}", "").replace(" {name}", "").replace("{name}", "")
 
     detail = ""
     tone = "calm"
