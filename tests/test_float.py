@@ -1168,5 +1168,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_070(self):
         self.assertIn('CBSE', config.BOARDS)
 
+    def test_hardening_071(self):
+        self.assertEqual(len(config.GRADES), 12)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
