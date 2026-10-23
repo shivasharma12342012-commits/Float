@@ -1516,5 +1516,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_171(self):
         self.assertEqual(config.env_float('FLOAT_TEST_NONEXISTENT_KEY', 5.67), 5.67)
 
+    def test_hardening_172(self):
+        self.assertTrue(config.env_bool('FLOAT_TEST_NONEXISTENT_KEY', True))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
