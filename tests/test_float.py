@@ -423,6 +423,12 @@ class SecurityTests(unittest.TestCase):
         self.assertGreaterEqual(info['count'], 1)
         self.assertIn('unit', info['file'])
 
+    def test_maintenance_prune_runs_cleanly_on_fresh_db(self):
+        import float.db as db, float.maintenance as maintenance
+        db.init()
+        res = maintenance.prune(batch=10)
+        self.assertEqual(res, {'audit': 0, 'usage': 0})
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
