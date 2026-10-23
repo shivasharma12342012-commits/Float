@@ -71,7 +71,7 @@ def _drop_old_screens(history: list[dict[str, Any]]) -> None:
 
 
 def title_for(text: str) -> str:
-    clean = " ".join(text.strip().split())
+    clean = " ".join((text or "").strip().split())
     if len(clean) <= 52:
         return clean or "New conversation"
     cut = clean[:52].rsplit(" ", 1)[0]
