@@ -100,6 +100,9 @@ class ArtifactTests(unittest.TestCase):
         self.assertIn("Heading", text)
         self.assertNotIn("#", text)
 
+    def test_safe_name_strips_illegal_chars(self):
+        self.assertEqual(artifacts.safe_name('Quiz: Ch 1/2?*', 'pdf'), 'Quiz Ch 12.pdf')
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
