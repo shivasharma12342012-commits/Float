@@ -62,7 +62,7 @@ function show(name) {
 
 function lock(on) {
   busy = on;
-  document.querySelectorAll(".gate-submit, .gate-google").forEach((b) => (b.disabled = on));
+  document.querySelectorAll(".gate-submit, .gate-google, #mode-signup input").forEach((b) => (b.disabled = on));
 }
 
 function known() {
