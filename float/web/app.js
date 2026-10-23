@@ -281,6 +281,7 @@ async function navGo(step) {
 function newThread() {
   navPush({ t: "home" });
   S.conv = null;
+  $("composer-note").textContent = "";
   $("turns").innerHTML = "";
   showGreeting(true);
   $("chip-thread").hidden = true;
