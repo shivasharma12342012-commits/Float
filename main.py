@@ -185,7 +185,8 @@ def _cmd_run(args: argparse.Namespace) -> None:
 def _cmd_set_password(args: argparse.Namespace) -> None:
     config.ensure_dirs()
     db.init()
-    user = db.get_user_by_email(args.email.strip().lower())
+    email = (args.email or "").strip().lower()
+    user = db.get_user_by_email(email)
     if user is None:
         print(f"No account for {args.email}.", file=sys.stderr)
         raise SystemExit(1)
