@@ -1664,5 +1664,16 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(db.org_get('school_name'), 'Temporary School Name')
         db.org_set('school_name', orig)
 
+    def test_hardening_195(self):
+        count_before = db.count_users()
+        u = db.create_user('temp_teacher_195@school.in', 'Temp Teacher', 'TempPass123!')
+        try:
+            self.assertEqual(db.count_users(), count_before + 1)
+            u_fetched = db.get_user(u['id'])
+            self.assertIsNotNone(u_fetched)
+            self.assertEqual(u_fetched['email'], 'temp_teacher_195@school.in')
+        finally:
+            db.delete_user(u['id'])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
