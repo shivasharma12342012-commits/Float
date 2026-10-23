@@ -1419,5 +1419,10 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_146(self):
         self.assertGreater(len(artifacts._wrap('One two three four five six seven', 12.0, 80.0)), 1)
 
+    def test_hardening_147(self):
+        rows = artifacts._as_rows('| Subject | Marks |\n|---|---|\n| Math | 95 |\n| Science | 88 |')
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0], ['Subject', 'Marks'])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
