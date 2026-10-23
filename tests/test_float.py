@@ -225,6 +225,10 @@ class SecurityTests(unittest.TestCase):
     def test_password_problems_rejects_repeated_chars(self):
         self.assertTrue(security.password_problems('aaaaaaaaaaaa'))
 
+    def test_password_problems_rejects_common_weak_list(self):
+        self.assertTrue(security.password_problems('password123'))
+        self.assertTrue(security.password_problems('qwerty12345'))
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
