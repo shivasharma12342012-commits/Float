@@ -303,8 +303,8 @@ def _tool_create_file(payload: dict[str, Any], user: dict[str, Any],
     kind = str(payload.get("kind", "docx")).lower()
     if kind not in artifacts.KINDS:
         kind = "docx"
-    name = str(payload.get("name") or "Document")
-    content = payload.get("content", "")
+    name = str(payload.get("name") or "Document").strip() or "Document"
+    content = str(payload.get("content") or "")
     title = str(payload.get("title") or name)
     subtitle = str(payload.get("subtitle") or "")
     if not subtitle:
