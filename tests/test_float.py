@@ -1116,5 +1116,9 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_056(self):
         self.assertFalse(security.verify_password('pass', 'not_a_valid_hash'))
 
+    def test_hardening_057(self):
+        masked = security.mask_key('sk-ant-1234567890abcdef')
+        self.assertTrue(masked.startswith('sk-ant-') and masked.endswith('cdef'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
