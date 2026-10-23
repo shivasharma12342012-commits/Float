@@ -189,6 +189,8 @@ function paintThreads(list) {
     row.append(make("span", null, conv.title || "Untitled"));
 
     const close = make("button", "x", "×");
+    close.type = "button";
+    close.setAttribute("aria-label", "Delete conversation");
     close.title = "Delete";
     close.addEventListener("click", async (event) => {
       event.stopPropagation();
