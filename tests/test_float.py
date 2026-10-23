@@ -23,6 +23,7 @@ import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
+from float import config, tools, artifacts, security, db, stats, server
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -788,6 +789,21 @@ class ServerTests(unittest.TestCase):
         self.assertTrue(data['ok'])
         self.assertGreaterEqual(data['backup']['count'], 1)
 
+
+
+
+class HardeningTests(unittest.TestCase):
+
+    def test_hardening_001_toolkit_lesson_plan(self):
+        entry = tools.toolkit_entry('lesson-plan')
+        self.assertIsNotNone(entry)
+        vals = {'klass': '10', 'subject': 'Math', 'topic': 'Optics', 'chapters': 'Algebra',
+                'question': 'Sample', 'task': 'Poster', 'students': 'Aarav', 'student': 'Diya',
+                'reason': 'Attendance', 'language': 'Hindi', 'gap': 'Grammar', 'from_who': 'Principal',
+                'occasion': 'Annual Day', 'speaker': 'Head', 'observations': 'Good',
+                'data': 'Aarav, 90\nDiya, 85'}
+        res = tools.fill_prompt(entry, vals)
+        self.assertGreater(len(res), 20)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
