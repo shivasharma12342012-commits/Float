@@ -770,6 +770,11 @@ class ServerTests(unittest.TestCase):
         with urllib.request.urlopen(req, timeout=5) as resp:
             self.assertEqual(resp.status, 200)
 
+    def test_server_admin_audit_handles_bad_limit_param(self):
+        status, data = self.call('/api/admin/audit?limit=notanumber', token=self.token, method='GET')
+        self.assertEqual(status, 200)
+        self.assertIn('entries', data)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
