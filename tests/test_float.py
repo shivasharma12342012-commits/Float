@@ -1386,5 +1386,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_137(self):
         self.assertEqual(tools.toolkit_entry('bilingual')['name'], 'Explain in two languages')
 
+    def test_hardening_138(self):
+        self.assertEqual(tools.toolkit_entry('seating')['name'], 'Seating and groups')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
