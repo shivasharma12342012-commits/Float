@@ -1457,5 +1457,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_156(self):
         self.assertNotEqual(security._subkey('ctx1'), security._subkey('ctx2'))
 
+    def test_hardening_157(self):
+        self.assertEqual(len(security.new_token(32)), 43)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
