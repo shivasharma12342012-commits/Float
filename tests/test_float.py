@@ -338,6 +338,11 @@ class SecurityTests(unittest.TestCase):
         self.assertIn('Students counted: 2', out)
         self.assertIn('spread is zero', out)
 
+    def test_attachments_to_text_plain_and_truncation(self):
+        import base64, float.attachments as attachments
+        raw = base64.b64encode(b'Hello class 8B').decode('ascii')
+        self.assertEqual(attachments.to_text({'name': 'note.txt', 'data': raw}), 'Hello class 8B')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
