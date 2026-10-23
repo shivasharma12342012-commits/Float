@@ -112,6 +112,9 @@ class ArtifactTests(unittest.TestCase):
     def test_safe_name_preserves_devanagari(self):
         self.assertIn('गणित', artifacts.safe_name('गणित कार्यपत्रक', 'pdf'))
 
+    def test_safe_name_strips_leading_dots(self):
+        self.assertEqual(artifacts.safe_name('...hidden', 'txt'), 'hidden.txt')
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
