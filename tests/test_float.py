@@ -278,6 +278,13 @@ class SecurityTests(unittest.TestCase):
             self.assertEqual(config.env_bool('FLOAT_TEST_BOOL', not expected), expected)
         os.environ.pop('FLOAT_TEST_BOOL', None)
 
+    def test_greeting_first_name_strips_honorifics(self):
+        import float.greeting as greeting
+        self.assertEqual(greeting._first_name('Mrs. Anita Sharma'), 'Anita')
+        self.assertEqual(greeting._first_name('Dr. R. K. Narayan'), 'R')
+        self.assertEqual(greeting._first_name(''), '')
+        self.assertEqual(greeting._first_name('...'), '')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
