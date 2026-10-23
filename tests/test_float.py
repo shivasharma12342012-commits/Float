@@ -1081,5 +1081,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_045(self):
         self.assertEqual(len(security.token_fingerprint('sample_token')), 64)
 
+    def test_hardening_046(self):
+        self.assertGreater(len(security.pin_problems('')), 0)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
