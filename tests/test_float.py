@@ -1347,5 +1347,9 @@ class HardeningTests(unittest.TestCase):
         self.assertIn('Class average', res)
         self.assertIn('Highest', res)
 
+    def test_hardening_126(self):
+        with self.assertRaises(stats.MarksError):
+            stats.analyse('Just random text without numbers')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
