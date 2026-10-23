@@ -926,6 +926,7 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
   min-height: 58px;
 }
 .composer textarea::placeholder { color: var(--faint); }
+.composer textarea:disabled { opacity: .6; }
 
 .composer-bar {
   display: flex;
