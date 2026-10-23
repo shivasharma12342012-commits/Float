@@ -206,7 +206,11 @@ document.querySelectorAll("[data-go]").forEach((button) => {
 // Follow the machine's own light/dark preference. No switch on the gate —
 // there is nothing here worth a decision.
 const dark = window.matchMedia("(prefers-color-scheme: dark)");
-const paint = () => document.documentElement.dataset.theme = dark.matches ? "dark" : "light";
+const paint = () => {
+  document.documentElement.dataset.theme = dark.matches ? "dark" : "light";
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = dark.matches ? "#000000" : "#FAF9F5";
+};
 dark.addEventListener("change", paint);
 paint();
 
