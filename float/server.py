@@ -774,7 +774,7 @@ def _parse_roster(text: str) -> list[dict[str, str]]:
         if not line:
             continue
         parts = [p.strip() for p in re.split(r"[,\t]|\s{2,}", line, maxsplit=1)]
-        if len(parts) == 2 and re.fullmatch(r"\d{1,4}", parts[0]):
+        if len(parts) == 2 and re.fullmatch(r"\d{1,4}", parts[0]) and parts[1]:
             entries.append({"roll": parts[0], "name": parts[1]})
         else:
             match = re.match(r"^(\d{1,4})[.)]\s+(.*)$", line)
