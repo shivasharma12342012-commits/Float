@@ -45,6 +45,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   --paper:       #000000;
   --surface:     #0E0E0E;
   --sage:        #141414;
