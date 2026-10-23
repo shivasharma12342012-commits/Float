@@ -1212,5 +1212,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_083(self):
         self.assertIsNone(db.get_user_by_email('unknown_teacher_email@school.in'))
 
+    def test_hardening_084(self):
+        self.assertIsNone(db.get_user_by_google('unknown_google_sub_id'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
