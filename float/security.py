@@ -198,7 +198,7 @@ def decrypt_secret(blob: str, purpose: str = "apikey") -> str:
 
         if version == "v2":
             aesgcm = _aesgcm()
-            if aesgcm is None:
+            if aesgcm is None or len(raw) < 28:
                 return ""
             nonce, payload = raw[:12], raw[12:]
             return aesgcm(key).decrypt(nonce, payload, purpose.encode("utf-8")).decode("utf-8")
