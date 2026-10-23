@@ -1534,5 +1534,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_177(self):
         self.assertEqual(config.PROVIDER_ORDER[0], 'anthropic')
 
+    def test_hardening_178(self):
+        self.assertEqual(config.PROVIDER_ORDER[-1], 'google')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
