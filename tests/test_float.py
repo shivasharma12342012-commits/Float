@@ -308,6 +308,14 @@ class SecurityTests(unittest.TestCase):
             self.assertIn('afternoon', greeting.SALUTATIONS[lang])
             self.assertIn('evening', greeting.SALUTATIONS[lang])
 
+    def test_stats_parse_and_compute_basic_sheet(self):
+        import float.stats as stats
+        parsed = stats.parse('Name, Q1(5), Q2(5)\nAarav, 4, 5\nDiya, 3, 4\nKabir, AB, AB')
+        res = stats.compute(parsed)
+        self.assertEqual(res['n'], 2)
+        self.assertAlmostEqual(res['mean'], 8.0)
+        self.assertEqual(res['max_total'], 10.0)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
