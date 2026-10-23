@@ -1632,5 +1632,15 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_conversation(conv_id, 1)
 
+    def test_hardening_191(self):
+        conv_id = db.new_conversation(1, 'Msg Conv 191')
+        try:
+            db.add_message(conv_id, 'user', 'Hello assistant')
+            msgs = db.get_messages(conv_id)
+            self.assertEqual(len(msgs), 1)
+            self.assertEqual(msgs[0]['content'], 'Hello assistant')
+        finally:
+            db.delete_conversation(conv_id, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
