@@ -434,6 +434,13 @@ class SecurityTests(unittest.TestCase):
         with self.assertRaises(google.GoogleError):
             google._decode_id_token('not-a-jwt')
 
+    def test_tools_for_filters_use_computer_when_disabled(self):
+        import float.tools as tools
+        with_comp = {t['name'] for t in tools.tools_for({}, True)}
+        without_comp = {t['name'] for t in tools.tools_for({}, False)}
+        self.assertIn('use_computer', with_comp)
+        self.assertNotIn('use_computer', without_comp)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
