@@ -1180,5 +1180,10 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_074(self):
         self.assertIn('en', config.LANGUAGES)
 
+    def test_hardening_075(self):
+        for m, (ci, co) in config.MODEL_PRICES.items():
+            self.assertGreaterEqual(ci, 0)
+            self.assertGreaterEqual(co, 0)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
