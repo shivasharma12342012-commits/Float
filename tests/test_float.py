@@ -1451,5 +1451,8 @@ class HardeningTests(unittest.TestCase):
         self.assertFalse(rl.check('u_1')[0])
         self.assertTrue(rl.check('u_2')[0])
 
+    def test_hardening_155(self):
+        self.assertEqual(len(security._subkey('test_ctx')), 32)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
