@@ -133,6 +133,10 @@ class ArtifactTests(unittest.TestCase):
         self.assertEqual(blocks[0].kind, 'code')
         self.assertEqual(blocks[0].text, 'print(1)')
 
+    def test_parse_markdown_nested_bullet_levels(self):
+        blocks = artifacts.parse_markdown('- L0\n  - L1\n    - L2')
+        self.assertEqual([b.level for b in blocks], [0, 1, 2])
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
