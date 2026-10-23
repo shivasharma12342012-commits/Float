@@ -453,6 +453,18 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(db.org_get('school_name'), 'DPS RK Puram')
         self.assertEqual(db.org_get('missing_key', 'fallback'), 'fallback')
 
+    def test_db_tasks_crud_lifecycle(self):
+        import importlib, float.config as config, float.db as db
+        importlib.reload(config); importlib.reload(db); db.init()
+        uid = db.create_user('t1@school.in', 'Teacher 1', 'passphrase123')['id']
+        tid = db.add_task(uid, 'Check copies', '2026-11-01')
+        self.assertEqual(len(db.list_tasks(uid)), 1)
+        db.set_task_done(tid, uid, True)
+        self.assertEqual(len(db.list_tasks(uid, include_done=False)), 0)
+        self.assertEqual(len(db.list_tasks(uid, include_done=True)), 1)
+        db.delete_task(tid, uid)
+        self.assertEqual(len(db.list_tasks(uid, include_done=True)), 0)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
