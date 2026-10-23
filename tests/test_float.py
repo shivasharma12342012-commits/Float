@@ -155,6 +155,10 @@ class ArtifactTests(unittest.TestCase):
         self.assertEqual(artifacts.strip_markdown(None), '')
         self.assertEqual(artifacts.strip_markdown('**Hi** `#1`'), 'Hi 1')
 
+    def test_render_md_returns_utf8_bytes(self):
+        data = artifacts.render('md', '# Title\n\nBody', 'Title', '')
+        self.assertIn('Title', data.decode('utf-8'))
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
