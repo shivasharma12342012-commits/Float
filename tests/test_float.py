@@ -414,6 +414,15 @@ class SecurityTests(unittest.TestCase):
         self.assertTrue(providers._friendly(503, 'server down', 'google').retryable)
         self.assertFalse(providers._friendly(404, '{"error": "not found"}', 'openai').retryable)
 
+    def test_maintenance_backup_and_last_backup(self):
+        import float.db as db, float.maintenance as maintenance
+        db.init()
+        path = maintenance.backup_now('unit')
+        self.assertTrue(path.exists())
+        info = maintenance.last_backup()
+        self.assertGreaterEqual(info['count'], 1)
+        self.assertIn('unit', info['file'])
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
