@@ -317,7 +317,7 @@ async function openThread(convId) {
     Object.values(files).forEach((artifact) => last.append(fileCard(artifact)));
   }
 
-  document.querySelectorAll(".thread").forEach((t) => t.setAttribute("aria-current", "false"));
+  document.querySelectorAll(".thread").forEach((t) => t.setAttribute("aria-current", String(t.dataset.id === String(convId))));
   scrollDown();
   closeDrawer();
 }
