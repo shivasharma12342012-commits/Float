@@ -474,6 +474,15 @@ class SecurityTests(unittest.TestCase):
         db.retire_notice(nid)
         self.assertFalse(any(n['id'] == nid for n in db.active_notices()))
 
+    def test_db_timetable_periods_roundtrip(self):
+        import importlib, float.config as config, float.db as db
+        importlib.reload(config); importlib.reload(db); db.init()
+        uid = db.create_user('tt@school.in', 'Timetable Teacher', 'passphrase123')['id']
+        db.set_periods(uid, [{'weekday': 0, 'slot': 1, 'starts': '08:00', 'ends': '08:40', 'label': '8B Maths', 'room': '204'}])
+        periods = db.list_periods(uid, weekday=0)
+        self.assertEqual(len(periods), 1)
+        self.assertEqual(periods[0]['label'], '8B Maths')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
