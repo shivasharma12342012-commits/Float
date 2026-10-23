@@ -1684,6 +1684,8 @@ async function attach(files) {
     const chip = make("div", "attach-chip");
     chip.append(make("span", null, file.name));
     const drop = make("button", null, "×");
+    drop.type = "button";
+    drop.setAttribute("aria-label", "Remove " + file.name);
     drop.addEventListener("click", () => {
       const idx = S.attachments.indexOf(entry);
       if (idx !== -1) S.attachments.splice(idx, 1);
