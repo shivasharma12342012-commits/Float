@@ -725,6 +725,12 @@ class ServerTests(unittest.TestCase):
         status, _ = self.call(f'/api/conversations/{cid}', {}, token=self.token, method='DELETE')
         self.assertEqual(status, 200)
 
+    def test_server_me_profile_update(self):
+        status, data = self.call('/api/me', {'name': 'Anita S.', 'board': 'ICSE / ISC', 'assist_level': 'coach'}, token=self.token)
+        self.assertEqual(status, 200)
+        self.assertEqual(data['user']['name'], 'Anita S.')
+        self.assertEqual(data['user']['assist_level'], 'coach')
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
