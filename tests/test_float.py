@@ -1507,5 +1507,8 @@ class HardeningTests(unittest.TestCase):
         if g_file.exists():
             g_file.unlink()
 
+    def test_hardening_169(self):
+        self.assertEqual(config.env('FLOAT_TEST_NONEXISTENT_KEY', 'default_val'), 'default_val')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
