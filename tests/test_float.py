@@ -1427,5 +1427,9 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_148(self):
         self.assertEqual(artifacts._as_rows('A simple paragraph.'), [['A simple paragraph.']])
 
+    def test_hardening_149(self):
+        for k in ['docx', 'pdf', 'xlsx', 'csv', 'html', 'md', 'txt']:
+            self.assertIn(k, artifacts.KINDS)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
