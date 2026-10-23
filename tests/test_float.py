@@ -1271,5 +1271,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_102(self):
         self.assertIsInstance(db.key_status(999999), dict)
 
+    def test_hardening_103(self):
+        self.assertGreaterEqual(db.pool_paise(), 0)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
