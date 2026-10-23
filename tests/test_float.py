@@ -1054,5 +1054,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_036(self):
         self.assertIn(b'# Heading', artifacts.render('md', '# Heading\n\nBody', 'Title'))
 
+    def test_hardening_037(self):
+        self.assertTrue(artifacts.desktop_dir().exists())
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
