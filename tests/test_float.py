@@ -1469,5 +1469,10 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_160(self):
         self.assertEqual(artifacts._column(2), 'C')
 
+    def test_hardening_161(self):
+        s = config.Settings()
+        s.lan = True
+        self.assertTrue(s.lan)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
