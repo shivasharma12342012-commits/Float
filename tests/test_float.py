@@ -1371,5 +1371,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_132(self):
         self.assertEqual(tools.toolkit_entry('slides')['name'], 'Lesson slides')
 
+    def test_hardening_133(self):
+        self.assertEqual(tools.toolkit_entry('activity')['name'], 'Classroom activity')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
