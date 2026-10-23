@@ -1332,5 +1332,10 @@ class HardeningTests(unittest.TestCase):
         for entry in tools.TOOLKIT:
             self.assertTrue('id' in entry and 'name' in entry and 'prompt' in entry and 'fields' in entry)
 
+    def test_hardening_123(self):
+        for entry in tools.TOOLKIT:
+            for f in entry['fields']:
+                self.assertTrue('key' in f and 'label' in f)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
