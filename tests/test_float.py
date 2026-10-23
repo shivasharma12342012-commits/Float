@@ -1531,5 +1531,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_176(self):
         self.assertEqual(config.GRADES[-1], '12')
 
+    def test_hardening_177(self):
+        self.assertEqual(config.PROVIDER_ORDER[0], 'anthropic')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
