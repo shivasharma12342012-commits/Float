@@ -384,6 +384,15 @@ class SecurityTests(unittest.TestCase):
         agent._drop_old_screens(hist)
         self.assertEqual(hist[0]['content'][0]['content'], 'screen 1')
 
+    def test_transport_seal_and_public_info(self):
+        import float.transport as transport
+        info = transport.public_info()
+        self.assertIn('available', info)
+        if info['available']:
+            self.assertEqual(len(info['kid']), 16)
+            sealed = transport.seal_response(b'0' * 32, '/api/test', {'ok': True})
+            self.assertIn('enc', sealed)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
