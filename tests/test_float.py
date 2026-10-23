@@ -137,6 +137,10 @@ class ArtifactTests(unittest.TestCase):
         blocks = artifacts.parse_markdown('- L0\n  - L1\n    - L2')
         self.assertEqual([b.level for b in blocks], [0, 1, 2])
 
+    def test_parse_markdown_numbered_list(self):
+        blocks = artifacts.parse_markdown('1. First\n2) Second')
+        self.assertEqual([b.kind for b in blocks], ['number', 'number'])
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
