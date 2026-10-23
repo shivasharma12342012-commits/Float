@@ -243,6 +243,10 @@ class SecurityTests(unittest.TestCase):
         tampered = blob[:-4] + ('AAAA' if not blob.endswith('AAAA') else 'BBBB')
         self.assertEqual(security.decrypt_secret(tampered), '')
 
+    def test_decrypt_secret_rejects_wrong_purpose(self):
+        blob = security.encrypt_secret('sk-live-secret', purpose='apikey')
+        self.assertEqual(security.decrypt_secret(blob, purpose='other'), '')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
