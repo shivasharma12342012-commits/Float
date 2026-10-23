@@ -154,9 +154,9 @@ async function boot() {
 }
 
 function paintIdentity() {
-  const name = S.user.name || S.user.email;
+  const name = (S.user.name || S.user.email || "T").trim();
   $("me-name").textContent = name;
-  $("me-avatar").textContent = name.trim().charAt(0).toUpperCase();
+  $("me-avatar").textContent = (name.charAt(0) || "T").toUpperCase();
   $("me-sub").textContent = S.user.role === "admin" ? "Admin · Settings" : "Settings";
   $("school-tag").textContent = S.user.school || "";
 }
