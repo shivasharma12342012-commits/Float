@@ -1009,5 +1009,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_021(self):
         self.assertEqual(artifacts.safe_name('', 'docx'), 'Document.docx')
 
+    def test_hardening_022(self):
+        self.assertEqual(len(artifacts.parse_markdown('# H1\n## H2\n### H3')), 3)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
