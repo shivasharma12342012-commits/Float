@@ -987,6 +987,7 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
   cursor: default;
 }
 .send.stop { background: var(--rose); }
+.composer .icon-btn.live { color: var(--accent); animation: breathe 1.2s ease-in-out infinite; }
 
 .composer-note {
   max-width: 44rem;
