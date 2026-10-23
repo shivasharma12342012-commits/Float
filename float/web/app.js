@@ -1744,6 +1744,7 @@ function popMenu(anchor, items, up = false) {
   items.forEach((item) => {
     if (item === "-") { box.append(document.createElement("hr")); return; }
     const row = make("button", null, item.label);
+    row.type = "button";
     if (item.kbd) row.append(make("kbd", null, item.kbd));
     row.addEventListener("click", () => { closePop(); item.run(); });
     box.append(row);
