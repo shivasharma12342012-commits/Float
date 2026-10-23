@@ -271,6 +271,13 @@ class SecurityTests(unittest.TestCase):
         finally:
             os.environ.pop('FLOAT_TEST_ZERO', None)
 
+    def test_env_bool_handles_truthy_and_falsy_strings(self):
+        import float.config as config
+        for val, expected in [('1', True), ('true', True), ('yes', True), ('0', False), ('false', False), ('off', False)]:
+            os.environ['FLOAT_TEST_BOOL'] = val
+            self.assertEqual(config.env_bool('FLOAT_TEST_BOOL', not expected), expected)
+        os.environ.pop('FLOAT_TEST_BOOL', None)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
