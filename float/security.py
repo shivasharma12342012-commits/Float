@@ -222,6 +222,7 @@ def decrypt_secret(blob: str, purpose: str = "apikey") -> str:
 
 def mask_key(key: str) -> str:
     """What the interface shows instead of the key."""
+    key = (key or "").strip()
     if not key:
         return ""
     if len(key) <= 12:
