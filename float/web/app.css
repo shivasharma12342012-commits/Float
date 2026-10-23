@@ -264,6 +264,7 @@ a:hover { text-decoration: underline; }
 
 .rail-scroll {
   overflow-y: auto;
+  overscroll-behavior: contain;
   flex: 1;
   min-height: 0;
   padding-bottom: 8px;
