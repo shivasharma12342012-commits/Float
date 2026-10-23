@@ -1576,5 +1576,17 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_class(cid, 1)
 
+    def test_hardening_185(self):
+        cid = db.add_class(1, 'Class 8D_test', '8', 'D')
+        try:
+            db.add_students(cid, [{'name': 'Aarav', 'roll': '1'}])
+            students = db.list_students(cid)
+            sid = students[0]['id']
+            db.save_attendance(cid, '2026-10-23', [sid], [])
+            records = db.attendance_range(cid)
+            self.assertGreaterEqual(len(records), 1)
+        finally:
+            db.delete_class(cid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
