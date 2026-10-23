@@ -735,6 +735,12 @@ class ServerTests(unittest.TestCase):
         status, _ = self.call('/..%2f..%2fmain.py', method='GET')
         self.assertIn(status, (403, 404))
 
+    def test_server_options_returns_204_with_allow_header(self):
+        req = urllib.request.Request(self.base + '/api/bootstrap', method='OPTIONS')
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            self.assertEqual(resp.status, 204)
+            self.assertIn('POST', resp.headers.get('Allow', ''))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
