@@ -1649,7 +1649,7 @@ function theme(choice) {
 function grow() {
   const input = $("input");
   input.style.height = "auto";
-  input.style.height = Math.min(input.scrollHeight, window.innerHeight * 0.4) + "px";
+  if (input.value) input.style.height = Math.min(input.scrollHeight, window.innerHeight * 0.36) + "px";
   syncSend();
 }
 
