@@ -1051,5 +1051,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_035(self):
         self.assertEqual(artifacts.render('txt', 'Plain teaching plan', 'Title'), b'Plain teaching plan')
 
+    def test_hardening_036(self):
+        self.assertIn(b'# Heading', artifacts.render('md', '# Heading\n\nBody', 'Title'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
