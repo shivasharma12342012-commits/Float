@@ -1280,5 +1280,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_105(self):
         self.assertIsInstance(db.own_work_summary(999999), dict)
 
+    def test_hardening_106(self):
+        self.assertEqual(server._band(0), 'No use')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
