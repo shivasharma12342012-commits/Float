@@ -204,6 +204,8 @@ def decrypt_secret(blob: str, purpose: str = "apikey") -> str:
             return aesgcm(key).decrypt(nonce, payload, purpose.encode("utf-8")).decode("utf-8")
 
         if version == "v1":
+            if len(raw) < 44:
+                return ""
             nonce, tag, ct = raw[:12], raw[12:44], raw[44:]
             mac_key = hashlib.blake2b(key, key=b"mac", digest_size=32).digest()
             expected = hmac.new(mac_key, purpose.encode("utf-8") + nonce + ct, hashlib.sha256).digest()
