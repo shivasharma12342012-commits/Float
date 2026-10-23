@@ -1537,5 +1537,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_178(self):
         self.assertEqual(config.PROVIDER_ORDER[-1], 'google')
 
+    def test_hardening_179(self):
+        self.assertIn('Physics', config.SUBJECTS)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
