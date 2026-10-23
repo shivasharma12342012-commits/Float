@@ -465,6 +465,15 @@ class SecurityTests(unittest.TestCase):
         db.delete_task(tid, uid)
         self.assertEqual(len(db.list_tasks(uid, include_done=True)), 0)
 
+    def test_db_notices_add_and_retire(self):
+        import importlib, float.config as config, float.db as db
+        importlib.reload(config); importlib.reload(db); db.init()
+        uid = db.create_user('admin2@school.in', 'Admin', 'passphrase123', role='admin')['id']
+        nid = db.add_notice('Staff meeting', 'At 2 PM', 'info', uid)
+        self.assertTrue(any(n['id'] == nid for n in db.active_notices()))
+        db.retire_notice(nid)
+        self.assertFalse(any(n['id'] == nid for n in db.active_notices()))
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
