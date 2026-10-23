@@ -144,7 +144,8 @@ def compute(a: Analysis) -> dict:
     res["hardest"] = min(ranked, key=lambda q: q["pct"]) if ranked else None
     res["easiest"] = max(ranked, key=lambda q: q["pct"]) if ranked else None
     res["careless"] = []
-    if res["hardest"] and res["easiest"] and res["hardest"] is not res["easiest"]:
+    if (res["hardest"] and res["easiest"] and res["hardest"] is not res["easiest"]
+            and res["hardest"].get("max") and res["easiest"].get("max")):
         hi, ei = a.questions.index(res["hardest"]["label"]), a.questions.index(res["easiest"]["label"])
         for s in scored:
             if (s.scores[hi] / res["hardest"]["max"] >= 0.7) and (s.scores[ei] / res["easiest"]["max"] <= 0.5):
