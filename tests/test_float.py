@@ -1191,5 +1191,8 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(s.port, 8766)
         self.assertFalse(s.lan)
 
+    def test_hardening_077(self):
+        self.assertEqual(config.APP_NAME, 'Float')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
