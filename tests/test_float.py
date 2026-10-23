@@ -1036,5 +1036,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_030(self):
         self.assertGreater(len(artifacts.build_csv('Name, Marks\nAarav, 90')), 10)
 
+    def test_hardening_031(self):
+        self.assertIn(b'<!doctype html>', artifacts.build_html('# Title\n\nContent', 'Page'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
