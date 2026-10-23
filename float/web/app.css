@@ -9,6 +9,7 @@
 
 :root,
 [data-theme="light"] {
+  color-scheme: light;
   --paper:       #FAF9F5;
   --surface:     #FFFFFF;
   --sage:        #F3F1EA;
