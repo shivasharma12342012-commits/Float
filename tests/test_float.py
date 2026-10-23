@@ -1478,5 +1478,10 @@ class HardeningTests(unittest.TestCase):
         config.ensure_dirs()
         self.assertTrue(config.DATA_DIR.exists() and config.FILES_DIR.exists())
 
+    def test_hardening_163(self):
+        m = config.ModelSpec(id='test-model', label='Test Model', context=64000, cost_in=15.0, cost_out=45.0, vision=True)
+        self.assertEqual(m.id, 'test-model')
+        self.assertTrue(m.vision)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
