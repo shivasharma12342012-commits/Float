@@ -1162,5 +1162,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_068(self):
         self.assertIsNone(config.PROVIDERS['anthropic'].model('non-existent-model'))
 
+    def test_hardening_069(self):
+        self.assertEqual(config.PROVIDER_ORDER, ('anthropic', 'openai', 'openrouter', 'google'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
