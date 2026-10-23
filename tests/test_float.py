@@ -1126,5 +1126,11 @@ class HardeningTests(unittest.TestCase):
         self.assertTrue(rl.check('u1')[0])
         self.assertFalse(rl.check('u1')[0])
 
+    def test_hardening_059(self):
+        rl = security.RateLimiter(limit=1, window=60.0)
+        rl.check('u1')
+        rl.reset('u1')
+        self.assertTrue(rl.check('u1')[0])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
