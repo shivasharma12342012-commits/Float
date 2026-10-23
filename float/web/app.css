@@ -1532,6 +1532,7 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
 .gate-form > p,
 .gate-form div > p { color: var(--soft); margin: 0 0 22px; font-size: 14px; }
 .gate-form form { margin: 0; }
+.gate-form .field input { background: var(--surface); }
 
 .gate-submit {
   width: 100%;
