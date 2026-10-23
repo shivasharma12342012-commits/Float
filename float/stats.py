@@ -52,8 +52,8 @@ def _split(line: str) -> list:
 
 def _num(cell: str):
     try:
-        v = float(cell)
-    except ValueError:
+        v = float(str(cell).strip())
+    except (ValueError, TypeError):
         return None
     return v if v == v and v not in (float("inf"), float("-inf")) else None
 
