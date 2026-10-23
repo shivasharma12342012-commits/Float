@@ -326,6 +326,12 @@ class SecurityTests(unittest.TestCase):
         with self.assertRaises(stats.MarksError):
             stats.parse('Name, Q1(10), Q2(10)')
 
+    def test_stats_parse_records_out_of_range_marks(self):
+        import float.stats as stats
+        parsed = stats.parse('Name, Q1(5)\nAarav, 4\nDiya, 9')
+        self.assertEqual(len(parsed.students), 1)
+        self.assertEqual(len(parsed.problems), 1)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
