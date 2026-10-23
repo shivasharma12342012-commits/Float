@@ -778,8 +778,8 @@ def _parse_roster(text: str) -> list[dict[str, str]]:
             entries.append({"roll": parts[0], "name": parts[1]})
         else:
             match = re.match(r"^(\d{1,4})[.)]\s+(.*)$", line)
-            if match:
-                entries.append({"roll": match.group(1), "name": match.group(2)})
+            if match and match.group(2).strip():
+                entries.append({"roll": match.group(1), "name": match.group(2).strip()})
             else:
                 entries.append({"roll": str(len(entries) + 1), "name": line})
     return entries
