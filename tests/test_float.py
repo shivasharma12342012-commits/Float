@@ -370,6 +370,14 @@ class SecurityTests(unittest.TestCase):
         with self.assertRaises(attachments.AttachmentError):
             attachments.to_text({'name': 'empty.txt', 'data': b64})
 
+    def test_agent_title_for_short_and_long_messages(self):
+        import float.agent as agent
+        self.assertEqual(agent.title_for(''), 'New conversation')
+        self.assertEqual(agent.title_for('   Lesson   plan  '), 'Lesson plan')
+        long_msg = 'Prepare a detailed unit test paper for Class 10 Mathematics Trigonometry'
+        self.assertTrue(agent.title_for(long_msg).endswith('…'))
+        self.assertLessEqual(len(agent.title_for(long_msg)), 53)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
