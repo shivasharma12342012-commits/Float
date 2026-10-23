@@ -183,6 +183,8 @@ function paintThreads(list) {
   }
   list.forEach((conv) => {
     const row = make("button", "thread");
+    row.type = "button";
+    row.dataset.id = String(conv.id);
     row.setAttribute("aria-current", String(conv.id) === String(S.conv));
     row.append(make("span", null, conv.title || "Untitled"));
 
