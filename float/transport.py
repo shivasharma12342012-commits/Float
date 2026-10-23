@@ -104,7 +104,7 @@ def open_request(env: Any, path: str) -> tuple[dict[str, Any], bytes]:
                                     b"c2s|" + path.encode("utf-8"))
         msg = json.loads(plain.decode("utf-8"))
         ts, nonce, body = float(msg["ts"]), str(msg["n"]), msg["body"]
-        if not isinstance(body, dict) or len(nonce) < 16:
+        if not isinstance(body, dict) or len(nonce) < 16 or ts != ts:
             raise ValueError
     except Exception:
         raise TransportError("That request could not be decrypted. Reload Float and try again.") from None
