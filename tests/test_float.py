@@ -141,6 +141,10 @@ class ArtifactTests(unittest.TestCase):
         blocks = artifacts.parse_markdown('1. First\n2) Second')
         self.assertEqual([b.kind for b in blocks], ['number', 'number'])
 
+    def test_parse_markdown_table_pads_short_rows(self):
+        blocks = artifacts.parse_markdown('| A | B | C |\n|---|---|---|\n| 1 |')
+        self.assertEqual(blocks[0].rows[1], ['1', '', ''])
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
