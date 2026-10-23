@@ -1325,5 +1325,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_120(self):
         self.assertIsNone(tools.toolkit_entry('non_existent_toolkit_entry_id'))
 
+    def test_hardening_121(self):
+        self.assertEqual(len(tools.TOOLKIT), 19)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
