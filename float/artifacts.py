@@ -184,7 +184,7 @@ def inline_runs(text: str) -> list[tuple[str, set[str]]]:
 
 
 def strip_markdown(text: str) -> str:
-    return re.sub(r"[*_`#>]", "", text)
+    return re.sub(r"[*_`#>]", "", text or "")
 
 
 # ---------------------------------------------------------------------------
