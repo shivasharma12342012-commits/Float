@@ -183,7 +183,7 @@ def auth_state(ctx: Route) -> dict[str, Any]:
 def auth_signup(ctx: Route) -> dict[str, Any]:
     body = ctx.body
     email = str(body.get("email", "")).strip().lower()
-    name = str(body.get("name", "")).strip()
+    name = str(body.get("name", "")).strip() or email.split("@")[0]
     password = str(body.get("password", ""))
 
     first_user = db.count_users() == 0
