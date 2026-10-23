@@ -1230,5 +1230,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_089(self):
         self.assertIsNone(db.get_artifact(999999, 1))
 
+    def test_hardening_090(self):
+        self.assertEqual(db.list_students(999999), [])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
