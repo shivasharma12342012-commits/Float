@@ -1677,7 +1677,8 @@ async function attach(files) {
       reader.readAsDataURL(file);
     });
     const kind = file.type.startsWith("image/") ? "image" : "text";
-    S.attachments.push({ name: file.name, mime: file.type || "text/plain", kind, data });
+    const entry = { name: file.name, mime: file.type || "text/plain", kind, data };
+    S.attachments.push(entry);
     syncSend();
 
     const chip = make("div", "attach-chip");
