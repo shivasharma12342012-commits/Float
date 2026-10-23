@@ -222,6 +222,9 @@ class SecurityTests(unittest.TestCase):
     def test_verify_password_rejects_unknown_algorithm(self):
         self.assertFalse(security.verify_password('chalkboard sunrise', 'md5$1$00$00'))
 
+    def test_password_problems_rejects_repeated_chars(self):
+        self.assertTrue(security.password_problems('aaaaaaaaaaaa'))
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
