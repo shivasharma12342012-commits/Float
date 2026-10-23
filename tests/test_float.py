@@ -1522,5 +1522,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_173(self):
         self.assertFalse(config.env_bool('FLOAT_TEST_NONEXISTENT_KEY', False))
 
+    def test_hardening_174(self):
+        self.assertEqual(config.BOARDS[0], 'CBSE')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
