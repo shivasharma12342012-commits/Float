@@ -1389,5 +1389,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_138(self):
         self.assertEqual(tools.toolkit_entry('seating')['name'], 'Seating and groups')
 
+    def test_hardening_139(self):
+        self.assertEqual(tools.toolkit_entry('assembly')['name'], 'Assembly speech')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
