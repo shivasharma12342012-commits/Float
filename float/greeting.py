@@ -123,6 +123,8 @@ def _first_name(name: str) -> str:
 
 
 def _parse_clock(value: str) -> dt.time | None:
+    if not value or not str(value).strip():
+        return None
     for fmt in ("%H:%M", "%I:%M %p", "%I:%M%p", "%H.%M"):
         try:
             return dt.datetime.strptime(value.strip(), fmt).time()
