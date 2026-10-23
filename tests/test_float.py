@@ -343,6 +343,14 @@ class SecurityTests(unittest.TestCase):
         raw = base64.b64encode(b'Hello class 8B').decode('ascii')
         self.assertEqual(attachments.to_text({'name': 'note.txt', 'data': raw}), 'Hello class 8B')
 
+    def test_attachments_docx_roundtrip_extraction(self):
+        import base64, float.artifacts as artifacts, float.attachments as attachments
+        docx_bytes = artifacts.render('docx', '# Photosynthesis\n\nPlants make food.', 'Bio', '')
+        b64 = base64.b64encode(docx_bytes).decode('ascii')
+        extracted = attachments.to_text({'name': 'bio.docx', 'data': b64})
+        self.assertIn('Photosynthesis', extracted)
+        self.assertIn('Plants make food.', extracted)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
