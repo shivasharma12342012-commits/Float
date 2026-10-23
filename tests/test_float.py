@@ -1431,5 +1431,9 @@ class HardeningTests(unittest.TestCase):
         for k in ['docx', 'pdf', 'xlsx', 'csv', 'html', 'md', 'txt']:
             self.assertIn(k, artifacts.KINDS)
 
+    def test_hardening_150(self):
+        for k in artifacts.KINDS:
+            self.assertGreater(len(artifacts.render(k, '# Test\n\nNotes', 'Doc')), 0)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
