@@ -567,7 +567,7 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
   to   { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .greeting { animation: none; }
+  .greeting, .modal, .toast, .pop, .working .pulse, .driving .ring { animation: none !important; transition: none !important; }
 }
 
 .greeting h2 {
