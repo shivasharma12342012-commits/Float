@@ -263,7 +263,7 @@ def run(user: dict[str, Any], conv_id: int, message: str, model_choice: str = ""
 
 
 def _drain(step_queue: "queue.Queue") -> list[dict[str, Any]]:
-    out = []
+    out: list[dict[str, Any]] = []
     while True:
         try:
             out.append(step_queue.get_nowait())
