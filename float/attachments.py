@@ -113,7 +113,7 @@ def xlsx_text(data: bytes) -> str:
                     val = "" if v is None else (v.text or "")
                     if c.get("t") == "inlineStr":   # text stored in the cell itself
                         val = "".join(t.text or "" for t in c.iter(ns + "t"))
-                    cells.append(shared[int(val)] if c.get("t") == "s" and val.isdigit() and int(val) < len(shared) else val)
+                    cells.append(shared[int(val)] if c.get("t") == "s" and val.isdigit() and 0 <= int(val) < len(shared) else val)
                 lines.append("\t".join(cells))
     return "\n".join(lines)
 
