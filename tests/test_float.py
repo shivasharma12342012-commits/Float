@@ -1259,5 +1259,8 @@ class HardeningTests(unittest.TestCase):
         self.assertGreaterEqual(cap, 0)
         self.assertFalse(over)
 
+    def test_hardening_099(self):
+        self.assertIsInstance(db.active_notices(), list)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
