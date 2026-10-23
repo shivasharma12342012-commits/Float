@@ -1588,5 +1588,14 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_class(cid, 1)
 
+    def test_hardening_186(self):
+        tid = db.add_task(1, 'Test task 186', '2026-10-24')
+        try:
+            tasks = db.list_tasks(1)
+            self.assertTrue(any(t['id'] == tid for t in tasks))
+            db.set_task_done(tid, 1, True)
+        finally:
+            db.delete_task(tid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
