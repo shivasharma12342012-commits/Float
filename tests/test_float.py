@@ -1424,5 +1424,8 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(rows), 3)
         self.assertEqual(rows[0], ['Subject', 'Marks'])
 
+    def test_hardening_148(self):
+        self.assertEqual(artifacts._as_rows('A simple paragraph.'), [['A simple paragraph.']])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
