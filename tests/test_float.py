@@ -1254,5 +1254,10 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_097(self):
         self.assertIn('anthropic', db.allowed_providers())
 
+    def test_hardening_098(self):
+        cap, over = db.cap_for(999999)
+        self.assertGreaterEqual(cap, 0)
+        self.assertFalse(over)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
