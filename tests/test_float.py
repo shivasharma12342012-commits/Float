@@ -247,6 +247,11 @@ class SecurityTests(unittest.TestCase):
         blob = security.encrypt_secret('sk-live-secret', purpose='apikey')
         self.assertEqual(security.decrypt_secret(blob, purpose='other'), '')
 
+    def test_same_constant_time_comparison(self):
+        self.assertTrue(security.same('abc', 'abc'))
+        self.assertFalse(security.same('abc', 'abd'))
+        self.assertTrue(security.same('', ''))
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
