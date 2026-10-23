@@ -1304,5 +1304,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_113(self):
         self.assertEqual(server._as_list(None), [])
 
+    def test_hardening_114(self):
+        self.assertEqual(len(server._parse_roster('Aarav Sharma\nDiya Patel')), 2)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
