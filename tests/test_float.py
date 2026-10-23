@@ -1218,5 +1218,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_085(self):
         self.assertIsNone(db.resolve_session('completely_unknown_token_xyz'))
 
+    def test_hardening_086(self):
+        self.assertEqual(db.get_key('anthropic', user_id=999999), '')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
