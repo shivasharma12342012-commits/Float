@@ -351,6 +351,13 @@ class SecurityTests(unittest.TestCase):
         self.assertIn('Photosynthesis', extracted)
         self.assertIn('Plants make food.', extracted)
 
+    def test_attachments_xlsx_roundtrip_extraction(self):
+        import base64, float.artifacts as artifacts, float.attachments as attachments
+        xlsx_bytes = artifacts.render('xlsx', '| Roll | Name |\n|---|---|\n| 1 | Aarav |', 'Roster', '')
+        b64 = base64.b64encode(xlsx_bytes).decode('ascii')
+        extracted = attachments.to_text({'name': 'roster.xlsx', 'data': b64})
+        self.assertIn('Aarav', extracted)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
