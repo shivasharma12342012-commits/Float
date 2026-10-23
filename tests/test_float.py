@@ -1410,5 +1410,8 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(runs), 3)
         self.assertEqual(runs[1], ('python main.py', {'code'}))
 
+    def test_hardening_144(self):
+        self.assertEqual(artifacts.inline_runs(''), [('', set())])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
