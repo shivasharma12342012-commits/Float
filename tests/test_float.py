@@ -1392,5 +1392,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_139(self):
         self.assertEqual(tools.toolkit_entry('assembly')['name'], 'Assembly speech')
 
+    def test_hardening_140(self):
+        self.assertEqual(tools.toolkit_entry('hpc')['name'], 'Holistic progress descriptors')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
