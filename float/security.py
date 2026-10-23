@@ -62,6 +62,8 @@ def hash_password(password: str, salt: bytes | None = None) -> str:
 
 
 def verify_password(password: str, encoded: str) -> bool:
+    if not password or not encoded:
+        return False
     try:
         algo, n_raw, salt_hex, expected = encoded.split("$", 3)
         if algo != "scrypt":
