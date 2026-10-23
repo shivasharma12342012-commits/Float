@@ -301,6 +301,13 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(greeting._part_of_day(19), 'evening')
         self.assertEqual(greeting._part_of_day(23), 'night')
 
+    def test_greeting_regional_salutations(self):
+        import float.greeting as greeting
+        for lang in ('hi', 'bn', 'mr', 'ta', 'te', 'gu', 'kn', 'ml', 'pa', 'or', 'as', 'ur'):
+            self.assertIn('morning', greeting.SALUTATIONS[lang])
+            self.assertIn('afternoon', greeting.SALUTATIONS[lang])
+            self.assertIn('evening', greeting.SALUTATIONS[lang])
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
