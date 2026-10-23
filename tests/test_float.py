@@ -332,6 +332,12 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(len(parsed.students), 1)
         self.assertEqual(len(parsed.problems), 1)
 
+    def test_stats_analyse_formats_summary_text(self):
+        import float.stats as stats
+        out = stats.analyse('Name, Q1(10), Q2(10)\nAarav, 10, 10\nDiya, 10, 10')
+        self.assertIn('Students counted: 2', out)
+        self.assertIn('spread is zero', out)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
