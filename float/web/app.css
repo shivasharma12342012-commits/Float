@@ -705,6 +705,7 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
   background: var(--sage);
   padding: .14em .38em;
   border-radius: 5px;
+  word-break: break-word;
 }
 .prose pre {
   background: var(--sage);
