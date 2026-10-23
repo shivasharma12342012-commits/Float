@@ -1048,5 +1048,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_034(self):
         self.assertTrue(artifacts.build_pdf('# Notice\n\nKV Sector 8', 'Notice').startswith(b'%PDF-1.4'))
 
+    def test_hardening_035(self):
+        self.assertEqual(artifacts.render('txt', 'Plain teaching plan', 'Title'), b'Plain teaching plan')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
