@@ -252,6 +252,10 @@ class SecurityTests(unittest.TestCase):
         self.assertFalse(security.same('abc', 'abd'))
         self.assertTrue(security.same('', ''))
 
+    def test_new_token_enforces_minimum_length(self):
+        tok = security.new_token(2)
+        self.assertGreaterEqual(len(tok), 10)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
