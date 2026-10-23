@@ -875,7 +875,7 @@ def tasks_list(ctx: Route) -> dict[str, Any]:
 @route("POST", "/api/tasks")
 def tasks_add(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
-    title = str(ctx.body.get("title", "")).strip()
+    title = str(ctx.body.get("title", "")).strip()[:240]
     if not title:
         raise HttpError(400, "A task needs a title.")
     db.add_task(int(user["id"]), title, str(ctx.body.get("due", "")))
