@@ -1322,5 +1322,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_119(self):
         self.assertEqual(server._parse_roster('   \n   '), [])
 
+    def test_hardening_120(self):
+        self.assertIsNone(tools.toolkit_entry('non_existent_toolkit_entry_id'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
