@@ -1445,5 +1445,11 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_153(self):
         self.assertEqual(security._device_key(), security._device_key())
 
+    def test_hardening_154(self):
+        rl = security.RateLimiter(limit=1, window=60.0)
+        self.assertTrue(rl.check('u_1')[0])
+        self.assertFalse(rl.check('u_1')[0])
+        self.assertTrue(rl.check('u_2')[0])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
