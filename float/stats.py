@@ -82,7 +82,7 @@ def parse(text: str) -> Analysis:
         label, mx = f"Q{i + 1}", None
         if header and i + 1 < len(header) and header[i + 1]:
             m = _MAX_RE.match(header[i + 1])
-            label, mx = (m.group(1).strip() or label, float(m.group(2))) if m else (header[i + 1], None)
+            label, mx = (m.group(1).strip() or label, float(m.group(2)) if float(m.group(2)) > 0 else None) if m else (header[i + 1], None)
         questions.append(label)
         maxes.append(mx)
 
