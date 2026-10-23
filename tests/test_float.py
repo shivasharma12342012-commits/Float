@@ -597,6 +597,14 @@ class ServerTests(unittest.TestCase):
                     (float("inf"), 50), (3, -10)]:
             self.assertEqual(post(*bad), 400, bad)
 
+    def test_server_parse_roster_formats(self):
+        import float.server as server
+        rows = server._parse_roster('1, Aarav Sharma\n2. Diya Verma\nIshaan Patel')
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0], {'roll': '1', 'name': 'Aarav Sharma'})
+        self.assertEqual(rows[1], {'roll': '2', 'name': 'Diya Verma'})
+        self.assertEqual(rows[2], {'roll': '3', 'name': 'Ishaan Patel'})
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
