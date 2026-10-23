@@ -705,6 +705,14 @@ class ServerTests(unittest.TestCase):
         status, _ = self.call(f'/api/tasks/{tid}', token=self.token, method='DELETE')
         self.assertEqual(status, 200)
 
+    def test_server_timetable_endpoints_roundtrip(self):
+        status, data = self.call('/api/timetable', {'periods': [{'weekday': 1, 'slot': 1, 'starts': '09:00', 'ends': '09:45', 'label': '9A Science', 'room': 'Lab 1'}]}, token=self.token)
+        self.assertEqual(status, 200)
+        self.assertEqual(len(data['periods']), 1)
+        status, got = self.call('/api/timetable', token=self.token, method='GET')
+        self.assertEqual(status, 200)
+        self.assertEqual(got['periods'][0]['room'], 'Lab 1')
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
