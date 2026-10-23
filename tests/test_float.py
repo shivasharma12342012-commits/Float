@@ -229,6 +229,11 @@ class SecurityTests(unittest.TestCase):
         self.assertTrue(security.password_problems('password123'))
         self.assertTrue(security.password_problems('qwerty12345'))
 
+    def test_pin_problems_rejects_repeated_and_common_pins(self):
+        self.assertTrue(security.pin_problems('1111'))
+        self.assertTrue(security.pin_problems('999999'))
+        self.assertTrue(security.pin_problems('123456'))
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
