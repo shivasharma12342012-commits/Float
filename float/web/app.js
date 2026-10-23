@@ -105,7 +105,7 @@ function bytes(n) {
 }
 
 function when(seconds) {
-  const gap = Date.now() / 1000 - seconds;
+  const gap = Math.max(0, Date.now() / 1000 - (Number(seconds) || 0));
   if (gap < 90) return "just now";
   if (gap < 3600) return Math.round(gap / 60) + " min ago";
   if (gap < 86400) return Math.round(gap / 3600) + " h ago";
