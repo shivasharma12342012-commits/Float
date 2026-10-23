@@ -805,5 +805,16 @@ class HardeningTests(unittest.TestCase):
         res = tools.fill_prompt(entry, vals)
         self.assertGreater(len(res), 20)
 
+    def test_hardening_002_toolkit_question_paper(self):
+        entry = tools.toolkit_entry('question-paper')
+        self.assertIsNotNone(entry)
+        vals = {'klass': '10', 'subject': 'Math', 'topic': 'Optics', 'chapters': 'Algebra',
+                'question': 'Sample', 'task': 'Poster', 'students': 'Aarav', 'student': 'Diya',
+                'reason': 'Attendance', 'language': 'Hindi', 'gap': 'Grammar', 'from_who': 'Principal',
+                'occasion': 'Annual Day', 'speaker': 'Head', 'observations': 'Good',
+                'data': 'Aarav, 90\nDiya, 85'}
+        res = tools.fill_prompt(entry, vals)
+        self.assertGreater(len(res), 20)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
