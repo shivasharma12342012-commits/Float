@@ -1245,5 +1245,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_094(self):
         self.assertEqual(db.list_artifacts(999999), [])
 
+    def test_hardening_095(self):
+        self.assertEqual(db.list_conversations(999999), [])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
