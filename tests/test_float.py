@@ -1151,5 +1151,10 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_065(self):
         self.assertIsNone(config.tls_files())
 
+    def test_hardening_066(self):
+        h = config._sha('kv_school_test')
+        self.assertEqual(len(h), 64)
+        self.assertTrue(all(c in '0123456789abcdef' for c in h))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
