@@ -1045,5 +1045,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_033(self):
         self.assertGreater(len(artifacts.build_xlsx('| C1 | C2 |\n|---|---|\n| 1 | 2 |', 'Sheet')), 500)
 
+    def test_hardening_034(self):
+        self.assertTrue(artifacts.build_pdf('# Notice\n\nKV Sector 8', 'Notice').startswith(b'%PDF-1.4'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
