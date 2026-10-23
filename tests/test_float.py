@@ -1099,5 +1099,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_051(self):
         self.assertGreater(len(security.password_problems('short')), 0)
 
+    def test_hardening_052(self):
+        self.assertEqual(security.password_problems('TeacherStrongPassword123!'), [])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
