@@ -1528,5 +1528,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_175(self):
         self.assertEqual(config.GRADES[0], '1')
 
+    def test_hardening_176(self):
+        self.assertEqual(config.GRADES[-1], '12')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
