@@ -109,6 +109,9 @@ class ArtifactTests(unittest.TestCase):
     def test_safe_name_deduplicates_extension(self):
         self.assertEqual(artifacts.safe_name('notes.pdf', 'pdf'), 'notes.pdf')
 
+    def test_safe_name_preserves_devanagari(self):
+        self.assertIn('गणित', artifacts.safe_name('गणित कार्यपत्रक', 'pdf'))
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
