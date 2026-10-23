@@ -234,6 +234,10 @@ class SecurityTests(unittest.TestCase):
         self.assertTrue(security.pin_problems('999999'))
         self.assertTrue(security.pin_problems('123456'))
 
+    def test_mask_key_handles_empty_and_short_keys(self):
+        self.assertEqual(security.mask_key(''), '')
+        self.assertEqual(security.mask_key('shortkey'), 'sho…')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
