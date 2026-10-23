@@ -483,6 +483,16 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(len(periods), 1)
         self.assertEqual(periods[0]['label'], '8B Maths')
 
+    def test_db_conversation_rename_and_delete(self):
+        import importlib, float.config as config, float.db as db
+        importlib.reload(config); importlib.reload(db); db.init()
+        uid = db.create_user('conv@school.in', 'Conv Teacher', 'passphrase123')['id']
+        cid = db.new_conversation(uid, 'Initial', 'chat')
+        db.rename_conversation(cid, uid, 'Updated Title')
+        self.assertEqual(db.get_conversation(cid, uid)['title'], 'Updated Title')
+        db.delete_conversation(cid, uid)
+        self.assertIsNone(db.get_conversation(cid, uid))
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
