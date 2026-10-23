@@ -1177,5 +1177,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_073(self):
         self.assertEqual(config.DEFAULT_ASSIST, 'draft')
 
+    def test_hardening_074(self):
+        self.assertIn('en', config.LANGUAGES)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
