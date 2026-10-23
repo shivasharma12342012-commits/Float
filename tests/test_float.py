@@ -115,6 +115,10 @@ class ArtifactTests(unittest.TestCase):
     def test_safe_name_strips_leading_dots(self):
         self.assertEqual(artifacts.safe_name('...hidden', 'txt'), 'hidden.txt')
 
+    def test_parse_markdown_headings_levels_1_to_4(self):
+        kinds = [b.kind for b in artifacts.parse_markdown('# H1\n## H2\n### H3\n#### H4')]
+        self.assertEqual(kinds, ['h1', 'h2', 'h3', 'h4'])
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
