@@ -1145,5 +1145,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_063(self):
         self.assertFalse(config.rt_phrase_matches(None))
 
+    def test_hardening_064(self):
+        self.assertFalse(config.rt_phrase_matches('   '))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
