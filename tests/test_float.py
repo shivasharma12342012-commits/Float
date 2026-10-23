@@ -1156,5 +1156,8 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(h), 64)
         self.assertTrue(all(c in '0123456789abcdef' for c in h))
 
+    def test_hardening_067(self):
+        self.assertIsNotNone(config.PROVIDERS['anthropic'].model('claude-sonnet-4-5'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
