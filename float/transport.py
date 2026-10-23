@@ -124,6 +124,7 @@ def open_request(env: Any, path: str) -> tuple[dict[str, Any], bytes]:
 
 def seal_response(key: bytes, path: str, payload: Any) -> dict[str, Any]:
     iv = secrets.token_bytes(12)
+    path = path or "/"
     ct = AESGCM(key).encrypt(iv, json.dumps(payload, default=str).encode("utf-8"),
                              b"s2c|" + path.encode("utf-8"))
     return {"enc": {"v": 1, "iv": _b64(iv), "ct": _b64(ct)}}
