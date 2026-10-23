@@ -112,7 +112,7 @@ def pin_problems(pin: str) -> list[str]:
 # Tokens
 # ---------------------------------------------------------------------------
 def new_token(nbytes: int = 32) -> str:
-    return secrets.token_urlsafe(nbytes)
+    return secrets.token_urlsafe(max(8, int(nbytes)))
 
 
 def token_fingerprint(token: str) -> str:
