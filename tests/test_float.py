@@ -214,6 +214,11 @@ class SecurityTests(unittest.TestCase):
         self.assertTrue(security.BOOT_NONCE)
         self.assertIsInstance(security.BOOT_NONCE, str)
 
+    def test_verify_password_handles_empty_and_malformed(self):
+        self.assertFalse(security.verify_password('', 'scrypt$32768$aa$bb'))
+        self.assertFalse(security.verify_password('validpass123', ''))
+        self.assertFalse(security.verify_password('validpass123', 'not-a-valid-hash'))
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
