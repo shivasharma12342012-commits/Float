@@ -1057,5 +1057,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_037(self):
         self.assertTrue(artifacts.desktop_dir().exists())
 
+    def test_hardening_038(self):
+        self.assertEqual(len(artifacts.inline_runs('Hello **teacher** friend')), 3)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
