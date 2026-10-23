@@ -713,6 +713,18 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(got['periods'][0]['room'], 'Lab 1')
 
+    def test_server_conversations_crud_endpoints(self):
+        status, created = self.call('/api/toolkit/worksheet', {'values': {'subject': 'Science', 'klass': '9A', 'topic': 'Atoms'}}, token=self.token)
+        self.assertEqual(status, 200)
+        cid = created['conv_id']
+        status, _ = self.call(f'/api/conversations/{cid}', {'title': 'Draft Paper'}, token=self.token)
+        self.assertEqual(status, 200)
+        status, fetched = self.call(f'/api/conversations/{cid}', token=self.token, method='GET')
+        self.assertEqual(status, 200)
+        self.assertEqual(fetched['conversation']['title'], 'Draft Paper')
+        status, _ = self.call(f'/api/conversations/{cid}', {}, token=self.token, method='DELETE')
+        self.assertEqual(status, 200)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
