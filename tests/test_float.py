@@ -1621,5 +1621,16 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.drop_key('anthropic', scope='org')
 
+    def test_hardening_190(self):
+        conv_id = db.new_conversation(1, 'Test Conversation 190')
+        try:
+            conv = db.get_conversation(conv_id, 1)
+            self.assertIsNotNone(conv)
+            db.rename_conversation(conv_id, 1, 'Renamed Conv 190')
+            conv_renamed = db.get_conversation(conv_id, 1)
+            self.assertEqual(conv_renamed['title'], 'Renamed Conv 190')
+        finally:
+            db.delete_conversation(conv_id, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
