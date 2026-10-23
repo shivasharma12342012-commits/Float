@@ -1488,5 +1488,9 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(p.id, 'openai')
         self.assertGreater(len(p.models), 0)
 
+    def test_hardening_165(self):
+        for pid, p in config.PROVIDERS.items():
+            self.assertTrue(p.console_url.startswith('https://'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
