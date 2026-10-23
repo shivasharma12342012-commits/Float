@@ -293,6 +293,14 @@ class SecurityTests(unittest.TestCase):
         self.assertIsNone(greeting._parse_clock('invalid'))
         self.assertIsNone(greeting._parse_clock(''))
 
+    def test_greeting_part_of_day_boundaries(self):
+        import float.greeting as greeting
+        self.assertEqual(greeting._part_of_day(2), 'night')
+        self.assertEqual(greeting._part_of_day(8), 'morning')
+        self.assertEqual(greeting._part_of_day(14), 'afternoon')
+        self.assertEqual(greeting._part_of_day(19), 'evening')
+        self.assertEqual(greeting._part_of_day(23), 'night')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
