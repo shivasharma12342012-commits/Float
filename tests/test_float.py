@@ -696,6 +696,15 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(server._band(99), 'Regular')
         self.assertEqual(server._band(100), 'Frequent')
 
+    def test_server_tasks_endpoints_roundtrip(self):
+        status, data = self.call('/api/tasks', {'title': 'Prepare worksheet', 'due': '2026-11-15'}, token=self.token)
+        self.assertEqual(status, 200)
+        tid = data['tasks'][0]['id']
+        status, data = self.call(f'/api/tasks/{tid}', {'done': True}, token=self.token)
+        self.assertEqual(status, 200)
+        status, _ = self.call(f'/api/tasks/{tid}', token=self.token, method='DELETE')
+        self.assertEqual(status, 200)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
