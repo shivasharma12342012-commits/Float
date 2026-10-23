@@ -1164,8 +1164,12 @@ def admin_org(ctx: Route) -> dict[str, Any]:
 @route("GET", "/api/admin/audit", auth="admin")
 def admin_audit(ctx: Route) -> dict[str, Any]:
     ctx.require_admin()
+    try:
+        lim = max(1, min(500, int(ctx.query.get("limit", "200"))))
+    except ValueError:
+        lim = 200
     return {"entries": db.audit_tail(
-        limit=min(500, int(ctx.query.get("limit", "200"))),
+        limit=lim,
         level=ctx.query.get("level", ""),
         user_id=int(ctx.query["user_id"]) if ctx.query.get("user_id") else None,
     )}
