@@ -1356,5 +1356,8 @@ class HardeningTests(unittest.TestCase):
         self.assertIn('Aarav', res)
         self.assertIn('Diya', res)
 
+    def test_hardening_128(self):
+        self.assertEqual(tools.toolkit_entry('rubric')['name'], 'Rubric')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
