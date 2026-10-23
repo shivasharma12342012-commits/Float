@@ -765,6 +765,11 @@ class ServerTests(unittest.TestCase):
         finally:
             hc.close()
 
+    def test_server_case_insensitive_bearer_header(self):
+        req = urllib.request.Request(self.base + '/api/bootstrap', headers={'Authorization': 'bearer ' + self.token})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
