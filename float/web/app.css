@@ -1680,3 +1680,8 @@ table.grid td.num { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 560px) {
   #chip-assist { display: none; }
 }
+
+@media print {
+  .rail, .topbar, .composer-wrap, .driving, .drawer, .modal-scrim, .toast { display: none !important; }
+  body, .shell, .main, .stream { height: auto !important; overflow: visible !important; display: block !important; background: #fff !important; color: #000 !important; }
+}
