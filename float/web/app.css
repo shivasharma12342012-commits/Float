@@ -1467,6 +1467,8 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
   bottom: 22px;
   left: 50%;
   transform: translateX(-50%);
+  max-width: min(32rem, calc(100vw - 32px));
+  text-align: center;
   background: var(--ink);
   color: var(--paper);
   padding: 9px 16px;
