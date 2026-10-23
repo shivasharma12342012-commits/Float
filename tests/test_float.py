@@ -429,6 +429,11 @@ class SecurityTests(unittest.TestCase):
         res = maintenance.prune(batch=10)
         self.assertEqual(res, {'audit': 0, 'usage': 0})
 
+    def test_google_decode_id_token_rejects_invalid_jwt(self):
+        import float.google as google
+        with self.assertRaises(google.GoogleError):
+            google._decode_id_token('not-a-jwt')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
