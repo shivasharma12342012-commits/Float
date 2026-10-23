@@ -81,6 +81,8 @@ def env_bool(name: str, default: bool) -> bool:
     raw = env(name).lower()
     if not raw:
         return default
+    if raw in {"0", "false", "no", "off"}:
+        return False
     return raw in {"1", "true", "yes", "on"}
 
 
