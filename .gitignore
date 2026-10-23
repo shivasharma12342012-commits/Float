@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+float_error.log
 *.pyc
 *.pyo
 .venv/
