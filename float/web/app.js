@@ -1633,7 +1633,7 @@ function theme(choice) {
     document.documentElement.dataset.theme =
       choice === "system" ? (dark.matches ? "dark" : "light") : choice;
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue("--paper").trim() || "#151515";
+    if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue("--paper").trim() || "#000000";
   };
   dark.onchange = choice === "system" ? apply : null;
   apply();
