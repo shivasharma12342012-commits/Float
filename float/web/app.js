@@ -1905,7 +1905,7 @@ document.addEventListener("click", (event) => {
   if (!event.target.closest("#rail")) closeRail();      // tapped outside
   if (!event.target.closest("#pop, [data-pop]")) closePop();
 });
-window.addEventListener("resize", () => { if (window.innerWidth > 760) closeRail(); });
+window.addEventListener("resize", () => { if (window.innerWidth > 760) closeRail(); closePop(); });
 $("driving-stop").addEventListener("click", stopComputer);
 
 $("sign-out").addEventListener("click", async () => {
