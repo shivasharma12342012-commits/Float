@@ -1072,5 +1072,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_042(self):
         self.assertFalse(security.same('secret123', 'secret456'))
 
+    def test_hardening_043(self):
+        self.assertFalse(security.same('short', 'longer_string'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
