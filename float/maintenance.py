@@ -61,7 +61,8 @@ def backup_now(tag: str = "") -> Path:
         if not src_path.exists():
             raise FileNotFoundError("There is no database to back up yet.")
         backup_dir().mkdir(parents=True, exist_ok=True)
-        name = f"float-{dt.date.today():%Y-%m-%d}{('-' + tag) if tag else ''}.sqlite3"
+        clean_tag = "".join(c for c in (tag or "") if c.isalnum() or c in "-_")[:24]
+        name = f"float-{dt.date.today():%Y-%m-%d}{('-' + clean_tag) if clean_tag else ''}.sqlite3"
         final = backup_dir() / name
         tmp = backup_dir() / (name + ".part")
         tmp.unlink(missing_ok=True)
