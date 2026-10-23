@@ -817,7 +817,7 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
 }
 .card-file .meta small { color: var(--faint); font-size: 12px; }
 .card-file .meta em { font-style: normal; color: var(--ok); font-size: 12px; }
-.card-file .acts { display: flex; gap: 6px; flex-shrink: 0; }
+.card-file .acts { display: flex; flex-wrap: wrap; gap: 6px; flex-shrink: 0; }
 
 .btn {
   border: 1px solid var(--line);
