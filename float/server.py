@@ -1270,7 +1270,7 @@ class FloatHandler(BaseHTTPRequestHandler):
     @property
     def query(self) -> dict[str, str]:
         parsed = urllib.parse.urlparse(self.path)
-        return {k: v[0] for k, v in urllib.parse.parse_qs(parsed.query).items()}
+        return {k: v[0] for k, v in urllib.parse.parse_qs(parsed.query, keep_blank_values=True).items() if v}
 
     def _host_ok(self) -> bool:
         raw_host = (self.headers.get("Host") or "").strip()
