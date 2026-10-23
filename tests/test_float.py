@@ -1066,5 +1066,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_040(self):
         self.assertEqual(len(artifacts.inline_runs('Run `python main.py` now')), 3)
 
+    def test_hardening_041(self):
+        self.assertTrue(security.same('secret123', 'secret123'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
