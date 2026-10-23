@@ -243,8 +243,8 @@ class RateLimiter:
     """Sliding window. Not distributed, because Float is not."""
 
     def __init__(self, limit: int, window: float, penalty: float = 0.0) -> None:
-        self.limit = limit
-        self.window = window
+        self.limit = max(1, int(limit))
+        self.window = max(0.001, float(window))
         self.penalty = penalty
         self._lock = threading.Lock()
         self._keys: dict[str, _Window] = {}
