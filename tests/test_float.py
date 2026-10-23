@@ -1090,5 +1090,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_048(self):
         self.assertGreater(len(security.pin_problems('1234')), 0)
 
+    def test_hardening_049(self):
+        self.assertGreater(len(security.pin_problems('0000')), 0)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
