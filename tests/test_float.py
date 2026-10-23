@@ -1383,5 +1383,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_136(self):
         self.assertEqual(tools.toolkit_entry('doubt')['name'], 'Solve a doubt')
 
+    def test_hardening_137(self):
+        self.assertEqual(tools.toolkit_entry('bilingual')['name'], 'Explain in two languages')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
