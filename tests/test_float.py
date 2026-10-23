@@ -782,6 +782,12 @@ class ServerTests(unittest.TestCase):
             body = resp.read()
             self.assertGreater(len(body), 200)
 
+    def test_server_admin_backup_endpoint(self):
+        status, data = self.call('/api/admin/backup', {}, token=self.token)
+        self.assertEqual(status, 200)
+        self.assertTrue(data['ok'])
+        self.assertGreaterEqual(data['backup']['count'], 1)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
