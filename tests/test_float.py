@@ -731,6 +731,10 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(data['user']['name'], 'Anita S.')
         self.assertEqual(data['user']['assist_level'], 'coach')
 
+    def test_server_static_path_traversal_is_blocked(self):
+        status, _ = self.call('/..%2f..%2fmain.py', method='GET')
+        self.assertIn(status, (403, 404))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
