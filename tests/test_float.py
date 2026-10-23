@@ -1203,5 +1203,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_080(self):
         self.assertIn('bn', config.LANGUAGES)
 
+    def test_hardening_081(self):
+        self.assertFalse(db.owns_class(999999, 1))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
