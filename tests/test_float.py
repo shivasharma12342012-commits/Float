@@ -159,6 +159,10 @@ class ArtifactTests(unittest.TestCase):
         data = artifacts.render('md', '# Title\n\nBody', 'Title', '')
         self.assertIn('Title', data.decode('utf-8'))
 
+    def test_render_txt_strips_formatting(self):
+        data = artifacts.render('txt', '# Title\n\n**Bold** line', 'Title', 'Sub')
+        self.assertIn('Bold line', data.decode('utf-8'))
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
