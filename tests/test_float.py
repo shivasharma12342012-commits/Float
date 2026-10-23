@@ -1642,5 +1642,15 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_conversation(conv_id, 1)
 
+    def test_hardening_192(self):
+        art_id = db.add_artifact(1, None, 'Art Title 192', 'docx', 'files/art192.docx', 1024)
+        try:
+            art = db.get_artifact(art_id, 1)
+            self.assertIsNotNone(art)
+            self.assertEqual(art['name'], 'Art Title 192')
+            db.mark_artifact_saved(art_id, 'C:/tmp/art192.docx')
+        finally:
+            pass
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
