@@ -1463,5 +1463,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_158(self):
         self.assertNotEqual(security.new_token(16), security.new_token(16))
 
+    def test_hardening_159(self):
+        self.assertEqual(artifacts._column(1), 'B')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
