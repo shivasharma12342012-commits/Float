@@ -316,6 +316,11 @@ class SecurityTests(unittest.TestCase):
         self.assertAlmostEqual(res['mean'], 8.0)
         self.assertEqual(res['max_total'], 10.0)
 
+    def test_stats_parse_rejects_empty_input(self):
+        import float.stats as stats
+        with self.assertRaises(stats.MarksError):
+            stats.parse('   \n  ')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
