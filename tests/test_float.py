@@ -1171,5 +1171,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_071(self):
         self.assertEqual(len(config.GRADES), 12)
 
+    def test_hardening_072(self):
+        self.assertIn('draft', config.ASSIST_LEVELS)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
