@@ -151,6 +151,10 @@ class ArtifactTests(unittest.TestCase):
         self.assertIn(('italic', {'italic'}), runs)
         self.assertIn(('code', {'code'}), runs)
 
+    def test_strip_markdown_handles_none_and_symbols(self):
+        self.assertEqual(artifacts.strip_markdown(None), '')
+        self.assertEqual(artifacts.strip_markdown('**Hi** `#1`'), 'Hi 1')
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
