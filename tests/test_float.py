@@ -127,6 +127,12 @@ class ArtifactTests(unittest.TestCase):
         kinds = [b.kind for b in artifacts.parse_markdown('\\pagebreak\n<!-- pagebreak -->')]
         self.assertEqual(kinds, ['pagebreak', 'pagebreak'])
 
+    def test_parse_markdown_fenced_code_block(self):
+        blocks = artifacts.parse_markdown('```python\nprint(1)\n```')
+        self.assertEqual(len(blocks), 1)
+        self.assertEqual(blocks[0].kind, 'code')
+        self.assertEqual(blocks[0].text, 'print(1)')
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
