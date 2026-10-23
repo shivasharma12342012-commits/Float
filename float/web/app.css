@@ -38,17 +38,17 @@
 }
 
 [data-theme="dark"] {
-  --paper:      #121714;
-  --surface:    #19201C;
-  --sage:       #1F2823;
-  --sage-deep:  #263029;
-  --line:       #2D3832;
+  --paper:      #000000;
+  --surface:    #0D0D0D;
+  --sage:       #121212;
+  --sage-deep:  #1A1A1A;
+  --line:       #222222;
   --ink:        #ECF0E9;
   --ink-2:      #D3DAD2;
   --soft:       #9AA79F;
   --faint:      #75837B;
-  --board:      #0F1613;
-  --board-2:    #1A2520;
+  --board:      #000000;
+  --board-2:    #141414;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
 }
 
@@ -918,31 +918,31 @@ table.grid td.num { text-align: right; font-variant-numeric: tabular-nums }
 
 /* ------------------------------------------------ Claude-style dark mode */
 [data-theme="dark"] {
-  --paper:      #262624;   /* warm charcoal page */
-  --surface:    #30302E;   /* composer, cards */
-  --sage:       #30302E;
-  --sage-deep:  #3B3A37;
-  --line:       #3D3C39;
+  --paper:      #000000;   /* pitch-black page */
+  --surface:    #0D0D0D;   /* composer, cards */
+  --sage:       #0D0D0D;
+  --sage-deep:  #171717;
+  --line:       #222222;
   --ink:        #ECEBE6;
   --ink-2:      #D6D4CC;
   --soft:       #B0AEA5;
   --faint:      #8B897F;
-  --board:      #1F1E1D;   /* sidebar */
-  --board-2:    #30302E;
+  --board:      #000000;   /* sidebar */
+  --board-2:    #141414;
   --accent:     #D97757;   /* Claude terracotta */
   --accent-ink: #FFFFFF;
   --rose:       #E0705F;
   --ok:         #6FBF8F;
-  --shadow: 0 0 0 1px rgba(255,255,255,.02), 0 6px 24px -10px rgba(0,0,0,.6);
+  --shadow: 0 0 0 1px rgba(255,255,255,.04), 0 6px 24px -10px rgba(0,0,0,.8);
 }
 [data-theme="dark"] a { color: #E39A7E }
-[data-theme="dark"] .rail { border-right: 1px solid #333230 }
+[data-theme="dark"] .rail { border-right: 1px solid #1C1C1C }
 [data-theme="dark"] .topbar { background: transparent; border-bottom-color: transparent }
-[data-theme="dark"] .composer { border-color: #4A4844; border-radius: 22px }
-[data-theme="dark"] .composer:focus-within { border-color: #6A6862 }
+[data-theme="dark"] .composer { border-color: #242424; border-radius: 22px }
+[data-theme="dark"] .composer:focus-within { border-color: #3D3D3D }
 [data-theme="dark"] .send { background: var(--accent); color: #fff }
 [data-theme="dark"] .send:not(:disabled):hover { background: #C4664A }
-[data-theme="dark"] .send:disabled { background: #3B3A37; color: var(--faint) }
+[data-theme="dark"] .send:disabled { background: #1A1A1A; color: var(--faint) }
 [data-theme="dark"] .composer-wrap { background: linear-gradient(to top, var(--paper) 70%, transparent) }
 [data-theme="dark"] .chip.on { background: var(--surface); border-color: var(--accent); color: var(--ink) }
 
@@ -950,12 +950,12 @@ table.grid td.num { text-align: right; font-variant-numeric: tabular-nums }
 [data-theme="dark"] .turn + .turn { border-top: 0 }
 [data-theme="dark"] .turn { padding: 16px 0 }
 [data-theme="dark"] .user-said {
-  background: #141413; color: var(--ink);
+  background: #141414; color: var(--ink);
   border-radius: 18px; border-top-left-radius: 18px;
 }
 [data-theme="dark"] .turn-who .float-mark { background: var(--accent); color: #fff }
 [data-theme="dark"] .prose code,
-[data-theme="dark"] .prose pre { background: #1F1E1D; border-color: #3D3C39 }
+[data-theme="dark"] .prose pre { background: #0D0D0D; border-color: #222222 }
 
 /* Assistant answers and the greeting in Times New Roman (both themes). */
 .prose, .greeting h2, .greeting p.detail { font-family: var(--serif) }
@@ -999,17 +999,17 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
 [data-theme="light"] .send { background: var(--accent); color: #fff; }
 [data-theme="light"] .send:not(:disabled):hover { background: #C4664A; }
 
-/* Dark palette sampled from the Claude desktop screenshot. */
+/* Dark palette: pitch-black background, quiet neutral surfaces, no neon. */
 [data-theme="dark"] {
-  --paper: #151515;  --surface: #20201F;  --sage: #20201F;  --sage-deep: #2D2D2B;
-  --line: #2E2E2C;   --ink: #F0EFEC;      --ink-2: #D9D7D0;
+  --paper: #000000;  --surface: #0D0D0D;  --sage: #0D0D0D;  --sage-deep: #171717;
+  --line: #222222;   --ink: #F0EFEC;      --ink-2: #D9D7D0;
   --soft: #B0AEA5;   --faint: #85837B;
-  --board: #1B1B1A;  --board-2: #262624;
+  --board: #000000;  --board-2: #141414;
 }
-[data-theme="dark"] .composer { border-color: #34332F; }
-[data-theme="dark"] .composer:focus-within { border-color: #55534E; }
-[data-theme="dark"] .user-said { background: #262624; }
-[data-theme="dark"] .prose code, [data-theme="dark"] .prose pre { background: #1B1B1A; border-color: #2E2E2C; }
+[data-theme="dark"] .composer { border-color: #242424; }
+[data-theme="dark"] .composer:focus-within { border-color: #3D3D3D; }
+[data-theme="dark"] .user-said { background: #141414; }
+[data-theme="dark"] .prose code, [data-theme="dark"] .prose pre { background: #0D0D0D; border-color: #222222; }
 
 /* Sidebar collapses to a slim icon strip on desktop (Ctrl+B). */
 .shell { transition: grid-template-columns .18s ease; }

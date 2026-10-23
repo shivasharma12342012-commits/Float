@@ -10,7 +10,7 @@
     "#float-splash{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;" +
     "align-items:center;justify-content:center;gap:22px;background:#FBF9F4;color:#2B2A27;" +
     "transition:opacity .45s ease,visibility .45s ease}" +
-    "@media (prefers-color-scheme:dark){#float-splash{background:#151515;color:#EDEBE4}}" +
+    "@media (prefers-color-scheme:dark){#float-splash{background:#000000;color:#EDEBE4}}" +
     "#float-splash.out{opacity:0;visibility:hidden}" +
     "#float-splash img{width:112px;height:112px;object-fit:contain;animation:fsPop .7s ease both,fsBob 2.4s ease-in-out .7s infinite}" +
     "#float-splash b{font:600 30px/1 'Times New Roman',Georgia,serif;letter-spacing:.04em;animation:fsFade .9s ease .2s both}" +
