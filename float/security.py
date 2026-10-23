@@ -103,7 +103,7 @@ def pin_problems(pin: str) -> list[str]:
     problems: list[str] = []
     if not pin.isdigit() or not (4 <= len(pin) <= 8):
         problems.append("A quick PIN is 4 to 8 digits.")
-    elif pin in {"0000", "1234", "1111", "123456", "000000"} or len(set(pin)) == 1:
+    elif pin in {"0000", "1234", "43210", "1111", "12345", "123456", "000000", "12345678"} or len(set(pin)) == 1:
         problems.append("Too easy to guess. Pick a different PIN.")
     return problems
 
