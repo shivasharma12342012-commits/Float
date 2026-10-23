@@ -1265,5 +1265,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_100(self):
         self.assertIsInstance(db.org_all(), dict)
 
+    def test_hardening_101(self):
+        self.assertGreaterEqual(db.count_users(), 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
