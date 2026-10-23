@@ -321,6 +321,11 @@ class SecurityTests(unittest.TestCase):
         with self.assertRaises(stats.MarksError):
             stats.parse('   \n  ')
 
+    def test_stats_parse_rejects_header_only(self):
+        import float.stats as stats
+        with self.assertRaises(stats.MarksError):
+            stats.parse('Name, Q1(10), Q2(10)')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
