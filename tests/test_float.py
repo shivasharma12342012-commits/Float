@@ -1286,5 +1286,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_107(self):
         self.assertEqual(server._band(15), 'Light')
 
+    def test_hardening_108(self):
+        self.assertEqual(server._band(60), 'Regular')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
