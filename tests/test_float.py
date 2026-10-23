@@ -775,6 +775,13 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn('entries', data)
 
+    def test_server_admin_export_returns_xlsx(self):
+        req = urllib.request.Request(self.base + '/api/admin/export', headers={'Authorization': 'Bearer ' + self.token})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            body = resp.read()
+            self.assertGreater(len(body), 200)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
