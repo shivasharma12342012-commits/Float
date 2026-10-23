@@ -66,7 +66,7 @@ def verify_password(password: str, encoded: str) -> bool:
         return False
     try:
         algo, n_raw, salt_hex, expected = encoded.split("$", 3)
-        if algo != "scrypt":
+        if algo != "scrypt" or int(n_raw) <= 0:
             return False
         key = hashlib.scrypt(
             password.encode("utf-8"),
