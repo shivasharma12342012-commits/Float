@@ -156,7 +156,11 @@ def finish(state: str, code: str) -> dict[str, Any]:
         raise GoogleError("That token was issued for a different application.")
     if claims.get("iss") not in ISSUERS:
         raise GoogleError("That token did not come from Google.")
-    if float(claims.get("exp", 0)) < time.time():
+    try:
+        exp_ts = float(claims.get("exp", 0))
+    except (TypeError, ValueError):
+        exp_ts = 0.0
+    if exp_ts < time.time():
         raise GoogleError("That token has already expired.")
     if not claims.get("email_verified"):
         raise GoogleError("That Google account has no verified email address.")
