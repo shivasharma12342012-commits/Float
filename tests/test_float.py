@@ -1337,5 +1337,10 @@ class HardeningTests(unittest.TestCase):
             for f in entry['fields']:
                 self.assertTrue('key' in f and 'label' in f)
 
+    def test_hardening_124(self):
+        res = stats.analyse('Aarav, 90')
+        self.assertIn('Aarav', res)
+        self.assertIn('Class average', res)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
