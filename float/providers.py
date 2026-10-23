@@ -51,8 +51,9 @@ def _friendly(status: int, body: str, provider: str) -> ProviderError:
     snippet = ""
     try:
         data = json.loads(body)
+        err_obj = data.get("error")
         snippet = (
-            data.get("error", {}).get("message")
+            (err_obj.get("message") if isinstance(err_obj, dict) else "")
             or data.get("message")
             or (data.get("error") if isinstance(data.get("error"), str) else "")
             or ""
