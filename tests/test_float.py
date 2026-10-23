@@ -1113,5 +1113,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_055(self):
         self.assertFalse(security.verify_password('pass', ''))
 
+    def test_hardening_056(self):
+        self.assertFalse(security.verify_password('pass', 'not_a_valid_hash'))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
