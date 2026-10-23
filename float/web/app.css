@@ -526,6 +526,7 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
 .stream {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   min-height: 0;
 }
 
