@@ -1400,5 +1400,10 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(runs), 3)
         self.assertEqual(runs[1], ('teacher', {'bold'}))
 
+    def test_hardening_142(self):
+        runs = artifacts.inline_runs('Hello *important* concept')
+        self.assertEqual(len(runs), 3)
+        self.assertEqual(runs[1], ('important', {'italic'}))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
