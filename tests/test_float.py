@@ -1006,5 +1006,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_020(self):
         self.assertEqual(artifacts.safe_name('folder/sub/doc:test.pdf', 'pdf'), 'foldersubdoctest.pdf')
 
+    def test_hardening_021(self):
+        self.assertEqual(artifacts.safe_name('', 'docx'), 'Document.docx')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
