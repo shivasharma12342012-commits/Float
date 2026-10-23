@@ -285,6 +285,14 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(greeting._first_name(''), '')
         self.assertEqual(greeting._first_name('...'), '')
 
+    def test_greeting_parse_clock_formats(self):
+        import float.greeting as greeting
+        self.assertEqual(greeting._parse_clock('08:30').hour, 8)
+        self.assertEqual(greeting._parse_clock('2:15 PM').hour, 14)
+        self.assertEqual(greeting._parse_clock('09.45').minute, 45)
+        self.assertIsNone(greeting._parse_clock('invalid'))
+        self.assertIsNone(greeting._parse_clock(''))
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
