@@ -1416,5 +1416,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_145(self):
         self.assertIn(r'\(', artifacts._pdf_escape('Formula (a + b)'))
 
+    def test_hardening_146(self):
+        self.assertGreater(len(artifacts._wrap('One two three four five six seven', 12.0, 80.0)), 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
