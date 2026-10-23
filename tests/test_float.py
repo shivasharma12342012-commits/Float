@@ -393,6 +393,12 @@ class SecurityTests(unittest.TestCase):
             sealed = transport.seal_response(b'0' * 32, '/api/test', {'ok': True})
             self.assertIn('enc', sealed)
 
+    def test_transport_open_request_rejects_non_dict(self):
+        import float.transport as transport
+        if transport.AVAILABLE:
+            with self.assertRaises(transport.TransportError):
+                transport.open_request('not-a-dict', '/api/auth/signin')
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
