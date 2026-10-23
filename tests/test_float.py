@@ -1548,5 +1548,10 @@ class HardeningTests(unittest.TestCase):
         tail = db.audit_tail(limit=5)
         self.assertTrue(any(e['action'] == 'test.event.181' for e in tail))
 
+    def test_hardening_182(self):
+        db.record_usage(1, 'anthropic', 'claude-sonnet-4-5', 100, 200, 50, 120)
+        summary = db.usage_summary()
+        self.assertIsInstance(summary, list)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
