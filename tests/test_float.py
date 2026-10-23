@@ -1658,5 +1658,11 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(periods), 1)
         self.assertEqual(periods[0]['label'], 'Math 8A')
 
+    def test_hardening_194(self):
+        orig = db.org_get('school_name')
+        db.org_set('school_name', 'Temporary School Name')
+        self.assertEqual(db.org_get('school_name'), 'Temporary School Name')
+        db.org_set('school_name', orig)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
