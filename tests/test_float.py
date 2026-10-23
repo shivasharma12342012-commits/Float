@@ -1652,5 +1652,11 @@ class HardeningTests(unittest.TestCase):
         finally:
             pass
 
+    def test_hardening_193(self):
+        db.set_periods(1, [{'weekday': 0, 'slot': 1, 'starts': '08:00', 'ends': '08:45', 'label': 'Math 8A', 'room': '101'}])
+        periods = db.list_periods(1)
+        self.assertEqual(len(periods), 1)
+        self.assertEqual(periods[0]['label'], 'Math 8A')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
