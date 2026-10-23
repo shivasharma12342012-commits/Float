@@ -92,7 +92,7 @@ def password_problems(password: str) -> list[str]:
     problems: list[str] = []
     if len(password) < 10:
         problems.append("Use at least 10 characters.")
-    if password.lower() in {"password12", "password123", "teacher123", "12345678910"}:
+    if password.strip().lower() in {"password12", "password123", "teacher123", "12345678910", "1234567890", "qwerty12345"}:
         problems.append("That one is on every guessing list. Pick something else.")
     if len(set(password)) < 5:
         problems.append("Use at least 5 different characters.")
