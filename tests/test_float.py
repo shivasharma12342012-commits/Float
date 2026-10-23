@@ -1368,5 +1368,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_131(self):
         self.assertEqual(tools.toolkit_entry('letter')['name'], 'Letter to the principal')
 
+    def test_hardening_132(self):
+        self.assertEqual(tools.toolkit_entry('slides')['name'], 'Lesson slides')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
