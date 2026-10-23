@@ -1439,5 +1439,8 @@ class HardeningTests(unittest.TestCase):
         enc = security.encrypt_secret('sk-sample-test-key-12345')
         self.assertTrue(len(enc) > 20)
 
+    def test_hardening_152(self):
+        self.assertEqual(security.decrypt_secret('invalid_ciphertext_without_prefix'), '')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
