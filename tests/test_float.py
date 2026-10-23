@@ -1251,5 +1251,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_096(self):
         self.assertEqual(db.get_messages(999999), [])
 
+    def test_hardening_097(self):
+        self.assertIn('anthropic', db.allowed_providers())
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
