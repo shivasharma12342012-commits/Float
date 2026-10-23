@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS users (
     grades        TEXT NOT NULL DEFAULT '[]',
     language      TEXT NOT NULL DEFAULT 'en',
     assist_level  TEXT NOT NULL DEFAULT 'draft',
-    accent        TEXT NOT NULL DEFAULT '#E8A33D',
+    accent        TEXT NOT NULL DEFAULT '#D97757',
     appearance    TEXT NOT NULL DEFAULT 'system',
     created_at    REAL NOT NULL,
     last_seen     REAL NOT NULL DEFAULT 0,
