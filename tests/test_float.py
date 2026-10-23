@@ -364,6 +364,12 @@ class SecurityTests(unittest.TestCase):
         with self.assertRaises(attachments.AttachmentError):
             attachments.to_text({'name': 'old.ppt', 'data': b64})
 
+    def test_attachments_rejects_empty_text_file(self):
+        import base64, float.attachments as attachments
+        b64 = base64.b64encode(b'   \n  ').decode('ascii')
+        with self.assertRaises(attachments.AttachmentError):
+            attachments.to_text({'name': 'empty.txt', 'data': b64})
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
