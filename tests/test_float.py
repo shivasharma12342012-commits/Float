@@ -1236,5 +1236,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_091(self):
         self.assertEqual(db.class_marks(999999), [])
 
+    def test_hardening_092(self):
+        self.assertEqual(db.list_periods(999999), [])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
