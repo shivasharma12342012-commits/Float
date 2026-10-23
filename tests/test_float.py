@@ -1483,5 +1483,10 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(m.id, 'test-model')
         self.assertTrue(m.vision)
 
+    def test_hardening_164(self):
+        p = config.PROVIDERS['openai']
+        self.assertEqual(p.id, 'openai')
+        self.assertGreater(len(p.models), 0)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
