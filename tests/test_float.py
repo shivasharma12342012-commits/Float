@@ -1474,5 +1474,9 @@ class HardeningTests(unittest.TestCase):
         s.lan = True
         self.assertTrue(s.lan)
 
+    def test_hardening_162(self):
+        config.ensure_dirs()
+        self.assertTrue(config.DATA_DIR.exists() and config.FILES_DIR.exists())
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
