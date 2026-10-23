@@ -1012,5 +1012,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_022(self):
         self.assertEqual(len(artifacts.parse_markdown('# H1\n## H2\n### H3')), 3)
 
+    def test_hardening_023(self):
+        self.assertEqual(len(artifacts.parse_markdown('| Col A | Col B |\n|---|---|\n| Val 1 | Val 2 |')), 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
