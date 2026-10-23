@@ -1543,5 +1543,10 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_180(self):
         self.assertIn('Chemistry', config.SUBJECTS)
 
+    def test_hardening_181(self):
+        db.audit('test.event.181', user_id=1, actor='Teacher', detail='Test audit action')
+        tail = db.audit_tail(limit=5)
+        self.assertTrue(any(e['action'] == 'test.event.181' for e in tail))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
