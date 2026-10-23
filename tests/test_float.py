@@ -1395,5 +1395,10 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_140(self):
         self.assertEqual(tools.toolkit_entry('hpc')['name'], 'Holistic progress descriptors')
 
+    def test_hardening_141(self):
+        runs = artifacts.inline_runs('Hello **teacher** friend')
+        self.assertEqual(len(runs), 3)
+        self.assertEqual(runs[1], ('teacher', {'bold'}))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
