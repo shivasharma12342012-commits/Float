@@ -1675,5 +1675,14 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_user(u['id'])
 
+    def test_hardening_196(self):
+        u = db.create_user('temp_pass_196@school.in', 'Temp Pass Teacher', 'TempPass123!')
+        try:
+            db.set_password(u['id'], 'NewPassword456!')
+            u_updated = db.get_user(u['id'])
+            self.assertTrue(security.verify_password('NewPassword456!', u_updated['password_hash']))
+        finally:
+            db.delete_user(u['id'])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
