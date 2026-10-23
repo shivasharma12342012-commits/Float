@@ -71,8 +71,9 @@ def env_int(name: str, default: int) -> int:
 
 def env_float(name: str, default: float) -> float:
     try:
-        return float(env(name) or default)
-    except ValueError:
+        raw = env(name)
+        return float(raw) if raw != "" else default
+    except (ValueError, TypeError):
         return default
 
 
