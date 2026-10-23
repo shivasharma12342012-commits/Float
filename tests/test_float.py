@@ -1003,5 +1003,8 @@ class HardeningTests(unittest.TestCase):
         res = tools.fill_prompt(entry, vals)
         self.assertGreater(len(res), 20)
 
+    def test_hardening_020(self):
+        self.assertEqual(artifacts.safe_name('folder/sub/doc:test.pdf', 'pdf'), 'foldersubdoctest.pdf')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
