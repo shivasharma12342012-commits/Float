@@ -505,6 +505,17 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(len(att), 1)
         self.assertEqual(att[0]['absent'], [students[1]['id']])
 
+    def test_db_cap_override_and_default(self):
+        import importlib, float.config as config, float.db as db
+        importlib.reload(config); importlib.reload(db); db.init()
+        uid = db.create_user('cap@school.in', 'Cap Teacher', 'passphrase123')['id']
+        db.org_set('teacher_monthly_paise_cap', '5000')
+        self.assertEqual(db.cap_for(uid), (5000, False))
+        db.set_cap_override(uid, 12000)
+        self.assertEqual(db.cap_for(uid), (12000, True))
+        db.set_cap_override(uid, None)
+        self.assertEqual(db.cap_for(uid), (5000, False))
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
