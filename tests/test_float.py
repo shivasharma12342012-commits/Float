@@ -1024,5 +1024,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_026(self):
         self.assertEqual(artifacts._column(25), 'Z')
 
+    def test_hardening_027(self):
+        self.assertEqual(artifacts._column(26), 'AA')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
