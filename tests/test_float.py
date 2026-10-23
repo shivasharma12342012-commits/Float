@@ -605,6 +605,15 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(rows[1], {'roll': '2', 'name': 'Diya Verma'})
         self.assertEqual(rows[2], {'roll': '3', 'name': 'Ishaan Patel'})
 
+    def test_server_band_classification(self):
+        import float.server as server
+        self.assertEqual(server._band(0), 'No use')
+        self.assertEqual(server._band(1), 'Light')
+        self.assertEqual(server._band(19), 'Light')
+        self.assertEqual(server._band(20), 'Regular')
+        self.assertEqual(server._band(99), 'Regular')
+        self.assertEqual(server._band(100), 'Frequent')
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
