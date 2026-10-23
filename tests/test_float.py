@@ -741,6 +741,19 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(resp.status, 204)
             self.assertIn('POST', resp.headers.get('Allow', ''))
 
+    def test_server_rejects_oversized_content_length(self):
+        import http.client
+        hc = http.client.HTTPConnection('127.0.0.1', self.srv.server_port, timeout=5)
+        try:
+            hc.putrequest('POST', '/api/auth/signin')
+            hc.putheader('Content-Length', str(99_000_000))
+            hc.endheaders()
+            resp = hc.getresponse()
+            resp.read()
+            self.assertEqual(resp.status, 413)
+        finally:
+            hc.close()
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
