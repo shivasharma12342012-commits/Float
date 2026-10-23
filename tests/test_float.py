@@ -123,6 +123,10 @@ class ArtifactTests(unittest.TestCase):
         kinds = [b.kind for b in artifacts.parse_markdown('---\n\n***\n\n___')]
         self.assertEqual(kinds, ['rule', 'rule', 'rule'])
 
+    def test_parse_markdown_pagebreaks(self):
+        kinds = [b.kind for b in artifacts.parse_markdown('\\pagebreak\n<!-- pagebreak -->')]
+        self.assertEqual(kinds, ['pagebreak', 'pagebreak'])
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
