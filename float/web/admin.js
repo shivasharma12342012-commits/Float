@@ -62,7 +62,7 @@ function toast(text, bad = false) {
   toastTimer = setTimeout(() => (node.hidden = true), bad ? 5200 : 3200);
 }
 
-function rupees(paise) { return "₹" + (paise / 100).toFixed(2); }
+function rupees(paise) { return "₹" + ((Number(paise) || 0) / 100).toFixed(2); }
 
 const TABS = [
   ["overview", "Overview"],
