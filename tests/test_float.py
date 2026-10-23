@@ -1442,5 +1442,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_152(self):
         self.assertEqual(security.decrypt_secret('invalid_ciphertext_without_prefix'), '')
 
+    def test_hardening_153(self):
+        self.assertEqual(security._device_key(), security._device_key())
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
