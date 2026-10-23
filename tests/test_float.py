@@ -1292,5 +1292,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_109(self):
         self.assertEqual(server._band(250), 'Frequent')
 
+    def test_hardening_110(self):
+        self.assertEqual(server._as_list('["math", "science"]'), ['math', 'science'])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
