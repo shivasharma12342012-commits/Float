@@ -1553,5 +1553,15 @@ class HardeningTests(unittest.TestCase):
         summary = db.usage_summary()
         self.assertIsInstance(summary, list)
 
+    def test_hardening_183(self):
+        cid = db.add_class(1, 'Class 6B_test', '6', 'B')
+        try:
+            added = db.add_students(cid, [{'name': 'Aarav Kumar', 'roll': '1'}, {'name': 'Diya Singh', 'roll': '2'}])
+            self.assertEqual(added, 2)
+            students = db.list_students(cid)
+            self.assertEqual(len(students), 2)
+        finally:
+            db.delete_class(cid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
