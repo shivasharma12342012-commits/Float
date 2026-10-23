@@ -1120,5 +1120,11 @@ class HardeningTests(unittest.TestCase):
         masked = security.mask_key('sk-ant-1234567890abcdef')
         self.assertTrue(masked.startswith('sk-ant-') and masked.endswith('cdef'))
 
+    def test_hardening_058(self):
+        rl = security.RateLimiter(limit=2, window=60.0)
+        self.assertTrue(rl.check('u1')[0])
+        self.assertTrue(rl.check('u1')[0])
+        self.assertFalse(rl.check('u1')[0])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
