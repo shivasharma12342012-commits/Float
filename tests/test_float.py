@@ -1498,5 +1498,14 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_167(self):
         self.assertEqual(config.VERSION, '1.0.0')
 
+    def test_hardening_168(self):
+        config.save_google('test_client_id.apps.google.com', 'test_client_secret')
+        self.assertEqual(config.settings.google_client_id, 'test_client_id.apps.google.com')
+        config.settings.google_client_id = ''
+        config.settings.google_client_secret = ''
+        g_file = config.DATA_DIR / 'google.json'
+        if g_file.exists():
+            g_file.unlink()
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
