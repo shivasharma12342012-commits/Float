@@ -322,6 +322,8 @@ def _load_google_file() -> None:
         saved = json.loads((DATA_DIR / "google.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return
+    if not isinstance(saved, dict):
+        return
     if not settings.google_client_id:
         settings.google_client_id = str(saved.get("client_id", "")).strip()
         settings.google_client_secret = str(saved.get("client_secret", "")).strip()
