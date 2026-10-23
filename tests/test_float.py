@@ -1706,5 +1706,16 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_user(u['id'])
 
+    def test_hardening_199(self):
+        u = db.create_user('temp_all_sess_199@school.in', 'Temp All Sess', 'TempPass123!')
+        try:
+            tok1 = db.create_session(u['id'])
+            tok2 = db.create_session(u['id'])
+            db.end_all_sessions(u['id'])
+            self.assertIsNone(db.resolve_session(tok1))
+            self.assertIsNone(db.resolve_session(tok2))
+        finally:
+            db.delete_user(u['id'])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
