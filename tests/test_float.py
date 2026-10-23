@@ -262,6 +262,15 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(fp1, fp2)
         self.assertEqual(len(fp1), 64)
 
+    def test_env_int_and_float_preserve_zero(self):
+        import float.config as config
+        os.environ['FLOAT_TEST_ZERO'] = '0'
+        try:
+            self.assertEqual(config.env_int('FLOAT_TEST_ZERO', 99), 0)
+            self.assertEqual(config.env_float('FLOAT_TEST_ZERO', 99.5), 0.0)
+        finally:
+            os.environ.pop('FLOAT_TEST_ZERO', None)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
