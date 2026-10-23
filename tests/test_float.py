@@ -256,6 +256,12 @@ class SecurityTests(unittest.TestCase):
         tok = security.new_token(2)
         self.assertGreaterEqual(len(tok), 10)
 
+    def test_token_fingerprint_is_deterministic_hex(self):
+        fp1 = security.token_fingerprint('tok-1')
+        fp2 = security.token_fingerprint('tok-1')
+        self.assertEqual(fp1, fp2)
+        self.assertEqual(len(fp1), 64)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
