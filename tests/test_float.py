@@ -1614,5 +1614,12 @@ class HardeningTests(unittest.TestCase):
         cap_def, over_def = db.cap_for(999888)
         self.assertFalse(over_def)
 
+    def test_hardening_189(self):
+        db.put_key('anthropic', 'sk-ant-test-key-189', scope='org')
+        try:
+            self.assertEqual(db.get_key('anthropic'), 'sk-ant-test-key-189')
+        finally:
+            db.drop_key('anthropic', scope='org')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
