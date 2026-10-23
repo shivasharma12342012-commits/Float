@@ -232,6 +232,7 @@ function paintModelChip() {
   if (chosen) {
     S.model = chosen.id;
     $("model-label").textContent = chosen.label;
+    $("chip-model").classList.remove("on");
   } else {
     $("model-label").textContent = "Add a key";
     $("chip-model").classList.add("on");
