@@ -321,7 +321,7 @@ async function openThread(convId) {
 }
 
 function addUserTurn(text, attachments) {
-  const turn = make("div", "turn");
+  const turn = make("div", "turn turn-user");
   const who = make("div", "turn-who");
   who.append(make("span", "avatar", (S.user.name || "?").charAt(0).toUpperCase()));
   who.append(make("span", null, "You"));
@@ -505,6 +505,9 @@ function setStreaming(on) {
   const button = $("send");
   button.classList.toggle("stop", on);
   button.setAttribute("aria-label", on ? "Stop" : "Send");
+  button.innerHTML = on
+    ? '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.8" fill="currentColor"/></svg>'
+    : '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M8 13V3M3.6 7.2 8 2.8l4.4 4.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
   $("input").disabled = false;
   syncSend();
 }
@@ -1756,7 +1759,7 @@ let lens = "plain";
 try { lens = localStorage.getItem("float.lens") || "plain"; } catch { /* ignore */ }
 if (!LENSES[lens]) lens = "plain";
 function paintLens() {
-  $("lens-label").textContent = "Lens: " + LENSES[lens].name;
+  $("lens-label").textContent = lens === "plain" ? "Style" : LENSES[lens].name;
   $("chip-lens").classList.toggle("lens-on", lens !== "plain");
 }
 function setLens(id) {
@@ -1805,19 +1808,26 @@ $("attach").addEventListener("click", () => popMenu($("attach"), [
 $("nav-back").addEventListener("click", () => navGo(-1));
 $("nav-forward").addEventListener("click", () => navGo(1));
 
-// From Drive / From Calendar / From Gmail: start the sentence, let the teacher finish it.
+// Quick starters on the home screen: open the toolkit item or fill a prompt.
 document.querySelectorAll(".starter").forEach((button) =>
   button.addEventListener("click", () => {
-    const caps = (S.boot && S.boot.capabilities) || {};
-    if (!caps.computer) {
-      toast(caps.computer_why || "Turn on computer control (admin panel) so Float can open Drive, Calendar and Gmail for you.", true);
-      return;
+    if (button.dataset.kit && S.boot && S.boot.toolkit) {
+      const entry = S.boot.toolkit.find((t) => t.id === button.dataset.kit);
+      if (entry) {
+        currentPanel = "toolkit";
+        document.querySelectorAll(".rail-link").forEach((l) =>
+          l.setAttribute("aria-current", String(l.dataset.panel === "toolkit")));
+        toolkitForm(entry);
+        return;
+      }
     }
-    const input = $("input");
-    input.value = button.dataset.prompt;
-    grow();
-    input.focus();
-    input.setSelectionRange(input.value.length, input.value.length);
+    if (button.dataset.prompt) {
+      const input = $("input");
+      input.value = button.dataset.prompt;
+      grow();
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
   }));
 
 // Dictation: the browser's own speech recognition, so nothing leaves Float's code.
