@@ -399,6 +399,14 @@ class SecurityTests(unittest.TestCase):
             with self.assertRaises(transport.TransportError):
                 transport.open_request('not-a-dict', '/api/auth/signin')
 
+    def test_transport_open_request_signals_rekey_on_kid_mismatch(self):
+        import float.transport as transport
+        if transport.AVAILABLE:
+            try:
+                transport.open_request({'kid': 'wrong-kid'}, '/api/auth/signin')
+            except transport.TransportError as exc:
+                self.assertTrue(exc.rekey)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
