@@ -145,6 +145,12 @@ class ArtifactTests(unittest.TestCase):
         blocks = artifacts.parse_markdown('| A | B | C |\n|---|---|---|\n| 1 |')
         self.assertEqual(blocks[0].rows[1], ['1', '', ''])
 
+    def test_inline_runs_bold_italic_code(self):
+        runs = artifacts.inline_runs('**bold** *italic* `code` plain')
+        self.assertIn(('bold', {'bold'}), runs)
+        self.assertIn(('italic', {'italic'}), runs)
+        self.assertIn(('code', {'code'}), runs)
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
