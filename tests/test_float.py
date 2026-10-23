@@ -1597,5 +1597,13 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_task(tid, 1)
 
+    def test_hardening_187(self):
+        nid = db.add_notice('Test Notice 187', 'Notice text', 'info', 1)
+        try:
+            notices = db.active_notices()
+            self.assertTrue(any(n['id'] == nid for n in notices))
+        finally:
+            db.retire_notice(nid)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
