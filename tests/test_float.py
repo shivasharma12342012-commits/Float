@@ -407,6 +407,13 @@ class SecurityTests(unittest.TestCase):
             except transport.TransportError as exc:
                 self.assertTrue(exc.rekey)
 
+    def test_providers_friendly_error_messages(self):
+        import float.providers as providers
+        self.assertEqual(providers._friendly(401, '{}', 'openai').status, 401)
+        self.assertTrue(providers._friendly(429, '{}', 'anthropic').retryable)
+        self.assertTrue(providers._friendly(503, 'server down', 'google').retryable)
+        self.assertFalse(providers._friendly(404, '{"error": "not found"}', 'openai').retryable)
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
