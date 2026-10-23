@@ -358,6 +358,12 @@ class SecurityTests(unittest.TestCase):
         extracted = attachments.to_text({'name': 'roster.xlsx', 'data': b64})
         self.assertIn('Aarav', extracted)
 
+    def test_attachments_rejects_unsupported_legacy_binary(self):
+        import base64, float.attachments as attachments
+        b64 = base64.b64encode(b'binary').decode('ascii')
+        with self.assertRaises(attachments.AttachmentError):
+            attachments.to_text({'name': 'old.ppt', 'data': b64})
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
