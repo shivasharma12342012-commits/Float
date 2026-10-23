@@ -106,6 +106,9 @@ class ArtifactTests(unittest.TestCase):
     def test_safe_name_handles_empty_input(self):
         self.assertEqual(artifacts.safe_name('', 'docx'), 'Document.docx')
 
+    def test_safe_name_deduplicates_extension(self):
+        self.assertEqual(artifacts.safe_name('notes.pdf', 'pdf'), 'notes.pdf')
+
 
 # ---------------------------------------------------------------------------
 # security: hashing, at-rest encryption, rate limiting
