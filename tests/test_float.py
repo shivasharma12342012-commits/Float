@@ -441,6 +441,11 @@ class SecurityTests(unittest.TestCase):
         self.assertIn('use_computer', with_comp)
         self.assertNotIn('use_computer', without_comp)
 
+    def test_tools_execute_rejects_unknown_tool(self):
+        import float.tools as tools
+        res = tools.execute('nonexistent_tool', {}, {'id': 1}, None)
+        self.assertIn('No tool called', res['text'])
+
 
 # ---------------------------------------------------------------------------
 # the HTTP server, exercised the way the browser does
