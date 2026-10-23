@@ -746,6 +746,9 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
   background: var(--sage);
   font-weight: 600;
 }
+.prose tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--sage) 45%, transparent);
+}
 
 .working {
   display: inline-flex;
