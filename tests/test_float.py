@@ -1495,5 +1495,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_166(self):
         self.assertEqual(config.APP_NAME, 'Float')
 
+    def test_hardening_167(self):
+        self.assertEqual(config.VERSION, '1.0.0')
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
