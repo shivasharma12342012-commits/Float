@@ -1262,5 +1262,8 @@ class HardeningTests(unittest.TestCase):
     def test_hardening_099(self):
         self.assertIsInstance(db.active_notices(), list)
 
+    def test_hardening_100(self):
+        self.assertIsInstance(db.org_all(), dict)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
