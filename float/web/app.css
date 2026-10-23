@@ -1629,6 +1629,7 @@ table.grid td.num { text-align: right; font-variant-numeric: tabular-nums; }
   font: 12.5px/1.5 var(--mono);
   max-height: 46vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--line);
   border-radius: var(--r);
   background: var(--paper);
