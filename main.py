@@ -7,6 +7,7 @@
     python main.py --port 9000     use a different port
     python main.py set-password you@school.edu.in   reset someone's password from the terminal
     python main.py make-admin you@school.edu.in     promote an existing account
+    python main.py stop            stop the running Float server
     python main.py --version
 
 Everything Float needs lives next to this file once it has run once:
@@ -158,6 +159,26 @@ def _cmd_run(args: argparse.Namespace) -> None:
         _tell_user(f"Port {port} is being used by another program, so Float could not start.\n\n"
                    f"Close that program, or start Float with a different port:\npython main.py --port {port + 1}")
         raise SystemExit(1)
+    pid_file = config.pid_path()
+    try:
+        pid_file.parent.mkdir(parents=True, exist_ok=True)
+        pid_file.write_text(
+            json.dumps({"pid": os.getpid(), "port": srv.server_port, "host": host, "started": time.time()}, indent=2),
+            encoding="utf-8",
+        )
+    except OSError:
+        pass
+
+    def _cleanup_pid() -> None:
+        try:
+            if pid_file.exists():
+                pid_file.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    import atexit
+    atexit.register(_cleanup_pid)
+
     url = f"{scheme}://{shown}:{srv.server_port}"
 
     print(f"{APP_NAME} {VERSION} — {APP_TAGLINE}")
@@ -243,7 +264,129 @@ def _cmd_restore(args: argparse.Namespace) -> None:
     print(f"Restored {chosen.name}. Your previous data was kept as {kept.name}. Start Float again.")
 
 
-_KNOWN_COMMANDS = {"run", "set-password", "make-admin", "restore"}
+def _is_pid_running(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+            if handle:
+                code = ctypes.c_ulong()
+                kernel32.GetExitCodeProcess(handle, ctypes.byref(code))
+                kernel32.CloseHandle(handle)
+                return code.value == 259  # STILL_ACTIVE
+            return False
+        except Exception:
+            return False
+    else:
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
+
+def _kill_pid(pid: int) -> None:
+    if sys.platform == "win32":
+        import subprocess
+        subprocess.run(["taskkill", "/PID", str(pid), "/F", "/T"],
+                       capture_output=True, text=True)
+    else:
+        import signal
+        try:
+            os.kill(pid, signal.SIGTERM)
+            time.sleep(0.5)
+            if _is_pid_running(pid):
+                os.kill(pid, signal.SIGKILL)
+        except OSError:
+            pass
+
+
+def _stop_windows_process_by_port(port: int) -> bool:
+    import subprocess
+    try:
+        res = subprocess.run(["netstat", "-ano", "-p", "tcp"], capture_output=True, text=True, timeout=5)
+        for line in res.stdout.splitlines():
+            parts = line.strip().split()
+            if len(parts) >= 5 and parts[3] == "LISTENING":
+                local_addr = parts[1]
+                if local_addr.endswith(f":{port}"):
+                    pid = int(parts[4])
+                    if pid > 0 and pid != os.getpid():
+                        _kill_pid(pid)
+                        return True
+    except Exception:
+        pass
+    return False
+
+
+def _cmd_stop(args: argparse.Namespace) -> None:
+    pid_file = config.pid_path()
+    pid_data = {}
+    if pid_file.exists():
+        try:
+            pid_data = json.loads(pid_file.read_text(encoding="utf-8"))
+        except Exception:
+            pid_data = {}
+
+    target_pid = pid_data.get("pid")
+    port = getattr(args, "port", None) or pid_data.get("port") or config.settings.port
+    host = getattr(args, "host", None) or "127.0.0.1"
+    force = getattr(args, "force", False)
+
+    stopped = False
+
+    # 1. Graceful HTTP shutdown request
+    scheme = "https" if config.tls_files() else "http"
+    shutdown_url = f"{scheme}://{host}:{port}/api/system/shutdown"
+    import ssl, urllib.request, urllib.error
+    ctx = ssl._create_unverified_context()
+    try:
+        req = urllib.request.Request(
+            shutdown_url,
+            data=b"{}",
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=3, context=ctx) as resp:
+            if resp.status == 200:
+                stopped = True
+    except Exception:
+        pass
+
+    # 2. Check if process is still running and wait
+    if target_pid:
+        start_wait = time.time()
+        while time.time() - start_wait < 3.0:
+            if not _is_pid_running(target_pid):
+                stopped = True
+                break
+            time.sleep(0.2)
+
+        if _is_pid_running(target_pid) and force:
+            _kill_pid(target_pid)
+            stopped = True
+
+    # 3. On Windows, if still not stopped, try port-based process termination
+    if not stopped and sys.platform == "win32":
+        stopped = _stop_windows_process_by_port(port)
+
+    # 4. Clean up PID file
+    try:
+        if pid_file.exists():
+            pid_file.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+    if stopped:
+        print(f"Float server on port {port} has been stopped.")
+    else:
+        print(f"Float does not appear to be running on port {port}.")
+
+
+_KNOWN_COMMANDS = {"run", "stop", "set-password", "make-admin", "restore"}
 
 
 def main() -> None:
@@ -271,6 +414,12 @@ def main() -> None:
     rest_p = sub.add_parser("restore", help="List backups, or restore one (close Float first).")
     rest_p.add_argument("file", nargs="?", default=None)
     rest_p.set_defaults(func=_cmd_restore)
+
+    stop_p = sub.add_parser("stop", help="Stop a running Float server.")
+    stop_p.add_argument("--port", type=int, default=None, help="Port to stop (defaults to active port or 8766).")
+    stop_p.add_argument("--host", default="127.0.0.1", help="Host address (defaults to 127.0.0.1).")
+    stop_p.add_argument("--force", "-f", action="store_true", help="Force terminate process if it does not exit promptly.")
+    stop_p.set_defaults(func=_cmd_stop)
 
     # `python main.py [--host ...] [--port ...] [--no-browser]` with no
     # subcommand named should just start Float — that's the common case a

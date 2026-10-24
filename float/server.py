@@ -1281,6 +1281,55 @@ def admin_export(ctx: Route) -> Any:
     return ("file", ("float-usage.xlsx", artifacts.KINDS["xlsx"][1], artifacts.build_xlsx(rows)))
 
 
+@route("POST", "/api/system/shutdown", auth="none")
+def system_shutdown(ctx: Route) -> dict[str, Any]:
+    """Gracefully shut down the Float server."""
+    is_admin = ctx.user and ctx.user.get("role") == "admin"
+    if not (ctx.local or is_admin):
+        raise HttpError(403, "Only someone at the Float computer or a school admin can shut down the server.")
+
+    user_id = int(ctx.user["id"]) if ctx.user else None
+    actor = ctx.user["name"] if ctx.user else ("localhost" if ctx.local else "system")
+    db.audit("server.shutdown", user_id=user_id, actor=actor, ip=ctx.ip, level="warn")
+
+    try:
+        from . import mcp
+        mcp.shutdown()
+    except Exception:
+        pass
+
+    try:
+        from . import computer
+        computer.stop_current()
+    except Exception:
+        pass
+
+    try:
+        pid_file = config.pid_path()
+        if pid_file.exists():
+            pid_file.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+    srv = ctx.request.server
+
+    def _do_shutdown() -> None:
+        time.sleep(0.4)
+        try:
+            srv.shutdown()
+        except Exception:
+            pass
+        try:
+            srv.server_close()
+        except Exception:
+            pass
+        time.sleep(0.2)
+        os._exit(0)
+
+    threading.Thread(target=_do_shutdown, daemon=True, name="float-shutdown").start()
+    return {"ok": True, "message": "Float server is shutting down."}
+
+
 # ---------------------------------------------------------------------------
 # The HTTP layer
 # ---------------------------------------------------------------------------

@@ -1767,6 +1767,36 @@ function tabAbout() {
   panel.append(inner);
   body.append(panel);
 
+  if (S.boot.capabilities && (S.boot.capabilities.local || (S.user && S.user.role === "admin"))) {
+    const srvPanel = make("div", "panel");
+    srvPanel.style.marginTop = "14px";
+    const srvBody = make("div", "panel-body");
+    const srvRow = make("div", "row");
+    const srvGrow = make("div", "grow");
+    srvGrow.append(make("b", null, "Float Server"));
+    srvGrow.append(make("small", null, "Stop the background server process on this computer."));
+    srvRow.append(srvGrow);
+    const stopBtn = make("button", "btn danger", "Shut down");
+    stopBtn.addEventListener("click", async () => {
+      if (!confirm("Shut down the Float server? You will be disconnected until it is started again.")) return;
+      stopBtn.disabled = true;
+      stopBtn.textContent = "Shutting down…";
+      try {
+        await api("/api/system/shutdown", { method: "POST" });
+        closeModal();
+        document.body.innerHTML = '<div class="empty" style="padding-top:25vh"><b>Float has been shut down</b>You can safely close this window. To start Float again, double-click Start Float.</div>';
+      } catch (err) {
+        toast(err.message, true);
+        stopBtn.disabled = false;
+        stopBtn.textContent = "Shut down";
+      }
+    });
+    srvRow.append(stopBtn);
+    srvBody.append(srvRow);
+    srvPanel.append(srvBody);
+    body.append(srvPanel);
+  }
+
   const mark = make("p", "hint", "Float · Your teaching, lighter.");
   mark.style.textAlign = "center";
   mark.style.cursor = "default";

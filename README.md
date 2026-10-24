@@ -415,6 +415,8 @@ Float/
 ├── Start Float.bat               double-click launcher (shows messages)
 ├── Start Float.vbs               double-click launcher (no console window)
 ├── Start Float School Server.bat one-server-for-the-school launcher
+├── Stop Float.bat                double-click to stop any running Float server
+├── Stop Float.vbs                silent stop launcher
 ├── float.ico                     the Float logo
 ├── float/
 │   ├── config.py                 providers, models, Indian-schools context
@@ -458,8 +460,9 @@ Float is built for and supported on **Windows**.
 | **Pin it to the taskbar** | Right-click the shortcut → *Pin to taskbar*. |
 | **Start Float when you log in** | Press `Win + R`, type `shell:startup`, and drop the shortcut in the folder. |
 | **See error messages** | Run **`Start Float.bat`** instead. It shows its output. |
+| **Stop the running Float server** | Double-click **`Stop Float.bat`** (or run `python main.py stop`). |
 | **Use a different port** | `python main.py --port 9000` |
-| **Close Float** | Close its window, or press `Ctrl + C`. Everyone is signed out. |
+| **Close Float** | Close its window, run `Stop Float.bat`, or press `Ctrl + C`. Everyone is signed out. |
 
 > The server and tests also run on Linux, but the launchers, window mode and "use my computer" tool have only been checked on Windows.
 

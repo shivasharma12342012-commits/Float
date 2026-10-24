@@ -572,6 +572,33 @@ function viewOrg(wrap) {
   exportBody.append(exportRow);
   exportPanel.append(exportBody);
   wrap.append(exportPanel);
+
+  const stopPanel = make("div", "panel");
+  stopPanel.style.marginTop = "14px";
+  const stopBody = make("div", "panel-body");
+  const stopRow = make("div", "row");
+  const stopGrow = make("div", "grow");
+  stopGrow.append(make("b", null, "Shut down Float server"));
+  stopGrow.append(make("small", null, "Safely stop the server process. Any connected teachers will be disconnected until Float is started again."));
+  stopRow.append(stopGrow);
+  const stopBtn = make("button", "btn danger", "Shut down");
+  stopBtn.addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to stop the Float server? Anyone currently using Float will be disconnected.")) return;
+    stopBtn.disabled = true;
+    stopBtn.textContent = "Shutting down…";
+    try {
+      await api("/api/system/shutdown", { method: "POST" });
+      document.body.innerHTML = '<div class="empty" style="padding-top:20vh"><b>Float has been shut down</b>You can safely close this window. To start Float again, double-click Start Float.</div>';
+    } catch (err) {
+      toast(err.message, true);
+      stopBtn.disabled = false;
+      stopBtn.textContent = "Shut down";
+    }
+  });
+  stopRow.append(stopBtn);
+  stopBody.append(stopRow);
+  stopPanel.append(stopBody);
+  wrap.append(stopPanel);
 }
 
 /* ── notices ───────────────────────────────────────────────────────────── */

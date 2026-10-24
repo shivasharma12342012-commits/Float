@@ -793,6 +793,24 @@ class ServerTests(unittest.TestCase):
 
 
 class HardeningTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.data_dir = _fresh_data_dir()
+        import importlib
+        import float.config as config
+        import float.db as db
+        import float.server as server
+        importlib.reload(config)
+        importlib.reload(db)
+        importlib.reload(server)
+        config.ensure_dirs()
+        db.init()
+        if db.count_users() == 0:
+            db.create_user("teacher1@school.in", "Teacher One", "TeacherPass123!", role="admin")
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.data_dir, ignore_errors=True)
 
     def test_hardening_001_toolkit_lesson_plan(self):
         entry = tools.toolkit_entry('lesson-plan')
