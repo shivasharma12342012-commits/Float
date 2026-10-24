@@ -61,7 +61,7 @@ Everything happens on your own computer. There is no Float server collecting any
 
 ## 🌱 Why Float exists
 
-Most classroom software is built for the institution: attendance systems, gradebooks, timetabling engines. Float is built for the person standing at the board, with six periods in the day, forty-odd faces in every room, and a hundred and twenty books to get through before the weekend.
+Most classroom software is built for the institution: attendance systems, gradebooks, timetabling engines. Float is built for the person standing at the board, with eight periods in the day, forty-odd faces in every room, and a hundred and twenty books to get through before the weekend.
 
 It doesn't ask which vendor your school has a contract with. It doesn't need an IT rollout. It doesn't place anyone above you except the one admin your own school chooses.
 

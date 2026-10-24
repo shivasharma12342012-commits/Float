@@ -1278,7 +1278,7 @@ class FloatHandler(BaseHTTPRequestHandler):
             host = raw_host.split("]")[0] + "]" if "]" in raw_host else raw_host
         else:
             host = raw_host.split(":")[0]
-        if host in {"127.0.0.1", "localhost", "[::1]", "::1", config.settings.host}:
+        if host.lower() in {"127.0.0.1", "localhost", "[::1]", "::1", config.settings.host.lower()}:
             return True
         if not config.settings.lan:
             return False

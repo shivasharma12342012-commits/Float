@@ -345,8 +345,8 @@ def _tool_look_up_class(payload: dict[str, Any], user: dict[str, Any],
                          f"{match['students']} students."]
     if "students" in include:
         students = db.list_students(int(match["id"]))
-        report.append("Students: " + ", ".join(
-            f"{s['roll']} {s['name']}".strip() for s in students) or "none")
+        s_list = ", ".join(f"{s['roll']} {s['name']}".strip() for s in students)
+        report.append(f"Students: {s_list or 'none'}")
     if "marks" in include:
         marks = db.class_marks(int(match["id"]))[:200]
         if marks:

@@ -95,7 +95,17 @@ def docx_text(data: bytes) -> str:
     ns = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
     with zipfile.ZipFile(io.BytesIO(data)) as zf:
         root = ElementTree.fromstring(zf.read("word/document.xml"))
-    paras = ["".join(t.text or "" for t in p.iter(ns + "t")) for p in root.iter(ns + "p")]
+    paras = []
+    for p in root.iter(ns + "p"):
+        runs = []
+        for elem in p.iter():
+            if elem.tag == ns + "t":
+                runs.append(elem.text or "")
+            elif elem.tag == ns + "tab":
+                runs.append("\t")
+            elif elem.tag == ns + "br":
+                runs.append("\n")
+        paras.append("".join(runs))
     return "\n".join(paras)
 
 
@@ -115,7 +125,12 @@ def xlsx_text(data: bytes) -> str:
                     val = "" if v is None else (v.text or "")
                     if c.get("t") == "inlineStr":   # text stored in the cell itself
                         val = "".join(t.text or "" for t in c.iter(ns + "t"))
-                    cells.append(shared[int(val)] if c.get("t") == "s" and val.isdigit() and 0 <= int(val) < len(shared) else val)
+                    if c.get("t") == "s" and val.isdigit() and 0 <= int(val) < len(shared):
+                        cells.append(shared[int(val)])
+                    elif c.get("t") == "b":
+                        cells.append("TRUE" if val == "1" else "FALSE")
+                    else:
+                        cells.append(val)
                 lines.append("\t".join(cells))
     return "\n".join(lines)
 

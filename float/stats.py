@@ -138,7 +138,7 @@ def compute(a: Analysis) -> dict:
         mx = a.maxes[i]
         qs.append({"label": label, "max": mx, "n": len(got),
                    "avg": statistics.fmean(got) if got else None,
-                   "pct": (100 * statistics.fmean(got) / mx) if got and mx else None})
+                   "pct": (100 * statistics.fmean(got) / mx) if got and mx and mx > 0 else None})
     res["questions"] = qs
     ranked = [q for q in qs if q["pct"] is not None]
     res["hardest"] = min(ranked, key=lambda q: q["pct"]) if ranked else None
@@ -147,9 +147,11 @@ def compute(a: Analysis) -> dict:
     if (res["hardest"] and res["easiest"] and res["hardest"] is not res["easiest"]
             and res["hardest"].get("max") and res["easiest"].get("max")):
         hi, ei = a.questions.index(res["hardest"]["label"]), a.questions.index(res["easiest"]["label"])
-        for s in scored:
-            if (s.scores[hi] / res["hardest"]["max"] >= 0.7) and (s.scores[ei] / res["easiest"]["max"] <= 0.5):
-                res["careless"].append(s)
+        h_max, e_max = res["hardest"]["max"], res["easiest"]["max"]
+        if h_max > 0 and e_max > 0:
+            for s in scored:
+                if (s.scores[hi] / h_max >= 0.7) and (s.scores[ei] / e_max <= 0.5):
+                    res["careless"].append(s)
     return res
 
 
