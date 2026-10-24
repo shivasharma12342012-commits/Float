@@ -31,6 +31,12 @@ DB_PATH = DATA_DIR / "float.sqlite3"
 FILES_DIR = DATA_DIR / "files"
 LOG_PATH = DATA_DIR / "float.log"
 DEVICE_KEY_PATH = DATA_DIR / ".device_key"
+MCP_CONFIG_PATH = DATA_DIR / "mcp.json"
+
+
+def mcp_config_path() -> Path:
+    data_dir = Path(os.environ.get("FLOAT_DATA_DIR") or (PROJECT_ROOT / "data"))
+    return data_dir / "mcp.json"
 
 
 # ----------------------------------------------------------------------------

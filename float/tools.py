@@ -22,7 +22,7 @@ import datetime as dt
 import json
 from typing import Any
 
-from . import artifacts, computer, config, db, stats
+from . import artifacts, computer, config, db, mcp, stats
 
 # ---------------------------------------------------------------------------
 # System prompt
@@ -267,7 +267,9 @@ def tools_for(user: dict[str, Any], allow_computer: bool) -> list[dict[str, Any]
     names = {"create_file", "look_up_class", "save_task", "read_my_day"}
     if allow_computer:
         names.add("use_computer")
-    return [t for t in TOOL_SCHEMAS if t["name"] in names]
+    active = [t for t in TOOL_SCHEMAS if t["name"] in names]
+    active.extend(mcp.get_tools())
+    return active
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +278,9 @@ def tools_for(user: dict[str, Any], allow_computer: bool) -> list[dict[str, Any]
 def execute(name: str, payload: dict[str, Any], user: dict[str, Any],
             conv_id: int | None, emit: Any = None, *, allow_computer: bool = True) -> dict[str, Any]:
     """Run a tool. Returns ``{"text": <for the model>, "card": <for the UI or None>}``."""
+    if name.startswith("mcp__") or mcp.is_mcp_tool(name):
+        return mcp.call_tool(name, payload)
+
     if name == "use_computer" and not (allow_computer and config.settings.computer_control):
         return {
             "text": "Computer control is only available when sitting at the Float computer itself.",
@@ -297,6 +302,19 @@ def execute(name: str, payload: dict[str, Any], user: dict[str, Any],
             computer.end(f"crashed: {exc}")                 # never leave the pointer "in use"
         return {"text": f"The tool failed: {exc}", "card": None}
 
+
+def tool_label(name: str) -> str:
+    """Human-friendly label for tool execution stream in the UI."""
+    if name.startswith("mcp__") or mcp.is_mcp_tool(name):
+        return mcp.tool_label(name)
+    labels = {
+        "create_file": "Making the file",
+        "look_up_class": "Looking up the class",
+        "save_task": "Adding to your list",
+        "use_computer": "Using your computer",
+        "read_my_day": "Checking your day",
+    }
+    return labels.get(name, "Working")
 
 def _tool_create_file(payload: dict[str, Any], user: dict[str, Any],
                       conv_id: int | None, emit: Any) -> dict[str, Any]:

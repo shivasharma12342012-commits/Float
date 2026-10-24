@@ -429,6 +429,7 @@ Float/
 │   ├── greeting.py               the opening screen's greeting
 │   ├── stats.py                  class statistics, calculated in code
 │   ├── tools.py                  the 19-entry toolkit and the tool-calling system prompt
+│   ├── mcp.py                    Model Context Protocol (MCP) client and tool runner
 │   ├── agent.py                  the conversation loop
 │   ├── google.py                 OAuth sign-in and Drive upload
 │   ├── server.py                 the HTTP server and every API route

@@ -1089,6 +1089,7 @@ const TABS = [
   ["you", "You"],
   ["models", "Model & keys"],
   ["assist", "How Float helps"],
+  ["mcp", "MCP Tools"],
   ["security", "Security"],
   ["google", "Google"],
   ["about", "About"],
@@ -1116,7 +1117,7 @@ function openSettings(tab = "you") {
   close.addEventListener("click", closeModal);
   $("modal-foot").append(close);
 
-  ({ you: tabYou, models: tabModels, assist: tabAssist,
+  ({ you: tabYou, models: tabModels, assist: tabAssist, mcp: tabMcp,
      security: tabSecurity, google: tabGoogle, about: tabAbout }[tab])();
 }
 
@@ -1423,6 +1424,200 @@ function tabAssist() {
     "teaches better than one who forwards it."));
   ledgerPanel.append(ledgerBody);
   body.append(ledgerPanel);
+}
+
+async function tabMcp() {
+  const body = $("modal-body");
+  body.innerHTML = '<div class="empty" style="padding:40px 0"><b>Loading MCP tools…</b></div>';
+
+  let data;
+  try {
+    data = await api("/api/mcp");
+  } catch (err) {
+    body.innerHTML = '<div class="empty" style="padding:40px 0"><b>Could not load MCP tools</b><small>' + (err.message || "") + '</small></div>';
+    return;
+  }
+
+  body.innerHTML = "";
+  body.append(make("p", "inline-note",
+    "Model Context Protocol (MCP) connects external tools and data sources to Float. " +
+    "Local scripts or remote servers configured here are queried for tools and made available in chat."));
+
+  const topRow = make("div", "row");
+  topRow.style.marginBottom = "14px";
+  const title = make("b", null, "Configured Servers (" + (data.servers ? data.servers.length : 0) + ")");
+  topRow.append(title);
+  topRow.append(make("span", "spacer"));
+
+  const refreshBtn = make("button", "btn", "Refresh");
+  refreshBtn.addEventListener("click", async () => {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = "Refreshing…";
+    try {
+      await api("/api/mcp/refresh", { method: "POST" });
+      toast("MCP tools refreshed.");
+      tabMcp();
+    } catch (err) {
+      toast(err.message, true);
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = "Refresh";
+    }
+  });
+  topRow.append(refreshBtn);
+
+  const addBtn = make("button", "btn primary", "Add Server");
+  addBtn.style.marginLeft = "7px";
+  addBtn.addEventListener("click", () => renderAddMcpForm(body));
+  topRow.append(addBtn);
+  body.append(topRow);
+
+  if (!data.servers || !data.servers.length) {
+    const empty = make("div", "empty");
+    empty.style.padding = "30px 10px";
+    empty.append(make("b", null, "No MCP servers configured"));
+    empty.append(make("small", null, "Click 'Add Server' to connect an external tool via command or HTTP URL."));
+    body.append(empty);
+    return;
+  }
+
+  data.servers.forEach((srv) => {
+    const panel = make("div", "panel");
+    panel.style.marginBottom = "12px";
+
+    const head = make("div", "panel-head");
+    head.append(make("b", null, srv.name));
+
+    let statusCls = "pill";
+    if (srv.disabled) statusCls = "pill off";
+    else if (srv.status === "error") statusCls = "pill off";
+    else if (srv.status !== "connected") statusCls = "pill warn";
+
+    const statusPill = make("span", statusCls, srv.disabled ? "disabled" : (srv.status || "disconnected"));
+    head.append(statusPill);
+
+    const toolCount = make("span", "chip", (srv.tool_count || 0) + " tool" + (srv.tool_count === 1 ? "" : "s"));
+    toolCount.style.marginLeft = "8px";
+    head.append(toolCount);
+
+    head.append(make("span", "spacer"));
+
+    const delBtn = make("button", "icon-btn", "");
+    delBtn.title = "Remove server";
+    delBtn.setAttribute("aria-label", "Remove server");
+    delBtn.innerHTML = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M4.5 4.5v8.5a1.5 1.5 0 0 0 1.5 1.5h4a1.5 1.5 0 0 0 1.5-1.5V4.5"/></svg>';
+    delBtn.addEventListener("click", async () => {
+      if (!confirm("Remove MCP server '" + srv.name + "'?")) return;
+      try {
+        await api("/api/mcp/servers/" + encodeURIComponent(srv.name), { method: "DELETE" });
+        toast("Removed " + srv.name + ".");
+        tabMcp();
+      } catch (err) { toast(err.message, true); }
+    });
+    head.append(delBtn);
+    panel.append(head);
+
+    const b = make("div", "panel-body");
+    const cmdLine = srv.command ? (srv.command + " " + (srv.args || []).join(" ")) : (srv.url || "");
+    const code = make("code", null, cmdLine);
+    code.style.fontSize = "12px";
+    code.style.opacity = "0.8";
+    b.append(code);
+
+    if (srv.error) {
+      const errBox = make("div", "hint");
+      errBox.style.color = "var(--rose)";
+      errBox.style.marginTop = "6px";
+      errBox.textContent = "Error: " + srv.error;
+      b.append(errBox);
+    }
+
+    if (srv.tools && srv.tools.length) {
+      const toolBox = make("div", null);
+      toolBox.style.marginTop = "10px";
+      srv.tools.forEach((t) => {
+        const item = make("div", "row");
+        item.style.padding = "5px 0";
+        item.style.borderTop = "1px solid var(--border)";
+        const gr = make("div", "grow");
+        gr.append(make("b", null, t.name));
+        if (t.description) {
+          const d = make("small", null, t.description);
+          d.style.display = "block";
+          gr.append(d);
+        }
+        item.append(gr);
+        toolBox.append(item);
+      });
+      b.append(toolBox);
+    }
+    panel.append(b);
+    body.append(panel);
+  });
+}
+
+function renderAddMcpForm(body) {
+  body.innerHTML = "";
+  body.append(make("p", "inline-note", "Add a new Model Context Protocol (MCP) server."));
+
+  const nameInput = field(body, "Server Name", "text", "e.g. calculator or school_db");
+  const typeWrap = make("div", "field");
+  typeWrap.append(make("label", null, "Transport Type"));
+  const typeSelect = document.createElement("select");
+  typeSelect.innerHTML = '<option value="stdio">Local Command (stdio)</option><option value="http">Remote URL (HTTP)</option>';
+  typeWrap.append(typeSelect);
+  body.append(typeWrap);
+
+  const cmdWrap = make("div", null);
+  const cmdInput = field(cmdWrap, "Command", "text", "e.g. python, uvx, node");
+  const argsInput = field(cmdWrap, "Arguments", "text", "e.g. -m calc_server or /path/to/server.py");
+  body.append(cmdWrap);
+
+  const urlWrap = make("div", null);
+  urlWrap.hidden = true;
+  const urlInput = field(urlWrap, "Server URL", "text", "e.g. http://localhost:8000/mcp");
+  body.append(urlWrap);
+
+  typeSelect.addEventListener("change", () => {
+    const isStdio = typeSelect.value === "stdio";
+    cmdWrap.hidden = !isStdio;
+    urlWrap.hidden = isStdio;
+  });
+
+  const btnRow = make("div", "row");
+  btnRow.style.marginTop = "16px";
+  const cancelBtn = make("button", "btn", "Cancel");
+  cancelBtn.addEventListener("click", tabMcp);
+  btnRow.append(cancelBtn);
+
+  const saveBtn = make("button", "btn primary", "Save & Connect");
+  saveBtn.style.marginLeft = "8px";
+  saveBtn.addEventListener("click", async () => {
+    const name = nameInput.value.trim();
+    if (!name) { toast("Server name is required", true); return; }
+    const isStdio = typeSelect.value === "stdio";
+    const payload = { name: name };
+    if (isStdio) {
+      if (!cmdInput.value.trim()) { toast("Command is required", true); return; }
+      payload.command = cmdInput.value.trim();
+      payload.args = argsInput.value.trim() ? argsInput.value.trim().split(/\s+/) : [];
+    } else {
+      if (!urlInput.value.trim()) { toast("URL is required", true); return; }
+      payload.url = urlInput.value.trim();
+    }
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Connecting…";
+    try {
+      await api("/api/mcp/servers", { body: payload });
+      toast("Added MCP server '" + name + "'.");
+      tabMcp();
+    } catch (err) {
+      toast(err.message, true);
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save & Connect";
+    }
+  });
+  btnRow.append(saveBtn);
+  body.append(btnRow);
 }
 
 function tabSecurity() {

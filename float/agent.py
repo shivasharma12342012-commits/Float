@@ -179,8 +179,8 @@ def run(user: dict[str, Any], conv_id: int, message: str, model_choice: str = ""
                         "name": event["name"], "input": event["input"],
                     })
                     pending.append(event)
-                    yield {"type": "tool", "name": event["name"],
-                           "label": TOOL_LABELS.get(event["name"], "Working")}
+                    label = TOOL_LABELS.get(event["name"]) or tools.tool_label(event["name"])
+                    yield {"type": "tool", "name": event["name"], "label": label}
                 elif kind == "usage":
                     total_in += event.get("tokens_in", 0)
                     total_out += event.get("tokens_out", 0)

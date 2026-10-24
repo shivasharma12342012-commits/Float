@@ -38,7 +38,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Callable
 
-from . import agent, artifacts, computer, config, db, google, greeting, maintenance, providers, security, stats, tools, transport
+from . import agent, artifacts, computer, config, db, google, greeting, maintenance, mcp, providers, security, stats, tools, transport
 
 Handler = Callable[["Route"], Any]
 _routes: list[tuple[str, re.Pattern[str], Handler, str]] = []
@@ -473,6 +473,7 @@ def bootstrap(ctx: Route) -> dict[str, Any]:
             "computer_why": control_why,
             "screen": computer.screenshot_size(),
             "teacher_own_keys": db.org_get("teacher_own_keys", "1") == "1",
+            "mcp": True,
         },
         "usage": {**db.usage_for_user(user_id), "month_paise": db.month_paise(user_id),
                   "cap_paise": db.cap_for(user_id)[0]},
@@ -668,6 +669,76 @@ def computer_stop(ctx: Route) -> dict[str, Any]:
         db.audit("computer.stop", user_id=int(user["id"]), actor=user["name"], level="warn")
     return {"stopped": stopped}
 
+
+# ---------------------------------------------------------------------------
+# Model Context Protocol (MCP)
+# ---------------------------------------------------------------------------
+@route("GET", "/api/mcp")
+def mcp_status(ctx: Route) -> dict[str, Any]:
+    ctx.require_user()
+    return {
+        "servers": mcp.list_servers(),
+        "tools": mcp.get_tools(),
+    }
+
+
+@route("POST", "/api/mcp/servers")
+def mcp_add_server(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_user()
+    body = ctx.body
+    name = str(body.get("name", "")).strip()
+    if not name:
+        raise HttpError(400, "Server name is required.")
+
+    command = str(body.get("command", "")).strip()
+    args = body.get("args")
+    if isinstance(args, str):
+        import shlex
+        args = shlex.split(args)
+    elif not isinstance(args, list):
+        args = []
+
+    url = str(body.get("url", "")).strip()
+    env = body.get("env") if isinstance(body.get("env"), dict) else {}
+    disabled = bool(body.get("disabled", False))
+
+    spec: dict[str, Any] = {"disabled": disabled}
+    if command:
+        spec["command"] = command
+        spec["args"] = args
+        if env:
+            spec["env"] = env
+    elif url:
+        spec["url"] = url
+        if isinstance(body.get("headers"), dict):
+            spec["headers"] = body["headers"]
+    else:
+        raise HttpError(400, "Either 'command' or 'url' must be specified.")
+
+    try:
+        mcp.add_server(name, spec)
+    except ValueError as exc:
+        raise HttpError(400, str(exc)) from None
+
+    db.audit("mcp.server.add", user_id=int(user["id"]), actor=user["name"],
+             detail=f"server: {name}", ip=ctx.ip)
+    return {"ok": True, "servers": mcp.list_servers(), "tools": mcp.get_tools()}
+
+
+@route("DELETE", "/api/mcp/servers/{name}")
+def mcp_delete_server(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_user()
+    name = str(ctx.params["name"]).strip()
+    mcp.remove_server(name)
+    db.audit("mcp.server.remove", user_id=int(user["id"]), actor=user["name"],
+             detail=f"server: {name}", ip=ctx.ip)
+    return {"ok": True, "servers": mcp.list_servers(), "tools": mcp.get_tools()}
+
+
+@route("POST", "/api/mcp/refresh")
+def mcp_refresh_tools(ctx: Route) -> dict[str, Any]:
+    ctx.require_user()
+    return mcp.refresh()
 
 # ---------------------------------------------------------------------------
 # Keys
