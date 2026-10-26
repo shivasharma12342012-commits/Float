@@ -19,6 +19,7 @@ them to your Desktop or Drive). Delete `data/` to start over completely.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
 import webbrowser
