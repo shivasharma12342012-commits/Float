@@ -1940,5 +1940,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("= ₹1,430.00", res["text"])
         self.assertIn("= ₹2,400.00", res["text"])
 
+    def test_rental_tariff_215_maruti_baleno_late_return_discount(self):
+        res = tools.execute("calculate_quote", {"vehicle": "Maruti Baleno", "days": 2, "daily_rate": 1650, "extra_hours": 4, "extra_hour_rate": 140, "discount_amount": 300, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹560.00", res["text"])
+        self.assertIn("-₹300.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
