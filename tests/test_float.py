@@ -1807,5 +1807,11 @@ class HardeningTests(unittest.TestCase):
         res = tools.execute("calculate_quote", {"days": 5, "daily_rate": 2000, "driver_allowance_per_day": 500, "gst_percent": 0}, {"id": 1, "name": "Operator"}, None)
         self.assertIn("Chauffeur Allowance: 5 day(s) @ ₹500.00/day = ₹2,500.00", res["text"])
 
+    def test_quote_extra_hours_and_extra_km_combined(self):
+        res = tools.execute("calculate_quote", {"days": 1, "daily_rate": 2000, "included_km_per_day": 200, "actual_km": 300, "extra_km_rate": 12, "extra_hours": 3, "extra_hour_rate": 200, "gst_percent": 0}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("Extra Distance Driven: 100 km (Actual 300 km) = ₹1,200.00", res["text"])
+        self.assertIn("Extra Hours: 3 hr(s) @ ₹200.00/hr = ₹600.00", res["text"])
+        self.assertIn("Taxable Subtotal: ₹3,800.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
