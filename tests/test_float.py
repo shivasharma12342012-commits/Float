@@ -2110,5 +2110,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Tata Nexon EV handover check #248", saved["text"])
         self.assertEqual(saved["card"]["type"], "task")
 
+    def test_rental_tariff_249_toyota_innova_crysta_self_drive(self):
+        res = tools.execute("calculate_quote", {"vehicle": "Toyota Innova Crysta", "days": 5, "daily_rate": 3800, "security_deposit": 8000, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹19,000.00", res["text"])
+        self.assertIn("Security Deposit Held: ₹8,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
