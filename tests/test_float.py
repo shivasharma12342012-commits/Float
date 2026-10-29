@@ -1859,5 +1859,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Compact SUV", config.SUBJECTS)
         self.assertIn("7-Seater SUV / MUV", config.SUBJECTS)
 
+    def test_greeting_car_rental_salutations_and_lines(self):
+        from float import greeting
+        self.assertIn("morning", greeting.LINES)
+        self.assertTrue(any("fleet" in l.lower() or "pickup" in l.lower() or "lot" in l.lower() for l in greeting.LINES["morning"]))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
