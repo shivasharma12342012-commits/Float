@@ -1,14 +1,14 @@
 """Guards against the kinds of bug that make an app feel unreliable.
 
 These are cheap checks that fail loudly the moment someone edits the project and
-breaks something a teacher would only discover mid-lesson:
+breaks something an operator would only discover mid-shift:
 
 * a Python module whose file name does not match its import (works on Windows,
   breaks everywhere else, and broke Float once already);
 * a button or panel in app.js that points at an element index.html no longer has;
 * a front-end call to an API route that does not exist;
 * a temporary password that can still be used for everything;
-* a crash that leaks internals to the teacher instead of a calm message.
+* a crash that leaks internals to the operator instead of a calm message.
 
 Run with: python -m unittest discover -s tests
 """
@@ -105,14 +105,14 @@ class RobustnessTests(unittest.TestCase):
         time.sleep(0.2)
 
         status, data = cls.call("/api/auth/signup", {
-            "email": "head@school.edu.in", "name": "Head Teacher",
+            "email": "head@school.edu.in", "name": "Lead Operator",
             "password": "chalkboard sunrise", "school": "Test School",
         })
         assert status == 200, data
         cls.admin_token = data["token"]
 
         status, data = cls.call("/api/admin/users", {
-            "email": "new@school.edu.in", "name": "New Teacher", "role": "teacher",
+            "email": "new@school.edu.in", "name": "New Operator", "role": "teacher",
         }, token=cls.admin_token)
         assert status == 200, data
         cls.temp_password = data["temp_password"]
