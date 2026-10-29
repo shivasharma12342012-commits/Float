@@ -1,6 +1,6 @@
 """Float — Google sign-in and Google Drive.
 
-Both are optional. Float works completely without either: a school with no Google
+Both are optional. Float works completely without either: an agency with no Google
 Workspace gets local accounts and the Desktop, and never sees a Google button.
 
 **Sign-in** is OAuth 2.0 with PKCE on a loopback redirect, which is the flow
@@ -12,7 +12,7 @@ standard library rather than dragging in a JWT stack for one signature.
 
 **Drive** reuses the same consent, asking additionally for ``drive.file``, which
 is the narrow scope: Float can only see and touch files Float created. It cannot
-read the teacher's existing Drive, and saying so plainly in the consent screen is
+read the operator's existing Drive, and saying so plainly in the consent screen is
 the point of choosing that scope.
 
 Tokens live in memory only, keyed by user id, and die with the process along with
@@ -172,7 +172,7 @@ def finish(state: str, code: str) -> dict[str, Any]:
         "picture": claims.get("picture", ""),
         "access_token": payload.get("access_token", ""),
         "refresh_token": payload.get("refresh_token", ""),
-        "expires_at": time.time() + float(payload.get("expires_in", 3000)),
+        "expires_at": time.time() + float(payload.get("expires_in") or 3000),
         "scope": payload.get("scope", ""),
         "user_id": flow.user_id,
     }
@@ -214,7 +214,7 @@ def _access_token(user_id: int) -> str:
         fields["client_secret"] = config.settings.google_client_secret
     payload = _post_form(TOKEN_URL, fields)
     entry["access_token"] = payload.get("access_token", "")
-    entry["expires_at"] = time.time() + float(payload.get("expires_in", 3000))
+    entry["expires_at"] = time.time() + float(payload.get("expires_in") or 3000)
     with _lock:
         _tokens[user_id] = entry
     return entry["access_token"]
