@@ -15,7 +15,7 @@ line. No ``requests``, no vendor SDKs — three SDKs would be 40 MB of dependenc
 to send the same JSON this file sends in 200 lines, and a school laptop with a
 patchy connection should not be waiting on ``pip``.
 
-Errors are translated into something a teacher can act on. "401" is not a
+Errors are translated into something an operator can act on. "401" is not a
 message; "That key was rejected — check it in Settings → Model" is.
 """
 
