@@ -9,11 +9,11 @@ time.
 **Sessions that end when the app does.** Every session token is minted against
 ``BOOT_NONCE``, a random value generated when the process starts. Close Float and
 the nonce is gone, so every token issued under it stops validating — which is
-exactly the behaviour asked for: shutting the app signs the teacher out, on that
+exactly the behaviour asked for: shutting the app signs the operator out, on that
 machine and on any tab they left open. Idle timeout and an absolute ceiling apply
 on top of that while it is running.
 
-**API keys at rest.** A school's OpenAI or Anthropic key is a spending
+**API keys at rest.** An agency's OpenAI or Anthropic key is a spending
 instrument, so it is encrypted before it touches SQLite, under a key derived from
 a random device secret stored in ``data/.device_key`` with 0600 permissions.
 Copying the database to another machine therefore yields nothing. AES-256-GCM is
@@ -86,13 +86,13 @@ def password_problems(password: str) -> list[str]:
     """Plain-language reasons a password is not good enough, or an empty list.
 
     Length does most of the work, so the bar is length. One character class rule
-    is kept because school machines are shared and 'aaaaaaaaaaaa' is a real thing
+    is kept because rental counter machines are shared and 'aaaaaaaaaaaa' is a real thing
     people type.
     """
     problems: list[str] = []
     if len(password) < 10:
         problems.append("Use at least 10 characters.")
-    if password.strip().lower() in {"password12", "password123", "teacher123", "12345678910", "1234567890", "qwerty12345"}:
+    if password.strip().lower() in {"password12", "password123", "operator123", "rental1234", "12345678910", "1234567890", "qwerty12345"}:
         problems.append("That one is on every guessing list. Pick something else.")
     if len(set(password)) < 5:
         problems.append("Use at least 5 different characters.")
