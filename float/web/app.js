@@ -67,7 +67,7 @@ async function api(path, options = {}) {
 const OFFLINE_MESSAGE =
   "Float can't be reached right now. If you closed its window, open Float again. Your saved work is safe.";
 
-/** Turn whatever went wrong into a sentence a teacher can act on. */
+/** Turn whatever went wrong into a sentence an operator can act on. */
 function friendly(err) {
   const text = err && err.message ? String(err.message) : "";
   if (!text || /failed to fetch|networkerror|load failed|network request failed|aborted/i.test(text)) {
@@ -656,7 +656,7 @@ function fileCard(artifact) {
     // The download route needs the bearer token, so fetch and hand over a blob.
     fetch(link.href, { headers: { Authorization: "Bearer " + TOKEN } })
       .then((r) => {
-        // Never save an error message as if it were the teacher's document.
+        // Never save an error message as if it were the operator's document.
         if (!r.ok) throw new Error("download failed");
         return r.blob();
       })
@@ -852,7 +852,7 @@ function toolkitForm(entry) {
       if (field.min !== undefined) input.min = field.min;
       if (field.max !== undefined) input.max = field.max;
       if (field.value !== undefined) { input.value = field.value; values[field.key] = String(field.value); }
-      // Sensible defaults out of the teacher's own profile.
+      // Sensible defaults out of the operator's own profile.
       if (field.key === "subject" && !input.value && (S.user.subjects || [])[0]) {
         input.value = S.user.subjects[0];
         values.subject = input.value;
@@ -1336,7 +1336,7 @@ function tabModels() {
   ledger.append(one, two);
   spendBody.append(ledger);
 
-  // Fair-share meter: every teacher sees their own allowance, nobody else's.
+  // Fair-share meter: every operator sees their own allowance, nobody else's.
   const capPaise = usage.cap_paise || 0, usedPaise = usage.month_paise || 0;
   const share = make("div", "hint");
   share.style.marginTop = "12px";
@@ -1420,7 +1420,7 @@ function tabAssist() {
   ledgerBody.append(bar);
   ledgerBody.append(make("div", "hint",
     `${own.own_share || 0}% of what went out this week was in your own words, across ` +
-    `${own.n || 0} pieces. Float shows this because a teacher who edits everything ` +
+    `${own.n || 0} pieces. Float shows this because an operator who customises everything ` +
     "teaches better than one who forwards it."));
   ledgerPanel.append(ledgerBody);
   body.append(ledgerPanel);
@@ -1695,7 +1695,7 @@ function tabGoogle() {
 
   if (caps.lan) {
     body.append(make("p", "inline-note",
-      "Google Drive is switched off on this school server, so one teacher's files never touch " +
+      "Google Drive is switched off on this agency server, so one operator's files never touch " +
       "another's account. Use Download to save a file to the computer you are sitting at."));
     return;
   }
@@ -1743,7 +1743,7 @@ function tabAbout() {
   body.innerHTML = "";
 
   body.append(make("p", "inline-note",
-    "Float is a working companion for schoolteachers. It runs entirely on this computer: " +
+    "Float is an AI operations companion for car rental teams. It runs entirely on this computer: " +
     "your classes, your drafts and your files never go anywhere except to the model " +
     "provider whose key you supplied."));
 
