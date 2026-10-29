@@ -1770,5 +1770,9 @@ class HardeningTests(unittest.TestCase):
         res = tools.execute("calculate_quote", {"days": True, "daily_rate": 2000}, {"id": 1, "name": "Operator"}, None)
         self.assertIn("1 day(s) @ ₹2,000.00/day = ₹2,000.00", res["text"])
 
+    def test_quote_nan_daily_rate_defaults_to_zero(self):
+        res = tools.execute("calculate_quote", {"days": 3, "daily_rate": "nan"}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("3 day(s) @ ₹0.00/day = ₹0.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
