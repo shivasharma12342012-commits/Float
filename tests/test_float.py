@@ -2315,5 +2315,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("= ₹35,400.00", res["text"])
         self.assertIn("Security Deposit Held: ₹25,000.00", res["text"])
 
+    def test_rental_tariff_290_audi_a6_outstation_chauffeur(self):
+        res = tools.execute("calculate_quote", {"vehicle": "Audi A6", "days": 3, "daily_rate": 11800, "included_km_per_day": 250, "actual_km": 800, "extra_km_rate": 44, "driver_allowance_per_day": 600, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹2,200.00", res["text"])
+        self.assertIn("= ₹1,800.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
