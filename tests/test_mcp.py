@@ -225,7 +225,7 @@ class McpServerHttpTests(unittest.TestCase):
         cls.server_file.write_text(MOCK_SERVER_CODE, encoding="utf-8")
 
         # Create user & token
-        cls.user = db.create_user("teacher_mcp@school.in", "Teacher MCP", "TeacherPass123!", role="admin")
+        cls.user = db.create_user("operator_mcp@agency.in", "Operator MCP", "OperatorPass123!", role="admin")
         cls.token = db.create_session(int(cls.user["id"]), "127.0.0.1", "test-agent")
 
         cls.http_server = server.serve(host="127.0.0.1", port=0)
