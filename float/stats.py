@@ -1,6 +1,6 @@
 """Float — class statistics, calculated in Python (never by the AI).
 
-The teacher pastes marks like::
+The operator pastes figures like::
 
     Name, Q1(5), Q2(5), Q3(10), Q4(10)
     Aarav, 4, 2, 7, 3
@@ -24,7 +24,7 @@ _MAX_RE = re.compile(r"^(.*?)[\(\[]\s*(\d+(?:\.\d+)?)\s*[\)\]]\s*$")
 
 
 class MarksError(ValueError):
-    """The marks could not be parsed. The message is safe to show a teacher."""
+    """The sheet could not be parsed. The message is safe to show an operator."""
 
 
 @dataclass
@@ -136,7 +136,7 @@ def compute(a: Analysis) -> dict:
     for i, label in enumerate(a.questions):
         got = [s.scores[i] for s in a.students if s.scores[i] is not None]
         mx = a.maxes[i]
-        qs.append({"label": label, "max": mx, "n": len(got),
+        qs.append({"index": i, "label": label, "max": mx, "n": len(got),
                    "avg": statistics.fmean(got) if got else None,
                    "pct": (100 * statistics.fmean(got) / mx) if got and mx and mx > 0 else None})
     res["questions"] = qs
@@ -146,7 +146,7 @@ def compute(a: Analysis) -> dict:
     res["careless"] = []
     if (res["hardest"] and res["easiest"] and res["hardest"] is not res["easiest"]
             and res["hardest"].get("max") and res["easiest"].get("max")):
-        hi, ei = a.questions.index(res["hardest"]["label"]), a.questions.index(res["easiest"]["label"])
+        hi, ei = res["hardest"]["index"], res["easiest"]["index"]
         h_max, e_max = res["hardest"]["max"], res["easiest"]["max"]
         if h_max > 0 and e_max > 0:
             for s in scored:
@@ -192,7 +192,7 @@ def analyse(text: str) -> str:
     if inc:
         L.append("- Missing some questions (left out of the totals): " + ", ".join(inc))
     if a.problems:
-        L.append("- Rows Float could not use (tell the teacher): " + "; ".join(a.problems))
+        L.append("- Rows Float could not use (tell the operator): " + "; ".join(a.problems))
     L.append("")
     L.append("Each student's marks (" + ", ".join(a.questions) + "):")
     for s in a.students:
