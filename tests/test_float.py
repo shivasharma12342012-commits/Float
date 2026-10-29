@@ -2120,5 +2120,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("= ₹900.00", res["text"])
         self.assertIn("= ₹3,000.00", res["text"])
 
+    def test_rental_tariff_251_toyota_innova_crysta_late_return_discount(self):
+        res = tools.execute("calculate_quote", {"vehicle": "Toyota Innova Crysta", "days": 2, "daily_rate": 3800, "extra_hours": 4, "extra_hour_rate": 300, "discount_amount": 300, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹1,200.00", res["text"])
+        self.assertIn("-₹300.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
