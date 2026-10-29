@@ -347,7 +347,10 @@ def _docx_table(rows: list[list[str]]) -> str:
         cells: list[str] = []
         for value in row:
             shade = '<w:shd w:val="clear" w:fill="EDF2EE"/>' if index == 0 else ""
-            text = f"**{value}**" if index == 0 and value else value
+            clean_val = value.strip()
+            if clean_val.startswith("**") and clean_val.endswith("**") and len(clean_val) >= 4:
+                clean_val = clean_val[2:-2].strip()
+            text = f"**{clean_val}**" if index == 0 and clean_val else value
             cells.append(
                 f'<w:tc><w:tcPr><w:tcW w:w="{cell_width}" w:type="dxa"/>{shade}</w:tcPr>'
                 f'<w:p><w:pPr><w:spacing w:after="40"/></w:pPr>{_docx_runs(text)}</w:p></w:tc>'
@@ -832,7 +835,7 @@ def save_to_desktop(artifact: dict[str, Any], folder: str = "Float") -> Path:
 
 
 def reveal(path: Path) -> bool:
-    """Open the containing folder, so 'saved' is something the teacher can see."""
+    """Open the containing folder, so 'saved' is something the operator can see."""
     try:
         system = platform.system()
         if system == "Windows":
