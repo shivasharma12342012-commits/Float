@@ -2240,5 +2240,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("= ₹1,950.00", res["text"])
         self.assertIn("= ₹600.00", res["text"])
 
+    def test_rental_tariff_275_kia_carens_late_return_discount(self):
+        res = tools.execute("calculate_quote", {"vehicle": "Kia Carens", "days": 2, "daily_rate": 2900, "extra_hours": 4, "extra_hour_rate": 240, "discount_amount": 300, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹960.00", res["text"])
+        self.assertIn("-₹300.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
