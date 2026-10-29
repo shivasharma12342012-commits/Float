@@ -2330,5 +2330,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Audi A6 handover check #292", saved["text"])
         self.assertEqual(saved["card"]["type"], "task")
 
+    def test_rental_tariff_293_force_urbania_13_seater_self_drive(self):
+        res = tools.execute("calculate_quote", {"vehicle": "Force Urbania 13-Seater", "days": 7, "daily_rate": 7500, "security_deposit": 12000, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹52,500.00", res["text"])
+        self.assertIn("Security Deposit Held: ₹12,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
