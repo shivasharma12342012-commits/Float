@@ -1,6 +1,6 @@
 """Turn an uploaded file (base64 from the browser) into plain text for the model.
 
-PDF: uses ``pypdf`` when installed (best for NCERT-style books); otherwise a
+PDF: uses ``pypdf`` when installed (best for multi-page agreements, policies and invoices); otherwise a
 small stdlib reader that handles simple text PDFs. DOCX, XLSX and plain text
 use only the standard library.
 """
@@ -81,7 +81,7 @@ def pdf_text(data: bytes) -> str:
         text = _pdf_basic(data)
         if not _readable(text):
             raise AttachmentError(
-                "Float could not read the text in this PDF. For books like NCERT, run "
+                "Float could not read the text in this PDF. For complex PDF documents, run "
                 "'pip install pypdf' once and restart Float. Scanned PDFs (photos of pages) "
                 "cannot be read; send those as images instead.")
     elif not _readable(text):
@@ -121,6 +121,14 @@ def xlsx_text(data: bytes) -> str:
             for row in ElementTree.fromstring(zf.read(name)).iter(ns + "row"):
                 cells = []
                 for c in row.iter(ns + "c"):
+                    ref = c.get("r", "")
+                    col_letters = "".join(ch for ch in ref if ch.isalpha()).upper()
+                    if col_letters:
+                        col_idx = 0
+                        for ch in col_letters:
+                            col_idx = col_idx * 26 + (ord(ch) - 64)
+                        while len(cells) < col_idx - 1:
+                            cells.append("")
                     v = c.find(ns + "v")
                     val = "" if v is None else (v.text or "")
                     if c.get("t") == "inlineStr":   # text stored in the cell itself
