@@ -1817,5 +1817,9 @@ class HardeningTests(unittest.TestCase):
         res = tools.execute("calculate_quote", {"days": 1, "daily_rate": 1000, "gst_percent": 5, "security_deposit": 5000}, {"id": 1, "name": "Operator"}, None)
         self.assertIn("REFUND DUE TO CUSTOMER FROM DEPOSIT: ₹3,950.00", res["text"])
 
+    def test_quote_exact_deposit_coverage_settlement(self):
+        res = tools.execute("calculate_quote", {"days": 2, "daily_rate": 2000, "gst_percent": 0, "security_deposit": 4000}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("SETTLEMENT STATUS: ₹0.00 balance (Deposit exactly covers bill)", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
