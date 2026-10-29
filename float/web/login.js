@@ -1,13 +1,13 @@
 /* Float — the gate.
  *
- * Three ways in, in the order a real teacher meets them:
+ * Three ways in, in the order a real operator meets them:
  *   quick   a PIN, because this is the same laptop as yesterday
  *   signin  email and password, or Google
  *   signup  the first account on the machine, or a school that allows self sign-up
  *
  * The session token lives in sessionStorage and nowhere else. Close the window,
  * close the app, and the token is gone — which is the whole of the
- * "log out when the teacher closes the app" requirement, done honestly.
+ * "log out when the operator closes the app" requirement, done honestly.
  * The server backs it up with a per-process boot nonce, so even a copied token
  * is dead once Float restarts.
  */
