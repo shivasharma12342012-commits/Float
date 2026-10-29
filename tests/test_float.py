@@ -1826,5 +1826,9 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Damage / Cleaning / Penalty: ₹1,200.00", res["text"])
         self.assertIn("GRAND TOTAL BILL: ₹4,200.00", res["text"])
 
+    def test_artifacts_strip_markdown_removes_links(self):
+        cleaned = artifacts.strip_markdown("View [Rental Terms](https://example.com/terms) and **Policy**")
+        self.assertEqual(cleaned, "View Rental Terms and Policy")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
