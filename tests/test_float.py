@@ -2230,5 +2230,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Maruti Ertiga handover check #272", saved["text"])
         self.assertEqual(saved["card"]["type"], "task")
 
+    def test_rental_tariff_273_kia_carens_self_drive(self):
+        res = tools.execute("calculate_quote", {"vehicle": "Kia Carens", "days": 1, "daily_rate": 2900, "security_deposit": 5500, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹2,900.00", res["text"])
+        self.assertIn("Security Deposit Held: ₹5,500.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
