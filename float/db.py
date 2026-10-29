@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS users (
     active        INTEGER NOT NULL DEFAULT 1,
     must_change   INTEGER NOT NULL DEFAULT 0,
     school        TEXT NOT NULL DEFAULT '',
-    board         TEXT NOT NULL DEFAULT 'CBSE',
+    board         TEXT NOT NULL DEFAULT 'Self-Drive Daily',
     subjects      TEXT NOT NULL DEFAULT '[]',
     grades        TEXT NOT NULL DEFAULT '[]',
     language      TEXT NOT NULL DEFAULT 'en',
@@ -611,7 +611,7 @@ def drop_key(provider: str, scope: str = "org", user_id: int | None = None) -> N
 
 
 def get_key(provider: str, user_id: int | None = None) -> str:
-    """The teacher's own key if they have one, otherwise the school's."""
+    """The operator's own key if they have one, otherwise the agency's."""
     with cursor() as db:
         if user_id is not None:
             row = db.execute(
