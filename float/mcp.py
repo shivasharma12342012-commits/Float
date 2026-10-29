@@ -1,7 +1,7 @@
 """Float — Model Context Protocol (MCP) support.
 
 Connects Float to external tool providers via the open Model Context Protocol
-(2024-11-05). Teachers and schools can plug in local scripts or remote services
+(2024-11-05). Rental operators and fleet agencies can plug in local scripts or remote services
 (e.g. database lookups, calculators, web fetchers, calendar links) without changing
 Float's core code.
 
@@ -14,7 +14,7 @@ Servers are configured in ``data/mcp.json`` matching the standard MCP format:
           "args": ["-m", "calc_mcp"],
           "env": {}
         },
-        "school_db": {
+        "fleet_db": {
           "url": "http://10.0.0.5:8000/mcp"
         }
       }
@@ -435,8 +435,13 @@ class McpHttpClient:
         text_parts = []
         if isinstance(content, list):
             for c in content:
-                if isinstance(c, dict) and c.get("type") == "text":
-                    text_parts.append(str(c.get("text", "")))
+                if isinstance(c, dict):
+                    if c.get("type") == "text":
+                        text_parts.append(str(c.get("text", "")))
+                    elif c.get("type") == "image":
+                        text_parts.append("[Image output from MCP tool]")
+                    elif c.get("type") == "resource":
+                        text_parts.append(str(c.get("resource", "")))
         elif isinstance(content, str):
             text_parts.append(content)
 
@@ -475,8 +480,13 @@ class McpHttpClient:
                     err_msg = err.get("message") if isinstance(err, dict) else str(err)
                     raise McpError(f"MCP error from '{self.name}': {err_msg}")
                 return parsed.get("result", {})
+        except urllib.error.HTTPError as exc:
+            err_body = exc.read().decode("utf-8", errors="replace")[:200]
+            raise McpError(f"HTTP {exc.code} from '{self.url}': {err_body}") from None
         except urllib.error.URLError as exc:
             raise McpError(f"Could not reach '{self.url}': {exc}") from exc
+        except (ValueError, KeyError) as exc:
+            raise McpError(f"Invalid JSON-RPC response from '{self.url}': {exc}") from None
         except TimeoutError:
             raise McpError(f"Request to '{self.url}' timed out.") from None
 
