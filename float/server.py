@@ -1291,7 +1291,7 @@ def admin_export(ctx: Route) -> Any:
     admin = ctx.require_admin()
     dash = lambda v: "" if v is None else v  # noqa: E731
     rows: list[list[Any]] = [
-        ["Teacher", "Role", "Active", "Usage band", "Requests", "Tokens in", "Tokens out", "Estimated ₹"]
+        ["Operator", "Role", "Active", "Usage band", "Requests", "Tokens in", "Tokens out", "Estimated ₹"]
     ]
     for e in _admin_users():
         rows.append([e["name"], e["role"], "Yes" if e["active"] else "No", e["band"],
