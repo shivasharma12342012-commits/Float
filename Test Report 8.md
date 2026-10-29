@@ -27,13 +27,13 @@ Note: the tests only ran after I copied `Attachments.py` to `attachments.py`. Se
 
 ## Problems found
 
-| # | Problem | Severity for a paying teacher |
+| # | Problem | Severity for a paying operator |
 |---|---|---|
 | 1 | **The zip contains `float/Attachments.py` (capital A) again.** Report 7 fixed this, but it has come back. Windows is saved by a runtime rename in `main.py`, but any copy that skips that step fails to start. | Medium. Rename the file to `attachments.py`. |
 | 2 | **No backup.** Accounts, classes, marks and chat history live in one `data/float.sqlite3` file. A deleted folder, a disk fault or a reinstall loses everything. | **High** |
-| 3 | **No database upgrade path.** There is no schema version or migration code. A future update that changes a table can break an existing teacher's data. | **High** (for the first update you ship) |
+| 3 | **No database upgrade path.** There is no schema version or migration code. A future update that changes a table can break an existing operator's data. | **High** (for the first update you ship) |
 | 4 | **Usage and audit records are never pruned.** The database grows without limit. For one school this is slow, not sudden, but nothing manages it. | Low–Medium |
-| 5 | **Class statistics (average, standard deviation, "more than one SD below") are worked out by the AI, not by code.** A model can give a wrong number with full confidence. | **High** if a teacher reports these marks to parents |
+| 5 | **Class statistics (average, standard deviation, "more than one SD below") are worked out by the AI, not by code.** A model can give a wrong number with full confidence. | **High** if a operator reports these marks to parents |
 | 6 | **Cost figures depend on a price table in `config.py`.** If providers change prices, the rupee estimates and monthly limits become wrong until someone edits the table. | Medium |
 
 ## NOT tested (unknown)
@@ -43,7 +43,7 @@ Note: the tests only ran after I copied `Attachments.py` to `attachments.py`. Se
 - **Real AI answers** with a real API key: quality, errors, rate limits, long answers, all 19 toolkit tools.
 - **"Use the computer"** (mouse and keyboard control) on a real desktop. This feature can click things in the wrong place, and it is the highest-risk feature in the app.
 - **Google sign-in, Drive, Calendar, Gmail.**
-- **Real long use:** weeks or months of daily use, thousands of chats, a database of many megabytes, several teachers at once on different machines.
+- **Real long use:** weeks or months of daily use, thousands of chats, a database of many megabytes, several operators at once on different machines.
 - **Different computers:** slow laptops, small screens, antivirus software blocking the app, Hindi and other Indic text in documents.
 
 ## Verdict: is Float ready to sell, with no bugs in long-term use?
@@ -53,10 +53,10 @@ Note: the tests only ran after I copied `Attachments.py` to `attachments.py`. Se
 What I can say:
 
 - **Sound foundation:** 65 of 65 tests pass, the server handled 2,400 parallel requests with no errors, and security basics (passwords, sessions, path traversal, temporary passwords) held up in every check I ran.
-- **Not proven in real use:** the things a teacher touches every day (a real browser, real AI answers, Windows, Google, computer control) have not been tested in this report. A paying customer would be the first to test them.
-- **Two problems would hurt a teacher in the long run:** no backup (problem 2) and no safe update path (problem 3). A teacher losing a year of marks and classes is the kind of failure that ends a sale and a reputation.
+- **Not proven in real use:** the things a operator touches every day (a real browser, real AI answers, Windows, Google, computer control) have not been tested in this report. A paying customer would be the first to test them.
+- **Two problems would hurt a operator in the long run:** no backup (problem 2) and no safe update path (problem 3). A operator losing a year of marks and classes is the kind of failure that ends a sale and a reputation.
 
-**Recommendation:** do not sell it as finished yet. It is ready for a **small, free or discounted pilot with 2–3 friendly teachers**, with a warning that it is early software, and with you taking a copy of their `data/` folder weekly. Before charging general customers, do these in order:
+**Recommendation:** do not sell it as finished yet. It is ready for a **small, free or discounted pilot with 2–3 friendly operators**, with a warning that it is early software, and with you taking a copy of their `data/` folder weekly. Before charging general customers, do these in order:
 
 1. Rename `Attachments.py` to `attachments.py` (problem 1).
 2. Add an automatic backup of `data/float.sqlite3` (problem 2).
