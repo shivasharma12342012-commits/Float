@@ -2145,5 +2145,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("= ₹1,400.00", res["text"])
         self.assertIn("-₹300.00", res["text"])
 
+    def test_ops_task_256_toyota_innova_hycross_handover(self):
+        saved = tools.execute("save_task", {"title": "Toyota Innova Hycross handover check #256", "category": "Handover"}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("Toyota Innova Hycross handover check #256", saved["text"])
+        self.assertEqual(saved["card"]["type"], "task")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
