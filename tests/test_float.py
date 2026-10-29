@@ -2170,5 +2170,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Mahindra XUV700 handover check #260", saved["text"])
         self.assertEqual(saved["card"]["type"], "task")
 
+    def test_rental_tariff_261_mahindra_scorpio_n_self_drive(self):
+        res = tools.execute("calculate_quote", {"vehicle": "Mahindra Scorpio-N", "days": 3, "daily_rate": 3600, "security_deposit": 7500, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹10,800.00", res["text"])
+        self.assertIn("Security Deposit Held: ₹7,500.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
