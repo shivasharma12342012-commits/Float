@@ -32,11 +32,11 @@ class ServerStopTests(unittest.TestCase):
         importlib.reload(db)
         importlib.reload(server)
 
-        # Create admin and teacher users
+        # Create admin and operator users
         cls.admin_user = db.create_user("admin_stop@school.in", "Admin Stop", "AdminPass123!", role="admin")
         cls.admin_token = db.create_session(int(cls.admin_user["id"]), "127.0.0.1", "test-agent")
 
-        cls.teacher_user = db.create_user("teacher_stop@school.in", "Teacher Stop", "TeacherPass123!", role="teacher")
+        cls.teacher_user = db.create_user("operator_stop@agency.in", "Operator Stop", "OperatorPass123!", role="teacher")
         cls.teacher_token = db.create_session(int(cls.teacher_user["id"]), "192.168.1.50", "test-agent")
 
     @classmethod
@@ -68,7 +68,7 @@ class ServerStopTests(unittest.TestCase):
             # When calling without localhost, let's verify Route logic
             class MockRoute:
                 local = False
-                user = {"id": 2, "name": "Teacher", "role": "teacher"}
+                user = {"id": 2, "name": "Operator", "role": "teacher"}
                 ip = "192.168.1.50"
                 request = type("Req", (), {"server": srv, "headers": {"Content-Type": "application/json"}})()
 
