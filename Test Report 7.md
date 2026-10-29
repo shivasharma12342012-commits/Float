@@ -11,8 +11,8 @@
 | 1 | The zip still contained `float/Attachments.py` (capital A) while the code imports `attachments`. Only 13 of 26 tests could run off Windows. | Renamed to `attachments.py`; a test now checks every internal import against the real file name. |
 | 2 | A temporary password kept full access until changed. Only the browser asked for a new one, and a page reload skipped it. | The server now allows only: load the app, change password, sign out. Everything else returns 403 with a plain message. The browser reads `must_change` from the server, so a reload no longer skips it. |
 | 3 | Session tokens were accepted in the URL (`?token=`), where they can land in history and logs. The app never used this. | Removed. Tokens are read from the `Authorization` header only. |
-| 4 | An unexpected server error showed the raw exception text to the teacher, and with no console window the error vanished (and logging itself could fail when there is no stderr). | Teacher sees a calm message with a short reference. The real traceback goes to `data/float_errors.log` (size-capped). Logging can no longer raise. |
-| 5 | When Float was not reachable (window closed, laptop asleep) teachers saw "Failed to fetch". | One plain sentence in the app, admin panel and sign-in page. |
+| 4 | An unexpected server error showed the raw exception text to the operator, and with no console window the error vanished (and logging itself could fail when there is no stderr). | Operator sees a calm message with a short reference. The real traceback goes to `data/float_errors.log` (size-capped). Logging can no longer raise. |
+| 5 | When Float was not reachable (window closed, laptop asleep) operators saw "Failed to fetch". | One plain sentence in the app, admin panel and sign-in page. |
 | 6 | The Download button saved an error response as if it were the document (a corrupt file). | It checks the response first and shows a message if it failed. |
 | 7 | If the app failed to start, the screen had nothing to click. | Added a "Try again" button. |
 | 8 | Unhandled errors in the page failed silently. | One safety net shows a friendly message. |
