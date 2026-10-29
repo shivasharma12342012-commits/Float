@@ -5,9 +5,9 @@
 - **Environment:** Linux sandbox, Python 3.12.3, stdlib only, temporary `FLOAT_DATA_DIR` and `HOME` per run, server started with `serve("127.0.0.1", 0)`. Any non-loopback connection was blocked by the tests; the AI provider was a stub. No real network calls were made.
 
 ## What was tested
-1. Admin routes: overview, add / deactivate / activate / reset password / change role, org settings, notice, audit, export; 403 for a teacher (and 401 when signed out) on every admin route.
+1. Admin routes: overview, add / deactivate / activate / reset password / change role, org settings, notice, audit, export; 403 for a operator (and 401 when signed out) on every admin route.
 2. Artifacts: list, download, save to (temporary) Desktop, wrong owner, `../../etc/passwd` as a file name, tampered stored path.
-3. Toolkit and conversations: create, read, rename, delete; teacher B cannot read, rename or delete teacher A's conversation or post into it.
+3. Toolkit and conversations: create, read, rename, delete; operator B cannot read, rename or delete operator A's conversation or post into it.
 4. API keys: add, list, delete; plaintext key searched for in every endpoint response and every file in the data folder; org-key replacement.
 5. Password change, PIN set / sign-in / removal, admin-created users (`must_change`).
 6. `web/*.html` references, `/api/...` strings in the JS against the route table, `node --check` on JS.
@@ -44,7 +44,7 @@ The stress run was made before the last one-line fix (notice `retire`); the unit
 | **Needs your decision:** `login.js` posts to `/api/auth/google/setup`, but no such route existed, so the Google setup form could never save | float/server.py | Added the route, calling the existing `config.save_google`. Allowed only on first run (no users) or for an admin; otherwise 403 |
 
 ## Passed with no change needed
-Teacher 403 / anonymous 401 on all 7 admin routes checked; cross-user conversation and file access (404); file-name traversal (name sanitised); plaintext key absent from all responses and the data folder; PIN and password flows; expired and idle sessions rejected; sign-in rate limit (429); web file references and JS syntax; stub chat loop and SSE.
+Operator 403 / anonymous 401 on all 7 admin routes checked; cross-user conversation and file access (404); file-name traversal (name sanitised); plaintext key absent from all responses and the data folder; PIN and password flows; expired and idle sessions rejected; sign-in rate limit (429); web file references and JS syntax; stub chat loop and SSE.
 
 ## NOT tested
 - Windows launcher (`.bat` / `.vbs`)
