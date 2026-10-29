@@ -1,7 +1,7 @@
-# Float — Test Report 4 (Teacher's Numbers Audit)
+# Float — Test Report 4 (Operator's Numbers Audit)
 
 - **Date:** 2 October 2026
-- **Method:** Run with AI assistance (Claude). Every number below is from commands actually run. A script (`teacher_math_test.py`) acted like a Class 8 maths teacher using the live server, and a second part measured the code itself.
+- **Method:** Run with AI assistance (Claude). Every number below is from commands actually run. A script (`operator_math_test.py`) acted like a Class 8 maths operator using the live server, and a second part measured the code itself.
 - **Environment:** Linux sandbox, Python 3.12.3, standard library only, fresh empty database, loopback only, no AI provider calls (no API key).
 - **Test class:** 8B Mathematics, 40 students (Hindi and English names), seeded random marks (seed 7) so the run can be repeated.
 
@@ -11,7 +11,7 @@
 |---|---|
 | Unit tests on the zip **exactly as uploaded** | **Fail**. Only 13 of 25 tests run, 1 import error (see Bug 1) |
 | Unit tests after renaming `Attachments.py` → `attachments.py` | 25 / 25 pass, run 1 (2.19 s) and run 2 (2.14 s) |
-| Teacher session checks (class, marks, attendance, AI class lookup) | 7 / 7 pass |
+| Operator session checks (class, marks, attendance, AI class lookup) | 7 / 7 pass |
 | Server errors during the 300-request read test | 0 |
 
 ## 2. Bugs found
@@ -26,7 +26,7 @@ Edge-case marks table (HTTP status): 55/50 → 200 · −5/50 → 200 · 3/0 →
 
 Bug 3 matters because a mark with max 0 can cause a divide-by-zero in a percentage later. I did not test AI report generation, so that is a risk, not a confirmed failure.
 
-## 3. The class maths: does Float return what a teacher would calculate?
+## 3. The class maths: does Float return what a operator would calculate?
 
 40 marks out of 50 saved, then read back and compared with a manual calculation.
 
@@ -59,9 +59,9 @@ Note: Float stores marks and attendance but has no built-in average, percentage 
 
 ## 4. Speed
 
-300 sequential reads of the class page: median **5.2 ms**, 95th percentile 7.3 ms, 99th percentile 8.8 ms, slowest 12.1 ms, mean 5.7 ms. Fine for one teacher on one laptop.
+300 sequential reads of the class page: median **5.2 ms**, 95th percentile 7.3 ms, 99th percentile 8.8 ms, slowest 12.1 ms, mean 5.7 ms. Fine for one operator on one laptop.
 
-## 5. Money: what would AI cost a teacher?
+## 5. Money: what would AI cost a operator?
 
 Assumption (mine): each request uses 3,000 tokens in and 1,000 out; 40 requests a day; 26 working days a month. Float's `estimate_paise()` matched my hand formula for every model.
 
@@ -78,7 +78,7 @@ Assumption (mine): each request uses 3,000 tokens in and 1,000 out; 40 requests 
 | Claude Opus 4.1 | 1,000 | 10,400 |
 | OpenRouter models | 0 (not priced) | 0 (**not real cost**) |
 
-Two cautions. The price list is typed into `config.py` and goes out of date, and OpenRouter shows ₹0, which a teacher may read as "free". The 40-requests-a-day figure is a guess; real use will differ.
+Two cautions. The price list is typed into `config.py` and goes out of date, and OpenRouter shows ₹0, which a operator may read as "free". The 40-requests-a-day figure is a guess; real use will differ.
 
 ## 6. Security numbers
 
@@ -92,7 +92,7 @@ Two cautions. The price list is typed into `config.py` and goes out of date, and
 | Wrong-password limit | 10 tries → first 7 got 401, last 3 got **429** (matches the limit of 7) |
 | Upload limit | 12 MB |
 
-The 782-year figure is for one core and one password style. An attacker with many machines or GPUs is faster, and teachers who choose weak passwords are guessed far sooner. It shows the hashing is sensibly slow, not that accounts are unbreakable.
+The 782-year figure is for one core and one password style. An attacker with many machines or GPUs is faster, and operators who choose weak passwords are guessed far sooner. It shows the hashing is sensibly slow, not that accounts are unbreakable.
 
 Also checked: the "own work share" figure. 300 AI characters and 100 own characters gave 25 %, which is correct (100 ÷ 400).
 
@@ -123,4 +123,4 @@ Most of the code is simple. The few complicated functions are the ones that hand
 
 ## 9. Limitations
 
-I did not change your files; the rename was applied only in my scratch copy. The student marks are synthetic. The cost table rests on my usage guess. This report is not a guarantee the software is free of defects. AI-generated content inside Float must be reviewed by a teacher before use.
+I did not change your files; the rename was applied only in my scratch copy. The student marks are synthetic. The cost table rests on my usage guess. This report is not a guarantee the software is free of defects. AI-generated content inside Float must be reviewed by a operator before use.
