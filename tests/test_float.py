@@ -1835,5 +1835,12 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("<w:b/>", xml)
         self.assertNotIn("****", xml)
 
+    def test_stats_compute_duplicate_column_headers(self):
+        raw = "Vehicle,Trip (100),Trip (100)\nCreta,90,40\nInnova,80,30\nSwift,70,20"
+        parsed = stats.parse(raw)
+        computed = stats.compute(parsed)
+        self.assertEqual(computed["easiest"]["index"], 0)
+        self.assertEqual(computed["hardest"]["index"], 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
