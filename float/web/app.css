@@ -1336,6 +1336,7 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
   background: var(--surface) !important;
   color: var(--ink) !important;
   caret-color: var(--ink);
+  -webkit-text-security: disc;
 }
 .key-input::placeholder { color: var(--faint) !important; }
 .key-shown {

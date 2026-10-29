@@ -771,8 +771,9 @@ function panelToolkit(filter = "") {
   const body = $("drawer-body");
   body.innerHTML = "";
 
-  const search = make("input", "kit-search");
-  search.placeholder = "Search 19 tools — worksheet, remarks, seating…";
+  const search = noAutofill(make("input", "kit-search"));
+  search.type = "search";
+  search.placeholder = "Search 19 tools — agreement, quote, checklist, damage…";
   search.value = filter;
   search.addEventListener("input", () => renderKit(search.value));
   body.append(search);
@@ -841,13 +842,14 @@ function toolkitForm(entry) {
       select.addEventListener("change", () => (values[field.key] = select.value));
       wrap.append(select);
     } else if (field.type === "textarea") {
-      const area = document.createElement("textarea");
+      const area = noAutofill(document.createElement("textarea"));
       area.placeholder = field.placeholder || "";
       area.addEventListener("input", () => (values[field.key] = area.value));
       wrap.append(area);
     } else {
-      const input = document.createElement("input");
+      const input = noAutofill(document.createElement("input"));
       input.type = field.type === "number" ? "number" : field.type === "date" ? "date" : "text";
+      input.name = "float_tk_" + field.key;
       input.placeholder = field.placeholder || "";
       if (field.min !== undefined) input.min = field.min;
       if (field.max !== undefined) input.max = field.max;
@@ -986,6 +988,18 @@ function panelClasses() {
   body.append(panel);
 }
 
+function noAutofill(node, isCredential = false) {
+  node.setAttribute("autocomplete", isCredential ? "new-password" : "off");
+  node.setAttribute("autocorrect", "off");
+  node.setAttribute("autocapitalize", "off");
+  node.setAttribute("spellcheck", "false");
+  node.setAttribute("data-lpignore", "true");
+  node.setAttribute("data-1p-ignore", "true");
+  node.setAttribute("data-bwignore", "true");
+  node.setAttribute("data-form-type", "other");
+  return node;
+}
+
 function field(parent, label, type, placeholder, value) {
   const wrap = make("div", "field");
   wrap.append(make("label", null, label));
@@ -993,6 +1007,7 @@ function field(parent, label, type, placeholder, value) {
   if (type !== "textarea") node.type = type;
   node.placeholder = placeholder || "";
   if (value !== undefined) node.value = value;
+  noAutofill(node, type === "password");
   wrap.append(node);
   parent.append(wrap);
   return node;
@@ -1258,8 +1273,9 @@ function tabModels() {
     const inner = make("div", "panel-body");
     inner.append(make("div", "hint", provider.help));
 
-    const input = document.createElement("input");
-    input.type = "password";
+    const input = noAutofill(document.createElement("input"));
+    input.type = "text";
+    input.name = "float_api_token_" + provider.id;
     input.placeholder = "Paste the key here";
     input.className = "mono key-input";
     input.style.width = "100%";
@@ -1299,7 +1315,7 @@ function tabModels() {
             body: { provider: provider.id, key: input.value, scope: "org" },
           });
           S.boot.keys = result.keys;
-          toast("School key saved — every teacher can use it.");
+          toast("Agency key saved — every operator can use it.");
           tabModels();
         } catch (err) { toast(err.message, true); }
       });
@@ -1825,10 +1841,10 @@ function tabAbout() {
 
     const gate = make("div", "field");
     gate.append(make("label", null, "Passphrase"));
-    const input = document.createElement("input");
-    input.type = "password";
+    const input = noAutofill(document.createElement("input"));
+    input.type = "text";
+    input.className = "mono key-input";
     input.id = "rt-phrase";
-    input.autocomplete = "off";
     gate.append(input);
     const go = make("button", "btn", "Enter");
     go.addEventListener("click", async () => {

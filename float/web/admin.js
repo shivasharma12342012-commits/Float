@@ -273,9 +273,17 @@ function viewTeachers(wrap) {
   row.append(grow);
 
   const email = document.createElement("input");
+  email.autocomplete = "off";
+  email.setAttribute("data-lpignore", "true");
+  email.setAttribute("data-1p-ignore", "true");
+  email.setAttribute("data-form-type", "other");
   email.placeholder = "agent@agency.in";
   email.style.cssText = "padding:8px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--paper);width:220px";
   const name = document.createElement("input");
+  name.autocomplete = "off";
+  name.setAttribute("data-lpignore", "true");
+  name.setAttribute("data-1p-ignore", "true");
+  name.setAttribute("data-form-type", "other");
   name.placeholder = "Name";
   name.style.cssText = email.style.cssText.replace("220px", "160px");
   const add = make("button", "btn primary", "Add");
@@ -484,6 +492,10 @@ function viewOrg(wrap) {
   nameField.append(make("label", null, "Agency / Branch name"));
   const nameInput = document.createElement("input");
   nameInput.type = "text";
+  nameInput.autocomplete = "off";
+  nameInput.setAttribute("data-lpignore", "true");
+  nameInput.setAttribute("data-1p-ignore", "true");
+  nameInput.setAttribute("data-form-type", "other");
   nameInput.value = org.school_name || "";
   nameField.append(nameInput);
   body.append(nameField);
