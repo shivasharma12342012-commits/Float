@@ -800,7 +800,7 @@ function panelToolkit(filter = "") {
       });
     });
     if (!list.children.length) {
-      list.append(make("div", "empty", "Nothing matches that. Try 'paper', 'parent' or 'plan'."));
+      list.append(make("div", "empty", "Nothing matches that. Try 'agreement', 'quote', 'checklist' or 'damage'."));
     }
   }
 
@@ -894,7 +894,7 @@ function toolkitForm(entry) {
 /* ── classes ───────────────────────────────────────────────────────────── */
 
 function panelClasses() {
-  openDrawer("Classes");
+  openDrawer("Fleet & Bookings");
   const body = $("drawer-body");
   body.innerHTML = "";
 
@@ -904,8 +904,8 @@ function panelClasses() {
 
   if (!S.boot.classes.length) {
     const empty = make("div", "empty");
-    empty.append(make("b", null, "No classes yet"));
-    empty.append(make("span", null, "Add one below. Paste the roll list straight from your register."));
+    empty.append(make("b", null, "No fleet groups yet"));
+    empty.append(make("span", null, "Add a fleet group below (e.g. SUV Fleet, Airport Bay 1). Paste your vehicles or bookings straight in."));
     body.append(empty);
   }
 
@@ -914,24 +914,24 @@ function panelClasses() {
     const head = make("div", "panel-head");
     head.append(make("b", null, klass.name));
     head.append(make("span", "spacer"));
-    head.append(make("span", "pill", `${klass.students} students`));
+    head.append(make("span", "pill", `${klass.students} vehicles`));
     panel.append(head);
 
     const inner = make("div", "panel-body");
     inner.append(make("div", "hint",
-      [klass.subject, klass.grade && `Class ${klass.grade}`, klass.section]
+      [klass.subject, klass.grade && `Bay ${klass.grade}`, klass.section]
         .filter(Boolean).join(" · ")));
 
     const acts = make("div", "stack");
-    const ask = make("button", "btn tiny", "Ask Float about this class");
+    const ask = make("button", "btn tiny", "Ask Float about this fleet group");
     ask.addEventListener("click", () => {
       closeDrawer();
       $("input").value = `Tell me how ${klass.name} is doing — marks, attendance, who needs help.`;
       send();
     });
-    const drop = make("button", "btn tiny danger", "Remove class");
+    const drop = make("button", "btn tiny danger", "Remove group");
     drop.addEventListener("click", async () => {
-      if (!confirm(`Remove ${klass.name} and its student list?`)) return;
+      if (!confirm(`Remove ${klass.name} and its vehicle/booking list?`)) return;
       await api(`/api/classes/${klass.id}`, { method: "DELETE", body: {} });
       const data = await api("/api/classes");
       S.boot.classes = data.classes;
@@ -947,22 +947,22 @@ function panelClasses() {
   // add form
   const panel = make("div", "panel");
   const head = make("div", "panel-head");
-  head.append(make("b", null, "Add a class"));
+  head.append(make("b", null, "Add a fleet group / bay"));
   panel.append(head);
   const inner = make("div", "panel-body");
 
-  const name = field(inner, "Class name", "text", "8B");
+  const name = field(inner, "Fleet group / Bay name", "text", "SUV Fleet - Bay 2");
   const row = make("div", "field-row");
   inner.append(row);
-  const grade = field(row, "Grade", "text", "8");
-  const section = field(row, "Section", "text", "B");
-  const subject = field(inner, "Subject you teach them", "text", "Science");
-  const roster = field(inner, "Roll list (optional)", "textarea",
-    "1 Aarav Kumar\n2 Diya Sharma\n3 Ishaan Patel");
+  const grade = field(row, "Hub / Bay #", "text", "2");
+  const section = field(row, "Zone / Tier", "text", "Prime");
+  const subject = field(inner, "Vehicle category", "text", "Compact SUV");
+  const roster = field(inner, "Vehicles or active bookings (optional)", "textarea",
+    "1 MH-02-AB-1234 Hyundai Creta ? Rahul Verma\n2 MH-02-CD-5678 Toyota Innova ? Corp Lease\n3 MH-02-EF-9012 Tata Nexon EV ? Available");
 
-  const add = make("button", "btn primary", "Add class");
+  const add = make("button", "btn primary", "Add fleet group");
   add.addEventListener("click", async () => {
-    if (!name.value.trim()) { toast("Give the class a name.", true); return; }
+    if (!name.value.trim()) { toast("Give the fleet group a name.", true); return; }
     add.disabled = true;
     try {
       await api("/api/classes", {
@@ -975,7 +975,7 @@ function panelClasses() {
       S.boot.classes = data.classes;
       paintCounts();
       panelClasses();
-      toast("Class added.");
+      toast("Fleet group added.");
     } catch (err) {
       toast(err.message, true);
       add.disabled = false;
@@ -1001,7 +1001,7 @@ function field(parent, label, type, placeholder, value) {
 /* ── to-do ─────────────────────────────────────────────────────────────── */
 
 function panelTasks() {
-  openDrawer("To do");
+  openDrawer("Ops Checklist");
   const body = $("drawer-body");
   body.innerHTML = "";
 
@@ -1048,7 +1048,7 @@ function panelTasks() {
 
   const add = make("div", "panel");
   const addBody = make("div", "panel-body");
-  const title = field(addBody, "Add something", "text", "Return Class 9 fair copies");
+  const title = field(addBody, "Add ops task", "text", "Refund ?10,000 security deposit for MH-02-AB-1234");
   const due = field(addBody, "By when", "date");
   const save = make("button", "btn primary", "Add");
   save.addEventListener("click", async () => {
@@ -1075,7 +1075,7 @@ function panelFiles() {
   if (!S.boot.artifacts.length) {
     const empty = make("div", "empty");
     empty.append(make("b", null, "Nothing made yet"));
-    empty.append(make("span", null, "Ask for a worksheet or a question paper and it will appear here."));
+    empty.append(make("span", null, "Ask for a rental agreement, handover checklist, or quote and it will appear here."));
     body.append(empty);
     return;
   }
@@ -1131,10 +1131,10 @@ function tabYou() {
     "you'd use with parents. Nothing here leaves your computer."));
 
   const name = field(body, "Name", "text", "", S.user.name);
-  const school = field(body, "School", "text", "", S.user.school);
+  const school = field(body, "Rental agency / Branch", "text", "", S.user.school);
 
   const boardWrap = make("div", "field");
-  boardWrap.append(make("label", null, "Board"));
+  boardWrap.append(make("label", null, "Primary service model"));
   const board = document.createElement("select");
   S.boot.options.boards.forEach((option) => {
     const node = document.createElement("option");
@@ -1146,7 +1146,7 @@ function tabYou() {
   body.append(boardWrap);
 
   const langWrap = make("div", "field");
-  langWrap.append(make("label", null, "Language for parent messages"));
+  langWrap.append(make("label", null, "Language for customer & driver messages"));
   const language = document.createElement("select");
   Object.entries(S.boot.options.languages).forEach(([code, label]) => {
     const node = document.createElement("option");
@@ -1157,8 +1157,8 @@ function tabYou() {
   langWrap.append(language);
   body.append(langWrap);
 
-  const subjects = pickMany(body, "Subjects you teach", S.boot.options.subjects, S.user.subjects || []);
-  const grades = pickMany(body, "Grades", S.boot.options.grades.map(String), S.user.grades || []);
+  const subjects = pickMany(body, "Vehicle categories in your fleet", S.boot.options.subjects, S.user.subjects || []);
+  const grades = pickMany(body, "Fleet bays / hubs", S.boot.options.grades.map(String), S.user.grades || []);
 
   const appearanceWrap = make("div", "field");
   appearanceWrap.append(make("label", null, "Appearance"));
@@ -1251,7 +1251,7 @@ function tabModels() {
     head.append(make("b", null, provider.label));
     head.append(make("span", "spacer"));
     if (status.mine) head.append(make("span", "pill", "your key · " + status.mine.hint));
-    else if (status.org) head.append(make("span", "pill admin", "school key"));
+    else if (status.org) head.append(make("span", "pill admin", "agency key"));
     else head.append(make("span", "pill off", "no key"));
     panel.append(head);
 
@@ -1292,7 +1292,7 @@ function tabModels() {
     acts.append(save);
 
     if (S.user.role === "admin") {
-      const forSchool = make("button", "btn", "Save as school key");
+      const forSchool = make("button", "btn", "Save as agency key");
       forSchool.addEventListener("click", async () => {
         try {
           const result = await api("/api/keys", {
@@ -1352,7 +1352,7 @@ function tabModels() {
     share.append(track);
     if (pct >= 80) {
       share.append(make("div", null, pct >= 100
-        ? "Limit reached. Classes, marks and files still work. Ask your admin if you need more."
+        ? "Limit reached. Fleet records, checklists and saved files still work. Ask your admin if you need more."
         : "Getting close. Ask your admin early if you have a heavy month."));
     }
     if (S.boot.capabilities && S.boot.capabilities.teacher_own_keys) {
@@ -1360,7 +1360,7 @@ function tabModels() {
     }
   } else {
     share.append(make("b", null, "Your share this month: "));
-    share.append("no limit set by your school.");
+    share.append("no limit set by your agency.");
   }
   spendBody.append(share);
   spendBody.append(make("div", "hint",
@@ -2022,11 +2022,11 @@ $("chip-lens").addEventListener("click", () => {
 $("open-menu").addEventListener("click", () => {
   const dark = document.documentElement.dataset.theme === "dark";
   const items = [
-    { label: "New conversation", kbd: "Ctrl /", run: newThread },
+    { label: "New task or quote", kbd: "Ctrl /", run: newThread },
     "-",
     { label: "Toolkit", kbd: "Ctrl K", run: () => showPanel("toolkit") },
-    { label: "Classes", run: () => showPanel("classes") },
-    { label: "To do", run: () => showPanel("tasks") },
+    { label: "Fleet & Bookings", run: () => showPanel("classes") },
+    { label: "Ops to-do", run: () => showPanel("tasks") },
     { label: "Files", run: () => showPanel("files") },
     "-",
     { label: "Settings", run: () => openSettings("you") },
@@ -2049,7 +2049,8 @@ $("nav-forward").addEventListener("click", () => navGo(1));
 document.querySelectorAll(".starter").forEach((button) =>
   button.addEventListener("click", () => {
     if (button.dataset.kit && S.boot && S.boot.toolkit) {
-      const entry = S.boot.toolkit.find((t) => t.id === button.dataset.kit);
+      const wanted = button.dataset.kit.replace(/_/g, "-");
+      const entry = S.boot.toolkit.find((t) => t.id === wanted || t.id === button.dataset.kit);
       if (entry) {
         currentPanel = "toolkit";
         document.querySelectorAll(".rail-link").forEach((l) =>

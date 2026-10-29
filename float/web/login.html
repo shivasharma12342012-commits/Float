@@ -16,23 +16,23 @@
   <!-- Left: the board. Quiet, dark, and the only place the serif shouts. -->
   <aside class="gate-art">
     <div class="wordmark">Float<span class="wordmark-dot"></span></div>
-    <blockquote id="pull">A hundred and twenty scripts.<br>Eight periods.<br>One of you.</blockquote>
-    <cite id="pull-cite">Float does the paperwork. The teaching stays yours.</cite>
+    <blockquote id="pull">Forty cars on the lot.<br>Eight periods.<br>One of you.</blockquote>
+    <cite id="pull-cite">Float handles the paperwork. The keys stay yours.</cite>
   </aside>
 
   <!-- Right: the form. Three modes share it. -->
   <section class="gate-form">
 
-    <!-- Returning teacher, known device: PIN first -->
+    <!-- Returning operator, known device: PIN first -->
     <div id="mode-quick" hidden>
       <h1>Welcome back.</h1>
-      <p id="quick-sub">Enter your PIN to carry on.</p>
+      <p id="quick-sub">Enter your PIN to open the rental desk.</p>
 
       <div class="known">
-        <div class="avatar" id="quick-avatar">T</div>
+        <div class="avatar" id="quick-avatar">F</div>
         <div class="grow">
-          <b id="quick-name">Teacher</b>
-          <small id="quick-email">teacher@school.in</small>
+          <b id="quick-name">Fleet Desk</b>
+          <small id="quick-email">desk@rental.in</small>
         </div>
       </div>
 
@@ -55,13 +55,13 @@
     <!-- Normal sign in -->
     <div id="mode-signin" hidden>
       <h1 id="signin-title">Good to see you.</h1>
-      <p id="signin-sub">Sign in to your staff room account.</p>
+      <p id="signin-sub">Sign in to your rental desk &amp; fleet workspace.</p>
 
       <form id="form-signin" autocomplete="on">
         <div class="field">
-          <label for="si-email">School email</label>
+          <label for="si-email">Work email</label>
           <input type="email" id="si-email" autocomplete="username" required
-                 placeholder="you@school.edu.in">
+                 placeholder="you@agency.in">
         </div>
         <div class="field">
           <label for="si-password">Password</label>
@@ -78,23 +78,23 @@
     <!-- Self sign-up, or the very first account on this machine -->
     <div id="mode-signup" hidden>
       <h1 id="signup-title">Set up Float.</h1>
-      <p id="signup-sub">This first account runs the school. You can add your colleagues afterwards.</p>
+      <p id="signup-sub">This first account manages the agency. You can add desk agents and fleet staff afterwards.</p>
 
       <form id="form-signup" autocomplete="on">
         <div class="field">
           <label for="su-name">Your name</label>
-          <input type="text" id="su-name" autocomplete="name" required placeholder="Anita Sharma">
-          <div class="hint">However you'd like Float to greet you.</div>
+          <input type="text" id="su-name" autocomplete="name" required placeholder="Vikram Khanna">
+          <div class="hint">However you'd like Float to greet you on shift.</div>
         </div>
         <div class="field" id="su-school-field">
-          <label for="su-school">School name</label>
+          <label for="su-school">Agency or branch name</label>
           <input type="text" id="su-school" autocomplete="organization"
-                 placeholder="Kendriya Vidyalaya, Sector 8">
+                 placeholder="Apex Car Rentals, Terminal 2">
         </div>
         <div class="field">
-          <label for="su-email">School email</label>
+          <label for="su-email">Work email</label>
           <input type="email" id="su-email" autocomplete="username" required
-                 placeholder="you@school.edu.in">
+                 placeholder="you@agency.in">
         </div>
         <div class="field">
           <label for="su-password">Password</label>
@@ -112,7 +112,7 @@
     <div id="gate-msg" role="alert" aria-live="polite" hidden></div>
 
     <p class="gate-foot">
-      Your classes and chats stay on your school's own Float computer. Float signs you out when you close this window.
+      Your fleet records, contracts and chats stay on your agency's own Float computer. Float signs you out when you close this window.
     </p>
   </section>
 </main>

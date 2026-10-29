@@ -2,18 +2,20 @@
 
 Three things live here.
 
-**The system prompt**, assembled per request from the teacher's own context: what
-they teach, which board, which classes, which language, and — the part that
-matters most — how much of the work they want done for them.
+**The system prompt**, assembled per request from the rental operator's own context:
+their agency/branch, service models (self-drive, chauffeur, corporate, airport),
+vehicle categories, registered fleet bays/groups, language, and how much of the
+work they want Float to finish immediately.
 
 **The tools**, in JSON Schema, which every provider is given in its own dialect
-by ``providers.py``. Kept deliberately few. A model with six good tools uses them;
-a model with twenty picks the wrong one.
+by ``providers.py``. Includes instant document generation (Word, Excel, PDF),
+fleet & booking lookup, deterministic rental quote & GST math (``calculate_quote``),
+ops task logging, shift schedule check, and computer control.
 
-**The toolkit**, which is the product: nineteen teaching workflows with the
-fields an Indian school teacher would actually be asked for, and a prompt written
-for each. These are not chat suggestions — each one is a small form that produces
-a document.
+**The toolkit**, which is the product: nineteen car rental workflows built for
+rental counter staff, dispatchers, and fleet managers. Each one is a fast form
+that produces a counter-ready contract, quote, checklist, analysis, or message in
+seconds.
 """
 
 from __future__ import annotations
@@ -27,44 +29,49 @@ from . import artifacts, computer, config, db, mcp, stats
 # ---------------------------------------------------------------------------
 # System prompt
 # ---------------------------------------------------------------------------
-_BASE = """You are Float, a working assistant for schoolteachers. You are used between \
-periods, in staff rooms, on laptops with weak connections, by people who are tired and \
-busy. Answer accordingly: get to the point, and make the first draft good enough to use.
+_BASE = """You are Float, an ultra-fast, high-precision operations and fleet assistant \
+for car rental businesses — used at rental counters, dispatch desks, airport lots, and \
+fleet offices by people who have customers waiting for keys right now. Answer accordingly: \
+skip all fluff, get straight to the output, and make the very first response ready to print, \
+hand over, or send on WhatsApp in seconds.
 
-How you write:
-- Plain, warm, specific. No preamble, no "Certainly!", no restating the question.
-- Use Markdown headings, tables and lists — Float turns them into Word, PDF and Excel files.
-- Indian classroom reality by default: 40-55 students in a room, shared textbooks, one \
-projector for the floor, chalk and a blackboard, low-cost materials for activities, and \
-a syllabus that has to be finished before the board exam.
-- Never invent a page number, a textbook line, a circular, or a board rule. If you are \
-not sure what the prescribed text says, say so and describe the concept instead.
-- Marks, weightings and blueprints must add up. Check them before you answer.
+How you work and write:
+- Crisp, commercial, practical, and zero preamble. Never open with "Certainly!" or restate the prompt.
+- Use clean Markdown headings, tables, and bullet lists — Float turns them directly into Word, PDF, and Excel files.
+- Car rental operational reality by default: vehicle registration plates (e.g. MH-02 / DL-01 / KA-01), \
+odometer out/in (km), fuel policy (Full-to-Full or Same-to-Same), FASTag balance, daily/weekly/monthly tariffs, \
+free km allowance + extra km and extra hour rates, refundable security deposit, Driver Licence + ID verification, \
+PUC/Insurance/Fitness validity, and 360-degree scratch/dent inspection logging.
+- Every tariff, extra-km charge, GST split (5% / 12% / 18%), security deposit adjustment, and invoice total \
+must add up to the exact rupee. Use the `calculate_quote` tool whenever quoting or settling a bill so the math is 100% exact.
+- Never invent a customer's licence number, registration plate, or insurance policy number if not given — \
+use a clean, clearly marked counter fill-in box (e.g. `Reg No: [________]`) or look up the registered fleet group first.
 
-What you are careful about:
-- You do not assess a child's ability, diagnose a condition, or write anything that \
-labels a student. You describe work, not children.
-- Anything that goes to a parent or into a record is a draft for the teacher to approve. \
-Say so once, briefly, at the end — not in every paragraph.
-- The teacher's judgement is the point of the job. Where a real decision sits with them \
-— a mark, a remark, whether a child is struggling — put the decision back in their hands \
-with the information they need, rather than making it for them."""
+How you get more work done in seconds:
+- Chain tools proactively in a single turn: if the operator asks to prepare a handover or quote for a fleet group, \
+call `look_up_class` to get the vehicle/booking details, call `calculate_quote` for exact pricing, call `create_file` \
+to generate the Word/Excel document immediately, and call `save_task` if there is a follow-up (like deposit refund or service due).
+- Anything that goes to a customer, insurer, or RTO is a draft for the operator to verify before signing or sending. \
+Note that in one short line at the end — never in every paragraph.
+- Where a commercial decision sits with the operator — waiving a minor scratch, approving a discount, or releasing a deposit — \
+lay out the exact numbers and put the call clearly in their hands."""
 
 _ASSIST = {
     "coach": """
-This teacher has asked you to COACH, not to finish the work.
-Give them a structure, the two or three decisions that actually matter, and one worked \
-example. Ask one focused question where their context genuinely changes the answer. \
-Leave the writing to them. Do not produce the finished artefact unless they ask again \
-explicitly.""",
+This operator has asked you to COACH / GUIDE, not to write the final document yet.
+Give them a tight operational checklist, the two or three commercial/policy decisions that matter \
+(e.g. rate tier, deposit hold, damage waiver), and one quick example calculation. Ask one focused \
+question where their fleet context changes the answer.""",
     "draft": """
-This teacher has asked for a DRAFT they will edit.
-Write the whole thing, properly, and finish with one short line naming the single place \
-their own knowledge of the class should change what you wrote. One line — not a checklist.""",
+This operator has asked for a FAST DRAFT ready to use.
+Produce the complete contract, quote, checklist, or message immediately, and finish with one short \
+line naming the single detail (such as odometer reading, plate number, or special rate) they should \
+verify before handing it over.""",
     "full": """
-This teacher has asked for a FINISHED version.
-Write it complete and ready to use. No questions back, no placeholders like [insert name]. \
-If something is genuinely unknown, choose a sensible default and note it in one clause.""",
+This operator has asked for an INSTANT FINISHED version.
+Produce the complete, counter-ready output in one shot. No questions back, no filler. If a detail is \
+unspecified, pick a sensible industry default (e.g. 250 km/day limit, Full-to-Full fuel, standard security deposit) \
+and state it in one brief clause.""",
 }
 
 
@@ -80,36 +87,36 @@ def system_prompt(user: dict[str, Any], tool_context: str = "") -> str:
     if user.get("name"):
         profile.append(f"You are working with {user['name']}.")
     if user.get("school"):
-        profile.append(f"School: {user['school']}.")
+        profile.append(f"Rental Agency / Branch: {user['school']}.")
     if user.get("board"):
-        profile.append(f"Board: {user['board']}.")
+        profile.append(f"Primary Service Model: {user['board']}.")
     if subjects:
-        profile.append(f"Subjects taught: {', '.join(subjects)}.")
+        profile.append(f"Vehicle Categories / Fleet Segments: {', '.join(subjects)}.")
     if grades:
-        profile.append(f"Classes taught: {', '.join(grades)}.")
+        profile.append(f"Fleet Bays / Hubs: {', '.join(grades)}.")
     if user.get("language", "en") != "en":
         profile.append(
-            f"This teacher's language is {language}. Write in {language} when they write to you "
-            "in it, and when the output is for students or parents. Keep technical terms and "
-            "board terminology in English where that is what the school uses."
+            f"Preferred language: {language}. Write in {language} when they write to you in it, "
+            "and when the output is for customers or drivers. Keep registration plates, vehicle models, "
+            "and financial figures clear."
         )
     lines.append("\n".join(profile))
 
     classes = db.list_classes(int(user["id"]))
     if classes:
         listing = "; ".join(
-            f"{c['name']} ({c['students']} students)" + (f", {c['subject']}" if c["subject"] else "")
+            f"{c['name']} ({c['students']} vehicles/bookings)" + (f", {c['subject']}" if c["subject"] else "")
             for c in classes[:12]
         )
-        lines.append(f"Classes registered in Float: {listing}. Use look_up_class before "
-                     "writing anything that needs real names or marks.")
+        lines.append(f"Fleet groups / bays registered in Float: {listing}. Use look_up_class before "
+                     "writing anything that needs real vehicle plates, renter names, or condition/revenue logs.")
 
     lines.append(
-        "Files: when the teacher will print, send or keep something, call create_file. "
-        "Do not ask permission first and do not paste a wall of text and then offer a file — "
-        "make the file, and say in one line what it is. Word for documents, Excel for "
-        "anything with marks or lists, PDF only when they ask for PDF. PDF cannot render "
-        "Indian-language scripts, so use Word for those."
+        "Files: whenever the operator will print, hand over, email, or WhatsApp a document or sheet, "
+        "call create_file immediately. Do not ask permission first and do not paste a wall of text and then "
+        "offer a file — make the file right away, and summarize the key numbers in two or three crisp bullets. "
+        "Use Word (docx) for rental agreements, checklists, letters, and SOPs; Excel (xlsx) for rate cards, "
+        "fleet schedules, and utilization logs; PDF only when they specifically ask for PDF."
     )
     if tool_context:
         lines.append(tool_context)
@@ -133,18 +140,18 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "create_file",
         "description": (
-            "Create a real file the teacher can print, email or upload: Word, PDF, Excel, "
-            "CSV, HTML or Markdown. Content is Markdown for documents (headings, tables, "
-            "lists all work) and a list of rows for spreadsheets. Use this whenever the "
-            "output is something they will keep rather than read once."
+            "Create a real file the rental operator can print at the desk, email, or send on WhatsApp: "
+            "Word (docx), PDF, Excel (xlsx), CSV, HTML or Markdown. Content is Markdown for documents "
+            "(headings, tables, lists all work) and a Markdown table for spreadsheets. Call this immediately "
+            "whenever the output is a contract, quote, invoice, checklist, roster, or report."
         ),
         "parameters": {
             "type": "object",
             "properties": {
-                "name": {"type": "string", "description": "Filename without extension, e.g. 'Class 8B Unit Test'."},
+                "name": {"type": "string", "description": "Filename without extension, e.g. 'SUV Handover Checklist - MH02AB1234'."},
                 "kind": {"type": "string", "enum": ["docx", "pdf", "xlsx", "csv", "html", "md", "txt"]},
                 "title": {"type": "string", "description": "Heading printed at the top."},
-                "subtitle": {"type": "string", "description": "One line under the title: class, date, marks."},
+                "subtitle": {"type": "string", "description": "One line under the title: branch, vehicle/booking, date."},
                 "content": {"type": "string", "description": "Markdown body. For xlsx/csv, a Markdown table."},
             },
             "required": ["name", "kind", "content"],
@@ -153,28 +160,58 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "look_up_class",
         "description": (
-            "Read a class the teacher has registered: the student list, recent marks and "
-            "attendance. Use before writing report remarks, seating plans, group lists or "
-            "anything else that needs real names or real scores."
+            "Look up a fleet group, vehicle bay, or booking roster registered in Float: the list of vehicles/renters, "
+            "logged inspection scores or trip revenues, and daily availability/check-out status. Use before writing "
+            "dispatch rosters, utilization reports, or fleet summaries that need real plates or customer names."
         ),
         "parameters": {
             "type": "object",
             "properties": {
-                "class_name": {"type": "string", "description": "Name or grade+section, e.g. '8B'."},
+                "class_name": {"type": "string", "description": "Fleet group or bay name, e.g. 'SUV Fleet' or 'Bay 2'."},
                 "include": {
                     "type": "array",
                     "items": {"type": "string", "enum": ["students", "marks", "attendance"]},
-                    "description": "What to fetch. Defaults to students.",
+                    "description": "What to fetch: 'students' (vehicles/renters), 'marks' (scores/metrics), 'attendance' (availability log).",
                 },
             },
             "required": ["class_name"],
         },
     },
     {
+        "name": "calculate_quote",
+        "description": (
+            "Instantly calculate an exact, error-free car rental quote or final trip settlement in Python. "
+            "Computes base rental tariff, included free km, extra km charges, extra hour charges, chauffeur/driver "
+            "allowance, tolls/FASTag, fuel refill charges, damage deductions, discounts, GST, net invoice total, "
+            "and balance payable or refundable after security deposit."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "vehicle": {"type": "string", "description": "Vehicle name/category, e.g. 'Hyundai Creta SX (Compact SUV)'."},
+                "days": {"type": "number", "description": "Number of rental days."},
+                "daily_rate": {"type": "number", "description": "Base rate per day in ₹."},
+                "included_km_per_day": {"type": "number", "description": "Free km included per day (default 250)."},
+                "actual_km": {"type": "number", "description": "Actual km driven (or expected km for a quote)."},
+                "extra_km_rate": {"type": "number", "description": "Charge per extra km in ₹ (e.g. 14)."},
+                "extra_hours": {"type": "number", "description": "Extra hours beyond the rental period."},
+                "extra_hour_rate": {"type": "number", "description": "Charge per extra hour in ₹ (e.g. 250)."},
+                "driver_allowance_per_day": {"type": "number", "description": "Chauffeur batta/allowance per day in ₹ (0 for self-drive)."},
+                "toll_parking": {"type": "number", "description": "FASTag tolls, state tax, or parking charges in ₹."},
+                "fuel_charge": {"type": "number", "description": "Fuel shortage charge in ₹ (0 if returned full-to-full)."},
+                "damage_charge": {"type": "number", "description": "Damage / cleaning / late penalty in ₹."},
+                "discount_amount": {"type": "number", "description": "Flat discount in ₹."},
+                "gst_percent": {"type": "number", "description": "GST percentage (e.g. 5, 12, or 18; default 5)."},
+                "security_deposit": {"type": "number", "description": "Refundable security deposit held/collected in ₹."},
+            },
+            "required": ["days", "daily_rate"],
+        },
+    },
+    {
         "name": "save_task",
         "description": (
-            "Put something on the teacher's list in Float. Use when they say they need to "
-            "remember something, or when a plan you wrote implies a deadline for them."
+            "Add an operational task or reminder to the operator's checklist in Float (e.g. 'Refund ₹5,000 deposit for "
+            "MH-02-AB-1234', 'Renew insurance for Innova KA-01-MN-4455', 'Call customer for extension')."
         ),
         "parameters": {
             "type": "object",
@@ -188,8 +225,8 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "use_computer",
         "description": (
-            "Work on the teacher's computer like a careful personal assistant: open apps, search, "
-            "click and type. Float shows a banner and its own pointer, and the teacher can press Esc.\n"
+            "Work on the operator's computer like a careful personal assistant: open apps, search, "
+            "click and type. Float shows a banner and its own pointer, and the operator can press Esc.\n"
             "YOU CAN SEE: every call ends with what is on screen NOW - the window in front, what else is "
             "open, a NUMBERED list of the buttons, links and boxes in the front window, and (when your "
             "model reads images) a screenshot with those numbers drawn on it. Read it before your next "
@@ -208,15 +245,15 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "the screenshot grid. Never invent a control name or a number.\n"
             "5. After a page or app needs time to load, use wait with until='text you expect'.\n"
             "6. If a step fails, the run stops and says why. Do NOT repeat it: read the screen shown, "
-            "take another route, or tell the teacher plainly what went wrong.\n"
-            "7. Afterwards tell the teacher in one plain sentence what is now on screen. Only use this "
-            "when the teacher asked Float to do something on the machine, and never to send, submit, "
-            "delete or pay without them saying so."
+            "take another route, or tell the operator plainly what went wrong.\n"
+            "7. Afterwards tell the operator in one plain sentence what is now on screen. Only use this "
+            "when asked to do something on the machine, and never to send, submit, delete or pay without "
+            "explicit confirmation."
         ),
         "parameters": {
             "type": "object",
             "properties": {
-                "intent": {"type": "string", "description": "One line the teacher will see on the banner."},
+                "intent": {"type": "string", "description": "One line the operator will see on the banner."},
                 "steps": {
                     "type": "array",
                     "description": "Steps in order.",
@@ -257,14 +294,14 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     },
     {
         "name": "read_my_day",
-        "description": "The teacher's timetable for today and their open tasks. Use when they ask about their day, or before planning their time.",
+        "description": "The operator's pickup/return schedule for today and their open ops tasks. Use when they ask about today's shift, dispatches, or pending work.",
         "parameters": {"type": "object", "properties": {}},
     },
 ]
 
 
 def tools_for(user: dict[str, Any], allow_computer: bool) -> list[dict[str, Any]]:
-    names = {"create_file", "look_up_class", "save_task", "read_my_day"}
+    names = {"create_file", "look_up_class", "calculate_quote", "save_task", "read_my_day"}
     if allow_computer:
         names.add("use_computer")
     active = [t for t in TOOL_SCHEMAS if t["name"] in names]
@@ -289,6 +326,7 @@ def execute(name: str, payload: dict[str, Any], user: dict[str, Any],
     handler = {
         "create_file": _tool_create_file,
         "look_up_class": _tool_look_up_class,
+        "calculate_quote": _tool_calculate_quote,
         "save_task": _tool_save_task,
         "use_computer": _tool_use_computer,
         "read_my_day": _tool_read_my_day,
@@ -308,13 +346,15 @@ def tool_label(name: str) -> str:
     if name.startswith("mcp__") or mcp.is_mcp_tool(name):
         return mcp.tool_label(name)
     labels = {
-        "create_file": "Making the file",
-        "look_up_class": "Looking up the class",
-        "save_task": "Adding to your list",
+        "create_file": "Building your document",
+        "look_up_class": "Checking fleet & booking records",
+        "calculate_quote": "Calculating exact rental quote",
+        "save_task": "Adding to your ops checklist",
         "use_computer": "Using your computer",
-        "read_my_day": "Checking your day",
+        "read_my_day": "Checking today's pickups & returns",
     }
     return labels.get(name, "Working")
+
 
 def _tool_create_file(payload: dict[str, Any], user: dict[str, Any],
                       conv_id: int | None, emit: Any) -> dict[str, Any]:
@@ -336,9 +376,82 @@ def _tool_create_file(payload: dict[str, Any], user: dict[str, Any],
              detail=f"{record['name']} ({record['size']} bytes)")
     return {
         "text": f"Created {record['name']} ({record['label']}, {record['size']} bytes). "
-                "The teacher can save it to their Desktop or Google Drive from the file card.",
+                "The operator can save it to their Desktop, Google Drive, or Download from the file card.",
         "card": {"type": "file", **record},
     }
+
+
+def _num(val: Any, default: float = 0.0) -> float:
+    try:
+        if val is None or val == "":
+            return default
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
+def _tool_calculate_quote(payload: dict[str, Any], user: dict[str, Any],
+                          conv_id: int | None, emit: Any) -> dict[str, Any]:
+    vehicle = str(payload.get("vehicle") or "Vehicle").strip()
+    days = max(0.0, _num(payload.get("days"), 1.0))
+    daily_rate = max(0.0, _num(payload.get("daily_rate"), 0.0))
+    inc_km_day = max(0.0, _num(payload.get("included_km_per_day"), 250.0))
+    actual_km = max(0.0, _num(payload.get("actual_km"), 0.0))
+    extra_km_rate = max(0.0, _num(payload.get("extra_km_rate"), 12.0))
+    extra_hours = max(0.0, _num(payload.get("extra_hours"), 0.0))
+    extra_hour_rate = max(0.0, _num(payload.get("extra_hour_rate"), 200.0))
+    driver_day = max(0.0, _num(payload.get("driver_allowance_per_day"), 0.0))
+    toll_parking = max(0.0, _num(payload.get("toll_parking"), 0.0))
+    fuel_charge = max(0.0, _num(payload.get("fuel_charge"), 0.0))
+    damage_charge = max(0.0, _num(payload.get("damage_charge"), 0.0))
+    discount = max(0.0, _num(payload.get("discount_amount"), 0.0))
+    gst_pct = max(0.0, _num(payload.get("gst_percent"), 5.0))
+    deposit = max(0.0, _num(payload.get("security_deposit"), 5000.0))
+
+    base_rent = round(days * daily_rate, 2)
+    included_km = round(days * inc_km_day, 1)
+    extra_km = max(0.0, round(actual_km - included_km, 1)) if actual_km > 0 else 0.0
+    extra_km_cost = round(extra_km * extra_km_rate, 2)
+    extra_hr_cost = round(extra_hours * extra_hour_rate, 2)
+    driver_cost = round(days * driver_day, 2)
+
+    taxable_sub = max(0.0, round(base_rent + extra_km_cost + extra_hr_cost + driver_cost - discount, 2))
+    gst_amount = round(taxable_sub * (gst_pct / 100.0), 2)
+    non_tax_reimb = round(toll_parking + fuel_charge + damage_charge, 2)
+    grand_total = round(taxable_sub + gst_amount + non_tax_reimb, 2)
+    net_after_deposit = round(grand_total - deposit, 2)
+
+    lines = [
+        f"EXACT QUOTE / SETTLEMENT CALCULATION — {vehicle}",
+        f"- Rental Duration: {days:g} day(s) @ ₹{daily_rate:,.2f}/day = ₹{base_rent:,.2f}",
+        f"- Included Distance: {included_km:g} km ({inc_km_day:g} km/day). Extra km rate: ₹{extra_km_rate:,.2f}/km",
+    ]
+    if extra_km > 0:
+        lines.append(f"- Extra Distance Driven: {extra_km:g} km (Actual {actual_km:g} km) = ₹{extra_km_cost:,.2f}")
+    if extra_hours > 0:
+        lines.append(f"- Extra Hours: {extra_hours:g} hr(s) @ ₹{extra_hour_rate:,.2f}/hr = ₹{extra_hr_cost:,.2f}")
+    if driver_cost > 0:
+        lines.append(f"- Chauffeur Allowance: {days:g} day(s) @ ₹{driver_day:,.2f}/day = ₹{driver_cost:,.2f}")
+    if discount > 0:
+        lines.append(f"- Discount Applied: -₹{discount:,.2f}")
+    lines.append(f"- Taxable Subtotal: ₹{taxable_sub:,.2f}")
+    lines.append(f"- GST ({gst_pct:g}%): ₹{gst_amount:,.2f} (CGST ₹{gst_amount/2:,.2f} + SGST ₹{gst_amount/2:,.2f})")
+    if toll_parking > 0:
+        lines.append(f"- FASTag Tolls / Parking / State Tax: ₹{toll_parking:,.2f}")
+    if fuel_charge > 0:
+        lines.append(f"- Fuel Shortage Refill Charge: ₹{fuel_charge:,.2f}")
+    if damage_charge > 0:
+        lines.append(f"- Damage / Cleaning / Penalty: ₹{damage_charge:,.2f}")
+    lines.append(f"- GRAND TOTAL BILL: ₹{grand_total:,.2f}")
+    lines.append(f"- Security Deposit Held: ₹{deposit:,.2f}")
+    if net_after_deposit > 0:
+        lines.append(f"- BALANCE PAYABLE BY CUSTOMER: ₹{net_after_deposit:,.2f}")
+    elif net_after_deposit < 0:
+        lines.append(f"- REFUND DUE TO CUSTOMER FROM DEPOSIT: ₹{abs(net_after_deposit):,.2f}")
+    else:
+        lines.append("- SETTLEMENT STATUS: ₹0.00 balance (Deposit exactly covers bill)")
+
+    return {"text": "\n".join(lines), "card": None}
 
 
 def _tool_look_up_class(payload: dict[str, Any], user: dict[str, Any],
@@ -354,31 +467,31 @@ def _tool_look_up_class(payload: dict[str, Any], user: dict[str, Any],
             break
     if match is None:
         if not classes:
-            return {"text": "No classes are registered in Float yet. The teacher can add one "
-                            "under Classes, or paste the list of names here.", "card": None}
+            return {"text": "No fleet groups are registered in Float yet. The operator can add one "
+                            "under Fleet, or paste the vehicle/booking list directly in chat.", "card": None}
         names = ", ".join(c["name"] for c in classes)
-        return {"text": f"No class matched '{wanted}'. Registered classes: {names}.", "card": None}
+        return {"text": f"No fleet group matched '{wanted}'. Registered fleet groups: {names}.", "card": None}
 
-    report: list[str] = [f"Class {match['name']} — {match['subject'] or 'no subject set'}, "
-                         f"{match['students']} students."]
+    report: list[str] = [f"Fleet Group {match['name']} — {match['subject'] or 'general category'}, "
+                         f"{match['students']} vehicles/bookings."]
     if "students" in include:
         students = db.list_students(int(match["id"]))
         s_list = ", ".join(f"{s['roll']} {s['name']}".strip() for s in students)
-        report.append(f"Students: {s_list or 'none'}")
+        report.append(f"Vehicles / Bookings: {s_list or 'none'}")
     if "marks" in include:
         marks = db.class_marks(int(match["id"]))[:200]
         if marks:
-            report.append("Recent marks: " + "; ".join(
+            report.append("Logged scores / metrics: " + "; ".join(
                 f"{m['name']} {m['assessment']} {m['score']}/{m['max_score']}" for m in marks[:60]))
         else:
-            report.append("No marks recorded.")
+            report.append("No inspection or revenue metrics recorded.")
     if "attendance" in include:
         rows = db.attendance_range(int(match["id"]), 20)
         if rows:
-            report.append("Attendance: " + "; ".join(
-                f"{r['on_date']}: {len(r['present'])} present, {len(r['absent'])} absent" for r in rows))
+            report.append("Availability log: " + "; ".join(
+                f"{r['on_date']}: {len(r['present'])} on-lot/active, {len(r['absent'])} out/maintenance" for r in rows))
         else:
-            report.append("No attendance recorded.")
+            report.append("No availability log recorded.")
     return {"text": "\n".join(report), "card": None}
 
 
@@ -389,7 +502,7 @@ def _tool_save_task(payload: dict[str, Any], user: dict[str, Any],
         return {"text": "A task needs a title.", "card": None}
     due = str(payload.get("due", "")).strip()
     db.add_task(int(user["id"]), title, due)
-    return {"text": f"Added to the teacher's list: {title}" + (f" (due {due})" if due else ""),
+    return {"text": f"Added to the ops checklist: {title}" + (f" (due {due})" if due else ""),
             "card": {"type": "task", "title": title, "due": due}}
 
 
@@ -400,16 +513,16 @@ def _tool_read_my_day(payload: dict[str, Any], user: dict[str, Any],
     tasks = db.list_tasks(int(user["id"]))
     lines = [f"{today.strftime('%A %d %B')}."]
     if periods:
-        lines.append("Timetable: " + "; ".join(
+        lines.append("Shift & Pickup/Return Schedule: " + "; ".join(
             f"{p['starts']}-{p['ends']} {p['label']}" + (f" ({p['room']})" if p['room'] else "")
             for p in periods))
     else:
-        lines.append("No timetable saved for today.")
+        lines.append("No pickup/return slots saved for today.")
     if tasks:
-        lines.append("Open tasks: " + "; ".join(
+        lines.append("Open ops tasks: " + "; ".join(
             f"{t['title']}" + (f" (due {t['due']})" if t["due"] else "") for t in tasks[:20]))
     else:
-        lines.append("No open tasks.")
+        lines.append("No open ops tasks.")
     return {"text": "\n".join(lines), "card": None}
 
 
@@ -425,7 +538,7 @@ def _tool_use_computer(payload: dict[str, Any], user: dict[str, Any],
 
     intent = str(payload.get("intent") or "a task")[:120]
     steps = payload.get("steps") or []
-    if isinstance(steps, str):                              # some models send the list as a JSON string
+    if isinstance(steps, str):
         try:
             steps = json.loads(steps)
         except ValueError:
@@ -469,13 +582,13 @@ def _tool_use_computer(payload: dict[str, Any], user: dict[str, Any],
                 emit({"type": "computer_step", "text": done[-1]})
     except computer.Stopped:
         computer.end("stopped")
-        return {"text": f"The teacher stopped the run after {len(done)} steps: "
+        return {"text": f"The operator stopped the run after {len(done)} steps: "
                         + "; ".join(done), "card": {"type": "computer", "steps": done, "stopped": True}}
     except Exception as exc:
         out = with_screen(
             f"Stopped after {len(done)} steps because: {exc}. Completed: " + ("; ".join(done) or "nothing yet") + ".",
             "Do not repeat the failed step. Use the screen above to take another route, "
-            "or tell the teacher plainly what went wrong.")
+            "or tell the operator plainly what went wrong.")
         computer.end(f"failed: {exc}")
         out["card"] = {"type": "computer", "steps": done, "stopped": True}
         return out
@@ -487,7 +600,7 @@ def _tool_use_computer(payload: dict[str, Any], user: dict[str, Any],
 
 
 # ---------------------------------------------------------------------------
-# The teaching toolkit
+# The Car Rental Operations Toolkit (19 rapid workflows)
 #
 # Each entry is a small form plus the prompt it fills. ``fields`` are rendered by
 # the front end; ``{placeholders}`` in ``prompt`` are filled from them.
@@ -496,529 +609,541 @@ def _f(key: str, label: str, kind: str = "text", **extra: Any) -> dict[str, Any]
     return {"key": key, "label": label, "type": kind, **extra}
 
 
-_CLASS = _f("klass", "Class", "text", placeholder="8B")
-_SUBJECT = _f("subject", "Subject", "text", placeholder="Science")
-_TOPIC = _f("topic", "Chapter or topic", "text", placeholder="Force and Laws of Motion")
-_BOARD = _f("board", "Board", "select", options=list(config.BOARDS))
+_CLASS = _f("klass", "Fleet group / Bay", "text", placeholder="SUV Fleet - Bay 2")
+_SUBJECT = _f("subject", "Vehicle category", "text", placeholder="Compact SUV (Creta / Seltos)")
+_TOPIC = _f("topic", "Vehicle & plate / Booking ref", "text", placeholder="MH-02-AB-4589 · Hyundai Creta SX")
+_BOARD = _f("board", "Service model", "select", options=list(config.BOARDS))
 
 TOOLKIT: list[dict[str, Any]] = [
     {
         "id": "lesson-plan",
-        "group": "Planning",
-        "name": "Lesson plan",
-        "blurb": "A period-by-period plan with outcomes, activities and board work.",
+        "group": "Bookings & Quotes",
+        "name": "Rental agreement",
+        "blurb": "Counter-ready self-drive or chauffeur contract with tariff, km rules, deposit & sign-off.",
         "icon": "plan",
         "kind": "docx",
         "fields": [
             _CLASS, _SUBJECT, _TOPIC, _BOARD,
-            _f("periods", "Number of periods", "number", value=1, min=1, max=20),
-            _f("minutes", "Minutes per period", "number", value=40, min=20, max=120),
-            _f("strength", "Class strength", "number", value=45, min=5, max=100),
-            _f("notes", "Anything specific", "textarea",
-               placeholder="Half the class struggles with numericals. No projector this week."),
+            _f("periods", "Rental duration (days)", "number", value=3, min=1, max=365),
+            _f("minutes", "Free km included per day", "number", value=250, min=50, max=1000),
+            _f("strength", "Daily tariff (₹)", "number", value=3200, min=500, max=100000),
+            _f("notes", "Renter name, DL/ID, deposit & special terms", "textarea",
+               placeholder="Renter: Rahul Verma, DL: MH02-2019004812, Deposit: ₹10,000 via UPI, Outstation to Goa allowed."),
         ],
-        "prompt": """Write a lesson plan for Class {klass} {subject}, {board}, on: {topic}.
-{periods} period(s) of {minutes} minutes each. Class strength about {strength}.
+        "prompt": """Draft a complete, print-ready Vehicle Rental Agreement for {klass} ({subject}, {board}) on vehicle/booking: {topic}.
+Rental duration: {periods} day(s), with {minutes} free km/day included. Base daily rate: ₹{strength}/day.
 
-Structure each period as: learning outcomes (observable, in student language) · prior \
-knowledge to check in 2 minutes · the hook · main teaching with what goes on the \
-blackboard · one activity that works with {strength} students and no special equipment · \
-check for understanding with the exact questions to ask · homework · what to do if the \
-period runs short.
+Use `calculate_quote` first to compute the exact base rent, GST, and deposit summary, then generate the Word document immediately via `create_file`.
 
-Add: common misconceptions on this topic and how to catch them; two differentiated \
-tasks, one for students who finish early and one for students who are behind; the \
-materials list.
+Structure the agreement cleanly with:
+1. Header block: Agency details, Agreement Reference, Date & Time Out, Expected Return Date & Time.
+2. Renter & Driver Verification Table: Full Name, Mobile, Address, Driving Licence No. & Expiry, Secondary ID (Aadhaar/Passport).
+3. Vehicle & Handover Table: Vehicle Model & Category ({subject}), Registration Plate ({topic}), Odometer Out, Fuel Level Out, FASTag Balance, Security Deposit Held.
+4. Tariff & Commercial Summary Table: Base rate (₹{strength}/day × {periods} days), Free km ({minutes} km/day), Extra km rate, Late return hourly charge, Fuel policy (Same-to-Same / Full-to-Full), GST, and Net Payable.
+5. Clear Rental Terms & Liability Clauses: Authorised driver only, speed governor / traffic challan liability, prohibited uses, breakdown & accident reporting protocol, damage deductible vs security deposit refund timeline.
+6. Dual Signature Block: Renter Signature & Timestamp, Desk Executive Signature & Stamp.
 
-Teacher's notes: {notes}
+Additional booking details: {notes}
 
-Create it as a Word file named "{klass} {subject} — {topic} lesson plan".""",
+Create it as a Word file named "{klass} {subject} — {topic} rental agreement".""",
     },
     {
         "id": "question-paper",
-        "group": "Assessment",
-        "name": "Question paper",
-        "blurb": "Blueprint-based paper with a marking scheme that adds up.",
+        "group": "Desk & Handover",
+        "name": "Vehicle handover checklist",
+        "blurb": "360° check-out / check-in inspection sheet with body panels, tyres, fuel, FASTag & accessories.",
         "icon": "paper",
         "kind": "docx",
         "fields": [
             _CLASS, _SUBJECT, _BOARD,
-            _f("chapters", "Chapters covered", "textarea", placeholder="Ch 8 Motion, Ch 9 Force and Laws of Motion"),
-            _f("marks", "Total marks", "number", value=40, min=10, max=100),
-            _f("duration", "Duration (minutes)", "number", value=90, min=30, max=180),
-            _f("exam_type", "Type", "select",
-               options=["Unit test", "Periodic test", "Half-yearly", "Pre-board", "Annual", "Practice paper"]),
-            _f("difficulty", "Difficulty", "select", options=["Easy", "Moderate", "Challenging", "Board-level"]),
-            _f("competency", "Competency-based questions", "select",
-               options=["40% (CBSE current)", "25%", "50%", "None"]),
+            _f("chapters", "Vehicle plate, model & renter name", "textarea",
+               placeholder="MH-02-AB-4589 · Hyundai Creta White · Renter: Rahul Verma"),
+            _f("marks", "Inspection points total", "number", value=40, min=10, max=100),
+            _f("duration", "Fuel level (%)", "number", value=100, min=5, max=100),
+            _f("exam_type", "Handover type", "select",
+               options=["Check-Out (Delivery)", "Check-In (Return)", "Outstation Pre-Trip", "Corporate Monthly Handover", "Airport Curbside Handover", "Workshop In/Out"]),
+            _f("difficulty", "Cleanliness & Cabin Status", "select",
+               options=["Showroom Clean / Sanitized", "Standard Ready", "Minor Dust (Noted)", "Deep Clean Required"]),
+            _f("competency", "Fuel & FASTag Policy", "select",
+               options=["Full-to-Full + Active FASTag", "Same-to-Same Level", "Prepaid Fuel Package", "Corporate Bill-to-Company"]),
         ],
-        "prompt": """Set a {exam_type} question paper for Class {klass} {subject}, {board}.
-Chapters: {chapters}. Total {marks} marks, {duration} minutes. Difficulty: {difficulty}. \
-Competency-based/application questions: {competency}.
+        "prompt": """Build a {exam_type} Vehicle Inspection & Handover Checklist for {klass} ({subject}, {board}).
+Vehicle & Renter: {chapters}. Inspection score scale: {marks} points. Fuel gauge at handover: {duration}%.
+Cabin condition: {difficulty}. Fuel & FASTag policy: {competency}.
 
-Start with a blueprint table: section, question type, marks each, number of questions, \
-total marks, and the Bloom's level. The section totals must sum exactly to {marks} — \
-check this before writing the paper.
+Start with a Top Summary Table: Booking Ref, Vehicle Reg & Model, Odometer (km), Fuel ({duration}%), FASTag Balance, Tyre Pressure Check, and Document Pouch Check (RC, Insurance, PUC, Permit).
 
-Then the paper itself: general instructions at the top, sections labelled the way \
-{board} labels them, questions numbered continuously, marks in brackets at the right of \
-each question. Include internal choice where the board's pattern has it.
+Then a 360-Degree Exterior & Interior Inspection Table ({marks}-point check):
+- Exterior Panels (Front Bumper, Bonnet, Windshield, Left/Right Doors, Fenders, Rear Bumper, Tailgate, Roof, ORVMs) with columns for: Status Out (OK / Scratch / Dent / Chip), Status In, and Notes.
+- Tyres, Alloys & Stepney (FL, FR, RL, RR, Spare Tyre, Jack & Spanner, Warning Triangle, First-Aid Kit).
+- Cabin, AC, Infotainment, Dashcam/GPS, Lights & Wipers.
 
-Then, after a page break, the marking scheme: the expected answer or value points for \
-every question, with the mark split shown (e.g. "formula 1 + substitution 1 + answer 1").
+After a page break, include the Return Settlement & Damage Deduction Sign-Off Box (Odometer In, Extra Km, Fuel Difference, New Scratches/Dents if any, Challan Check, Deposit Release Authorisation) and Renter + Agent Signatures.
 
-Create it as a Word file named "{klass} {subject} {exam_type}".""",
+Create it as a Word file named "{klass} {subject} {exam_type} checklist".""",
     },
     {
         "id": "worksheet",
-        "group": "Assessment",
-        "name": "Worksheet",
-        "blurb": "Practice sheet at three levels, with the answer key.",
+        "group": "Bookings & Quotes",
+        "name": "Instant quote & rate card",
+        "blurb": "Three-tier rate sheet (Daily, Weekly, Monthly) with free km, extra charges & deposit.",
         "icon": "worksheet",
         "kind": "docx",
         "fields": [
             _CLASS, _SUBJECT, _TOPIC,
-            _f("count", "Questions", "number", value=15, min=5, max=50),
-            _f("tiers", "Levels", "select",
-               options=["Three tiers (support / core / stretch)", "One level", "Two tiers"]),
-            _f("style", "Style", "select",
-               options=["Mixed", "MCQ only", "Numerical practice", "Short answer", "Diagram-based", "Case study"]),
+            _f("count", "Number of rental days / packages", "number", value=5, min=1, max=90),
+            _f("tiers", "Pricing tiers", "select",
+               options=["Three tiers (Standard / Plus with Fuel / Zero-Dep VIP)", "Self-Drive vs Chauffeur comparison", "Daily / Weekly / Monthly slabs"]),
+            _f("style", "Trip type", "select",
+               options=["Local + Outstation Mixed", "Self-Drive Unlimited Km", "Self-Drive Limited Km", "Airport Transfer & Hourly", "Corporate Monthly Lease", "Wedding / VIP Fleet"]),
         ],
-        "prompt": """Make a {subject} worksheet for Class {klass} on {topic}. About {count} \
-questions, {style}, arranged as: {tiers}.
+        "prompt": """Create an Instant Customer Quote & Rate Card for {subject} ({klass}) covering {topic}.
+Duration / packages: {count} day(s) or package options, structured as: {tiers}, for trip style: {style}.
 
-Each tier gets a short line telling the teacher who it is for. Leave ruled space \
-indicated for written answers. Number continuously.
+Use `calculate_quote` to verify sample package arithmetic, then create a clean, customer-ready Word document containing:
+1. Executive Quote Summary Table comparing the {tiers} side by side (Base Tariff, Included Free Km, Extra Km Rate, Extra Hour Rate, Security Deposit, Insurance/Damage Coverage, and Total Estimated Price including GST).
+2. Inclusions & Exclusions Box (Fuel policy, FASTag tolls, state entry tax, night chauffeur allowance if applicable).
+3. Required Documents for Instant Handover (Original DL, Aadhaar/Passport, refundable security deposit modes) and Booking Confirmation instructions.
 
-After a page break, the answer key with working shown for anything numerical.
-
-Create it as a Word file named "{klass} {subject} — {topic} worksheet".""",
+Create it as a Word file named "{klass} {subject} — {topic} quote".""",
     },
     {
         "id": "marking",
-        "group": "Assessment",
-        "name": "Mark an answer",
-        "blurb": "Band, mark split and feedback for one student's answer — you decide the mark.",
+        "group": "Billing & Claims",
+        "name": "Damage & deduction estimator",
+        "blurb": "Fair, itemized return deduction breakdown for scratches, fuel shortage, late hours or extra km.",
         "icon": "mark",
         "fields": [
             _CLASS, _SUBJECT,
-            _f("question", "The question", "textarea"),
-            _f("max_marks", "Marks available", "number", value=5, min=1, max=20),
-            _f("answer", "The student's answer", "textarea", rows=8),
-            _f("scheme", "Marking scheme, if you have one", "textarea", required=False),
+            _f("question", "Condition at Check-Out & Agreed Tariff Rules", "textarea",
+               placeholder="Delivered clean, 100% fuel, 42,100 km. Rate: ₹3,000/day (250 km/day free, ₹14/extra km, ₹250/extra hr). Deposit held: ₹10,000."),
+            _f("max_marks", "Security deposit held (₹ in thousands or total)", "number", value=10, min=1, max=500),
+            _f("answer", "Return inspection findings (odometer, fuel, scratches/damage, delay)", "textarea", rows=6,
+               placeholder="Returned at 43,050 km after 3 days + 4 extra hours. Fuel at 75% (12L short). Deep 6-inch scratch on rear left door panel."),
+            _f("scheme", "Agency repair/deduction rate card (optional)", "textarea", required=False,
+               placeholder="Panel repaint ₹2,500; Fuel @ ₹102/L; Late hour ₹250/hr"),
         ],
-        "prompt": """Here is one Class {klass} {subject} answer to mark, out of {max_marks}.
+        "prompt": """Evaluate this vehicle return for {klass} ({subject}) against the security deposit of {max_marks} (₹{max_marks},000 if in thousands, or exact amount stated).
 
-Question: {question}
-Marking scheme: {scheme}
-Student's answer: {answer}
+Check-Out baseline & tariff terms: {question}
+Standard deduction schedule: {scheme}
+Check-In return findings: {answer}
 
-Give me: the mark split point by point, showing exactly which mark was earned where and \
-which was not · a suggested total, clearly labelled as a suggestion · one sentence of \
-feedback written to the student, naming the specific thing to fix · the one thing this \
-answer shows they have genuinely understood.
-
-Then stop. The mark is the teacher's to award — do not argue for it.""",
+Give me:
+1. Point-by-point itemized breakdown showing exact calculation for: Extra Km (if any), Extra Hours, Fuel Refill Shortage, and Physical Damage / Panel Repair.
+2. Fair Wear-and-Tear vs Chargeable Damage distinction — flag clearly what should be charged and what is minor wear.
+3. Suggested Total Deduction and Net Security Deposit Refund, clearly labelled as a recommendation for the desk manager.
+4. A polite, transparent 4-line message to send to the customer explaining the settlement and refund timeline.""",
     },
     {
         "id": "rubric",
-        "group": "Assessment",
-        "name": "Rubric",
-        "blurb": "Criteria and descriptors you can hand to students beforehand.",
+        "group": "Fleet & Maintenance",
+        "name": "Vehicle condition grading",
+        "blurb": "Standardized A/B/C/D fleet inspection rubric across exterior, cabin, tyres & mechanicals.",
         "icon": "rubric",
         "kind": "docx",
         "fields": [
             _CLASS, _SUBJECT,
-            _f("task", "The task", "textarea", placeholder="Group presentation on water conservation"),
-            _f("marks", "Total marks", "number", value=20, min=5, max=100),
-            _f("levels", "Levels", "number", value=4, min=3, max=5),
+            _f("task", "Inspection purpose / fleet segment", "textarea",
+               placeholder="Pre-weekend audit for Self-Drive Compact SUVs"),
+            _f("marks", "Maximum audit score", "number", value=100, min=10, max=100),
+            _f("levels", "Condition grades", "number", value=4, min=3, max=5),
         ],
-        "prompt": """Build a marking rubric for this Class {klass} {subject} task: {task}. \
-{marks} marks total, {levels} performance levels.
+        "prompt": """Build a standardized Vehicle Condition & Lot-Readiness Rubric for {klass} ({subject}): {task}.
+Total score: {marks} points across {levels} condition grades (e.g. Grade A: Ready for VIP/Airport · Grade B: Standard Lot Ready · Grade C: Minor Touch-Up Needed · Grade D: Grounded for Workshop).
 
-A table: criteria down the left, levels across the top, a descriptor in every cell \
-written in language a student can read, and the marks for each criterion. The criteria \
-marks must total {marks}.
+Include a Markdown table with inspection subsystems down the left (Exterior Body & Paint, Tyres & Brakes, Engine & Fluids, AC & Electricals, Interior & Hygiene, Statutory Documents & FASTag), the {levels} condition grades across the top with clear observable criteria in every cell, and point weights that sum exactly to {marks}.
 
-Under it, a one-paragraph version the teacher can read out to the class before they start.
+Below the table, add a 1-minute Quick Lot Check instruction that yard staff can follow before releasing keys.
 
-Create it as a Word file named "{klass} {subject} rubric".""",
+Create it as a Word file named "{klass} {subject} condition rubric".""",
     },
     {
         "id": "remarks",
-        "group": "Reporting",
-        "name": "Report card remarks",
-        "blurb": "Specific, non-repeating remarks for a whole class.",
+        "group": "Desk & Handover",
+        "name": "Customer & trip handover notes",
+        "blurb": "Sharp, tailored dispatch and counter notes for a batch of bookings or vehicles.",
         "icon": "report",
         "kind": "docx",
         "fields": [
             _CLASS, _SUBJECT,
-            _f("students", "Students and notes", "textarea", rows=10,
-               placeholder="Aarav — good in theory, careless in numericals\nDiya — quiet, excellent written work\nKabir — improving, needs to finish homework"),
-            _f("words", "Words per remark", "number", value=35, min=15, max=80),
-            _f("tone", "Tone", "select", options=["Warm and honest", "Formal", "Encouraging", "Direct"]),
+            _f("students", "Bookings / Vehicles and raw notes", "textarea", rows=10,
+               placeholder="MH-02-AB-1234 (Creta · Rahul V.) — Airport T2 pickup 08:30, needs child seat, VIP repeat client\nMH-02-CD-5678 (Innova · Corp TechCorp) — 5-day Pune trip, chauffeur Ramesh assigned\nMH-02-EF-9012 (Nexon EV · Priya S.) — First-time EV renter, brief on fast charging & range"),
+            _f("words", "Words per note", "number", value=35, min=15, max=80),
+            _f("tone", "Style", "select", options=["Crisp & Operational", "VIP Hospitality", "Formal Corporate", "Direct Counter Brief"]),
         ],
-        "prompt": """Write report card remarks for Class {klass} {subject}. Tone: {tone}. \
-About {words} words each.
+        "prompt": """Write individual dispatch & handover briefing notes for {klass} ({subject}). Style: {tone}. About {words} words each.
 
-Students and my notes on them:
+Bookings / Vehicles and raw notes:
 {students}
 
-Rules: every remark names something specific that student did — no remark should work \
-for two different children. Say one thing they have done well and one thing to work on, \
-with a concrete next step. Never label the child ("weak", "bright", "average"); describe \
-the work. No two remarks may open with the same word.
+Rules: every briefing note must name the specific vehicle/booking requirement, the one critical check the desk agent or driver must perform before handover, and the exact customer touchpoint that makes the experience seamless. No two notes may open with the same word.
 
-Put them in a table: name, remark. Create it as a Word file named "{klass} {subject} remarks".""",
+Put them in a clean table: Booking / Vehicle, Handover & Dispatch Briefing Note. Create it as a Word file named "{klass} {subject} handover notes".""",
     },
     {
         "id": "parent-message",
-        "group": "Communication",
-        "name": "Message to a parent",
-        "blurb": "WhatsApp-length, in English or your language, ready to send.",
+        "group": "Customer Comms",
+        "name": "WhatsApp to customer",
+        "blurb": "Ready-to-send WhatsApp, SMS or email for booking confirmation, pickup, extension or deposit refund.",
         "icon": "message",
         "fields": [
-            _f("student", "Student's name", "text"),
+            _f("student", "Customer's name", "text", placeholder="Rahul Verma"),
             _CLASS,
-            _f("reason", "What it is about", "select",
-               options=["Absence", "Homework not done", "Praise / good work", "Behaviour concern",
-                        "Falling marks", "PTM invitation", "Fee reminder", "Medical / leave", "Other"]),
-            _f("detail", "The specifics", "textarea",
-               placeholder="Absent 4 days this week, no message from home"),
+            _f("reason", "Message type", "select",
+               options=["Booking Confirmation & Vehicle Details", "Chauffeur & Vehicle Dispatched",
+                        "Pickup Reminder & Documents Required", "Return Due / Extension Check",
+                        "Overdue Vehicle Return Alert", "Security Deposit Refund Processed",
+                        "Invoice & FASTag / Fuel Settlement", "Thank You & Google Review Request", "Other"]),
+            _f("detail", "Booking & vehicle specifics", "textarea",
+               placeholder="Hyundai Creta (MH-02-AB-4589), Pickup tomorrow 9:00 AM at Terminal 2, carry original DL + Aadhaar"),
             _f("language", "Language", "select", options=list(config.LANGUAGES.values())),
-            _f("channel", "Sending it by", "select", options=["WhatsApp", "School diary note", "Email", "SMS"]),
+            _f("channel", "Channel", "select", options=["WhatsApp", "SMS", "Email", "Corporate Desk Note"]),
         ],
-        "prompt": """Write a message to the parent of {student}, Class {klass}, about: {reason}. \
-Details: {detail}. Language: {language}. Channel: {channel}.
+        "prompt": """Write a customer message to {student} ({klass}) regarding: {reason}.
+Specifics: {detail}. Language: {language}. Channel: {channel}.
 
-Keep it to the length that channel deserves — a WhatsApp message is four or five lines, \
-not a letter. Respectful, clear, no blame on the child, one specific ask or next step. \
-Open with the teacher's name and the class so the parent knows who is writing.
+Keep it to the exact length that fits {channel} — a WhatsApp message should be 4–6 crisp lines with clean formatting, clear vehicle/timing details, and one clear call to action. Polite, professional, zero fluff.
 
-Give me two versions: a warmer one and a more formal one. Nothing else.""",
+Give me two ready-to-copy versions:
+1. Warm & Service-First (ideal for retail/VIP customers).
+2. Crisp & Direct (ideal for fast counter updates or corporate bookings).""",
     },
     {
         "id": "bilingual",
-        "group": "Teaching",
-        "name": "Explain in two languages",
-        "blurb": "A concept side by side in English and your classroom language.",
+        "group": "Desk & Handover",
+        "name": "Bilingual driver & renter rules",
+        "blurb": "Side-by-side English + regional language rules for chauffeurs or self-drive renters.",
         "icon": "languages",
         "kind": "docx",
         "fields": [
             _CLASS, _SUBJECT, _TOPIC,
             _f("language", "Second language", "select", options=list(config.LANGUAGES.values())),
-            _f("depth", "For", "select", options=["The whole class", "Students who are behind", "Revision before the exam"]),
+            _f("depth", "For", "select",
+               options=["Self-Drive Customer Handout", "Chauffeur / Driver Trip SOP", "Outstation & State Border Rules"]),
         ],
-        "prompt": """Explain {topic} ({subject}, Class {klass}) side by side in English and \
-{language}, for: {depth}.
+        "prompt": """Create a side-by-side bilingual instruction & rules sheet on {topic} ({subject}, {klass}) in English and {language}, tailored for: {depth}.
 
-A two-column table: English on the left, {language} on the right, matched line for line, \
-so the teacher can read either column aloud. Keep the technical terms in English in both \
-columns — that is what the exam will use — but explain each one in {language} the first \
-time it appears.
+Include:
+1. A two-column table: English on the left, {language} on the right, matched line-for-line so any renter or driver can read either column clearly (covering speed limits, fuel policy, FASTag/toll handling, no-smoking/cleanliness, and breakdown/accident emergency steps).
+2. Three golden rules highlighted for the dashboard card in both languages.
+3. Five quick verification questions for the desk agent or fleet supervisor to confirm before departure, in both languages.
 
-Then: the three sentences worth writing on the blackboard, in both languages. Then five \
-questions to ask the class, in both languages.
-
-Create it as a Word file named "{topic} — bilingual notes".""",
+Create it as a Word file named "{topic} — bilingual rules".""",
     },
     {
         "id": "activity",
-        "group": "Teaching",
-        "name": "Classroom activity",
-        "blurb": "Something that works with 50 students and no equipment.",
+        "group": "Bookings & Quotes",
+        "name": "Weekend & seasonal promo",
+        "blurb": "Three high-conversion offers to fill idle vehicles on weekdays, long weekends or peak season.",
         "icon": "activity",
         "fields": [
             _CLASS, _SUBJECT, _TOPIC,
-            _f("minutes", "Time available", "number", value=20, min=5, max=60),
-            _f("strength", "Class strength", "number", value=48, min=5, max=100),
-            _f("budget", "Materials", "select",
-               options=["Nothing but chalk and blackboard", "Everyday items from home",
-                        "Under ₹200 total", "School lab available", "One projector"]),
+            _f("minutes", "Target booking length (days)", "number", value=3, min=1, max=30),
+            _f("strength", "Idle vehicles to fill", "number", value=12, min=1, max=200),
+            _f("budget", "Promo channel & discount margin", "select",
+               options=["Zero ad spend — WhatsApp broadcast to past renters", "10-15% weekday utilization discount",
+                        "Free extra km / free doorstep delivery perk", "Corporate B2B tie-up offer", "Hotel & travel desk partner commission"]),
         ],
-        "prompt": """Give me three classroom activities for {topic} ({subject}, Class {klass}). \
-{minutes} minutes, {strength} students, materials: {budget}.
+        "prompt": """Design three high-conversion rental promotions for {topic} ({subject}, {klass}) targeting {minutes}-day bookings to fill {strength} vehicles using: {budget}.
 
-For each: what it is in one line · exactly how to run it with {strength} students in a \
-room with fixed benches · what the teacher says to start it · how long each part takes · \
-what to do when it goes wrong · what you actually see if they understood.
+For each campaign:
+- Offer Headline & Hook in one line
+- Exact Package Math (daily rate, free km or delivery perk, minimum booking days, and why your margin stays protected)
+- Ready-to-send WhatsApp Broadcast / Instagram copy (under 60 words)
+- Counter upsell script (how the desk agent pitches an upgrade or extra day)
+- Risk guardrails (how to prevent high-mileage abuse).
 
-Rank them: the safest one first, the most interesting one last. Be honest about which one \
-will be noisy.""",
+Rank them from fastest same-day bookings to highest revenue margin.""",
     },
     {
         "id": "remedial",
-        "group": "Teaching",
-        "name": "Remedial plan",
-        "blurb": "A two-week plan for students who are behind.",
+        "group": "Fleet & Maintenance",
+        "name": "Downtime & turnaround plan",
+        "blurb": "Rapid action plan to get grounded or high-downtime vehicles back earning on the road.",
         "icon": "remedial",
         "kind": "docx",
         "fields": [
             _CLASS, _SUBJECT,
-            _f("gap", "What they're struggling with", "textarea",
-               placeholder="Cannot balance chemical equations; shaky on valency"),
-            _f("count", "How many students", "number", value=8, min=1, max=40),
-            _f("time", "Time you have", "select",
-               options=["15 minutes after class, twice a week", "One extra period a week",
-                        "Zero session time — inside the regular lesson only", "Saturday remedial class"]),
+            _f("gap", "Current fleet issue / bottleneck", "textarea",
+               placeholder="SUVs taking 6+ hours between check-in and next check-out; recurring AC and clutch complaints on high-km cars"),
+            _f("count", "Vehicles affected", "number", value=6, min=1, max=100),
+            _f("time", "Service window available", "select",
+               options=["45-minute express turnaround between bookings", "Overnight lot maintenance window",
+                        "Mid-week low-demand workshop slot", "Authorized service center + local garage split"]),
         ],
-        "prompt": """Write a two-week remedial plan for {count} Class {klass} students in \
-{subject}. What they are struggling with: {gap}. Time available: {time}.
+        "prompt": """Write a practical 14-day Fleet Turnaround & Preventive Maintenance Plan for {count} vehicles in {klass} ({subject}).
+Bottleneck / issues reported: {gap}. Maintenance window available: {time}.
 
-Work backwards from the real gap, not the current chapter — name the earlier skill that \
-is actually missing. Session by session: what to do, what the student does, and the \
-one-question check at the end that tells you whether to move on.
+Structure the plan with:
+1. Root-cause diagnosis (separating driver/renter wear from workshop delays or parts bottlenecks).
+2. Step-by-step Pit-Stop Turnaround SOP (washing, fluid/tyre check, OBD scan, cabin sanitization, and photo logging within {time}).
+3. Preventive Maintenance Schedule by odometer slab (every 5,000 / 10,000 / 20,000 km) to stop repeat breakdowns.
+4. Spare parts & vendor checklist to cut workshop waiting time in half.
 
-Add: what the teacher should stop doing, if anything, that is making it worse; what to \
-send home that a parent with no {subject} background can still help with.
-
-Create it as a Word file named "{klass} {subject} remedial plan".""",
+Create it as a Word file named "{klass} {subject} fleet turnaround plan".""",
     },
     {
         "id": "pacing",
-        "group": "Planning",
-        "name": "Syllabus pacing",
-        "blurb": "Weeks to chapters, with exams and holidays taken out.",
+        "group": "Fleet & Maintenance",
+        "name": "Fleet & service planner",
+        "blurb": "Excel calendar mapping vehicles across bookings, servicing, insurance renewals & buffer stock.",
         "icon": "calendar",
         "kind": "xlsx",
         "fields": [
             _CLASS, _SUBJECT, _BOARD,
-            _f("chapters", "Chapters left", "textarea", rows=6),
-            _f("from_date", "Starting", "date"),
-            _f("to_date", "Must finish by", "date"),
-            _f("periods_week", "Periods per week", "number", value=5, min=1, max=12),
-            _f("blocked", "Weeks already gone", "textarea", required=False,
-               placeholder="Sports week 12-16 Oct, half-yearly 20-30 Sep"),
+            _f("chapters", "Vehicles / plates & upcoming commitments", "textarea", rows=6,
+               placeholder="MH-02-AB-1234 Creta (Service due in 800 km)\nMH-02-CD-5678 Innova (Corporate lease Mon-Fri)\nMH-02-EF-9012 Seltos (Insurance renewal 25th)"),
+            _f("from_date", "Start date", "date"),
+            _f("to_date", "End date", "date"),
+            _f("periods_week", "Target billable days per week per car", "number", value=5, min=1, max=7),
+            _f("blocked", "Blackout / workshop / renewal dates", "textarea", required=False,
+               placeholder="15-16th Workshop service batch; 24-26th Festival peak (100% fleet locked)"),
         ],
-        "prompt": """Build a pacing calendar for Class {klass} {subject} ({board}) from \
-{from_date} to {to_date}, {periods_week} periods a week.
+        "prompt": """Build a Fleet Availability, Dispatch & Maintenance Schedule for {klass} ({subject}, {board}) from {from_date} to {to_date}, targeting {periods_week} billable days/week per vehicle.
 
-Chapters remaining:
+Vehicles & commitments:
 {chapters}
 
-Unavailable: {blocked}
+Workshop / blackout dates: {blocked}
 
-Count the actual teaching periods available between those dates, subtract the \
-unavailable weeks, then allocate periods to chapters in proportion to their weight in \
-the board exam — say what weighting you assumed. Leave 12% slack, because a term \
-without slack is a term that overruns.
+Allocate each vehicle across active rental days, preventive maintenance windows, and statutory renewals while keeping at least 10-12% reserve/buffer capacity for breakdowns or VIP extensions.
 
-Give it as a table: week starting, chapters, periods, what must be finished by the end \
-of that week, and a running "periods left" column. Flag clearly, in words, if the \
-syllabus does not fit — do not quietly compress it.
+Provide a clean Markdown table (for Excel export): Week / Date Window, Vehicle Plate & Model, Assigned Booking / Service Status, Billable Days, Maintenance / Renewal Action, and Standby Buffer Status. Flag clearly if demand exceeds available fleet.
 
-Create it as an Excel file named "{klass} {subject} pacing".""",
+Create it as an Excel file named "{klass} {subject} fleet schedule".""",
     },
     {
         "id": "analysis",
-        "group": "Reporting",
-        "name": "Marks analysis",
-        "blurb": "Paste your marks; get the topics to reteach.",
+        "group": "Billing & Claims",
+        "name": "Fleet revenue & utilization analysis",
+        "blurb": "Paste vehicle earnings, utilization days or inspection scores; get instant profit & fleet insights.",
         "icon": "analysis",
         "fields": [
             _CLASS, _SUBJECT,
-            _f("data", "Paste marks", "textarea", rows=10,
-               placeholder="Name, Q1(5), Q2(5), Q3(10), Q4(10)\nAarav, 4, 2, 7, 3\nDiya, 5, 5, 9, 8"),
-            _f("topics", "What each question tested", "textarea", required=False,
-               placeholder="Q1 valency, Q2 balancing, Q3 mole concept, Q4 numericals"),
+            _f("data", "Paste vehicle metrics (Name/Plate, Days Rented, Revenue, Inspection Score)", "textarea", rows=10,
+               placeholder="Vehicle, Utilization(30), RevenueScore(100), Condition(10)\nCreta-1234, 26, 92, 9\nInnova-5678, 28, 96, 8\nSwift-9012, 14, 48, 6"),
+            _f("topics", "What each column measures", "textarea", required=False,
+               placeholder="Q1 Days rented out of 30, Q2 Revenue target %, Q3 Vehicle condition score"),
         ],
-        "prompt": """Analyse these Class {klass} {subject} marks.
+        "prompt": """Analyse these fleet performance and utilization figures for {klass} ({subject}).
 
 {data}
 
-Float has already worked out every number in the block above, in code. Use those \
-numbers exactly as given and do NOT recalculate any average, spread, percentage or \
-list of students. Your job is the teaching interpretation, not the arithmetic. If a \
-number you need is not in the block, say it is not available rather than working it out.
+Float has already calculated the exact summary statistics in Python above. Use those numbers exactly as given and do NOT recalculate averages, spreads, or percentages.
 
-Question topics: {topics}
+Metric definitions: {topics}
 
-Give me: the class average and the spread · which question the class did worst on, with \
-the percentage · the specific misconception that question failure points to · the \
-students who are more than one standard deviation below, listed by name, with what each \
-one specifically got wrong · the students who did well on the hard question and badly on \
-the easy one, because that usually means carelessness, not ability.
-
-Then one paragraph: what to reteach, and how long it should take. Do not recommend \
-reteaching the whole chapter unless the data actually says so.""",
+Give me:
+1. Fleet average performance and spread across the group.
+2. Which metric/category the fleet underperformed on most, and the operational reason (pricing, downtime, or seasonal demand).
+3. Underperforming vehicles (more than 1 SD below average) listed by name/plate, with a specific action for each (reprice, workshop overhaul, or rotate to corporate lease).
+4. High-earning / high-utilization vehicles that need preventive maintenance priority so they don't burn out.
+5. One crisp paragraph on how to lift fleet utilization and net rev-per-car next week.""",
     },
     {
         "id": "notice",
-        "group": "Communication",
-        "name": "Notice or circular",
-        "blurb": "Official school wording, first time.",
+        "group": "Customer Comms",
+        "name": "Branch & driver notice",
+        "blurb": "Official rental agency circular or SOP notice for drivers, counter staff or corporate clients.",
         "icon": "notice",
         "kind": "docx",
         "fields": [
-            _f("about", "What it's about", "textarea"),
+            _f("about", "What the notice is about", "textarea",
+               placeholder="Mandatory 360-degree video recording + FASTag balance check before every self-drive handover"),
             _f("audience", "For", "select",
-               options=["Parents", "Students", "All staff", "One class", "Notice board"]),
-            _f("tone", "Tone", "select", options=["Formal", "Friendly", "Urgent"]),
-            _f("from_who", "Signed by", "text", placeholder="Class Teacher, VIII-B"),
+               options=["All Chauffeurs & Drivers", "Rental Desk & Yard Staff", "Corporate Fleet Clients", "Self-Drive Customers", "All Branches"]),
+            _f("tone", "Tone", "select", options=["Formal SOP", "Friendly Operational", "Urgent Compliance"]),
+            _f("from_who", "Issued by", "text", placeholder="Fleet Operations Manager"),
         ],
-        "prompt": """Write a school notice for {audience} about: {about}. Tone: {tone}. \
-Signed by: {from_who}.
+        "prompt": """Write an official rental agency operational notice/circular for {audience} regarding: {about}. Tone: {tone}. Issued by: {from_who}.
 
-Standard Indian school format: school name line, "NOTICE" or "CIRCULAR" centred, \
-reference number placeholder, date, subject line, body, signature block. Body in short \
-numbered points if there is more than one instruction. Say clearly what the reader must \
-do and by when.
+Format cleanly with: Agency Header, "OPERATIONAL NOTICE / CIRCULAR", Reference No., Date, Subject Line, numbered action points stating clearly what must be done at the counter/lot and from when, and signature block.
 
 Create it as a Word file.""",
     },
     {
         "id": "letter",
-        "group": "Communication",
-        "name": "Letter to the principal",
-        "blurb": "Leave, requisition, permission — properly worded.",
+        "group": "Billing & Claims",
+        "name": "Insurance, RTO or vendor letter",
+        "blurb": "Formal letter for insurance claims, RTO permits/NOC, corporate billing or police intimation.",
         "icon": "letter",
         "kind": "docx",
         "fields": [
-            _f("purpose", "What you're asking for", "select",
-               options=["Casual leave", "Medical leave", "Permission for a trip",
-                        "Requisition for materials", "Request for a substitute",
-                        "Complaint / concern", "Other"]),
-            _f("detail", "Details", "textarea"),
-            _f("from_who", "Your name and designation", "text"),
+            _f("purpose", "Letter type", "select",
+               options=["Motor Insurance Own-Damage Claim Intimation", "RTO Tourist Permit / Fitness / NOC Request",
+                        "Corporate Overdue Invoice Demand", "Police Station Incident / Missing Vehicle Intimation",
+                        "Authorized Workshop Repair & Estimate Approval", "Corporate Fleet Empanelment Letter", "Other"]),
+            _f("detail", "Vehicle plate, policy/invoice ref, dates & facts", "textarea",
+               placeholder="Vehicle MH-02-AB-4589, Policy #OG-26-1902-1805, minor rear bumper impact on NH-48 on 14 Oct, estimate ₹14,500"),
+            _f("from_who", "Your name, designation & agency name", "text",
+               placeholder="Vikram Khanna, Fleet Manager — Apex Car Rentals"),
         ],
-        "prompt": """Write a formal letter to the Principal. Purpose: {purpose}. \
-Details: {detail}. From: {from_who}.
+        "prompt": """Write a formal official business letter. Purpose: {purpose}.
+Specific details: {detail}. From: {from_who}.
 
-Standard Indian official format: To, The Principal / school name / place · Subject line · \
-Respected Sir/Madam · body in two or three short paragraphs, the ask stated plainly in \
-the first one · Yours faithfully · name and designation.
+Use standard commercial/official format: To block, Date, Reference/Policy/Vehicle Registration Number in the Subject line, clear factual paragraphs stating the exact request, enclosures/documents attached list (RC, DL, Rental Agreement, FIR/Photos if applicable), and authorised signatory block.
 
-Courteous, brief, and specific about dates and numbers. Create it as a Word file.""",
+Create it as a Word file.""",
     },
     {
         "id": "slides",
-        "group": "Teaching",
-        "name": "Lesson slides",
-        "blurb": "Slide-by-slide content you can paste into PowerPoint.",
+        "group": "Bookings & Quotes",
+        "name": "Corporate fleet pitch deck",
+        "blurb": "Slide-by-slide B2B proposal for companies, hotels or events needing monthly cars & transfers.",
         "icon": "slides",
         "kind": "docx",
         "fields": [
             _CLASS, _SUBJECT, _TOPIC,
-            _f("count", "Number of slides", "number", value=10, min=4, max=30),
+            _f("count", "Number of slides", "number", value=8, min=4, max=20),
         ],
-        "prompt": """Plan {count} slides for teaching {topic} ({subject}, Class {klass}).
+        "prompt": """Create a {count}-slide B2B Corporate Fleet & Mobility Pitch Deck for {topic} ({subject}, {klass}).
 
-For each slide: the title · at most four lines of on-screen text, written to be read \
-from the back row · what the teacher says while it is up, in two or three sentences · \
-what to draw or show if there is no image available.
+For each slide provide:
+- Slide Title
+- At most 4 punchy, metric-backed bullet points (fleet reliability, average vehicle age, 24x7 replacement vehicle SLA, GPS/panic-button safety, GST-compliant consolidated monthly billing)
+- Presenter talking points (2–3 crisp sentences)
+- Suggested visual or rate comparison table to show on screen.
 
-Slide one is a question, not a title card. The last slide is the check for understanding.
+Slide 1 opens with the client's mobility pain point & cost-saving hook; the final slide is a clear pilot proposal & SLA sign-off.
 
-Create it as a Word file named "{topic} slides" with one section per slide.""",
+Create it as a Word file named "{topic} corporate pitch deck" with one section per slide.""",
     },
     {
         "id": "seating",
-        "group": "Planning",
-        "name": "Seating and groups",
-        "blurb": "Group lists that mix ability without announcing it.",
+        "group": "Desk & Handover",
+        "name": "Driver & vehicle dispatch roster",
+        "blurb": "Assign vehicles and chauffeurs to shifts, airport runs or outstation trips cleanly.",
         "icon": "seating",
         "fields": [
             _CLASS,
-            _f("students", "Names (or leave blank to use your class list)", "textarea", required=False),
-            _f("size", "Group size", "number", value=4, min=2, max=8),
-            _f("basis", "Mix by", "select",
-               options=["Mixed ability", "Same ability", "Keep talkers apart", "Random", "Friendship groups avoided"]),
+            _f("students", "Vehicles / Drivers (or leave blank to pull from your registered Fleet group)", "textarea", required=False,
+               placeholder="MH-02-AB-1234 Creta · Ramesh\nMH-02-CD-5678 Innova · Suresh\nMH-02-EF-9012 Dzire · Mahesh"),
+            _f("size", "Vehicles per shift / bay pod", "number", value=4, min=1, max=15),
+            _f("basis", "Dispatch rule", "select",
+               options=["Balance odometer km across fleet", "Airport Morning / Evening Shift Split",
+                        "Match VIP Chauffeurs to Luxury/Corporate", "Keep backup standby vehicle per pod", "Outstation vs Local City Split"]),
         ],
-        "prompt": """Make groups of {size} for Class {klass}, on this basis: {basis}.
-Students: {students}
+        "prompt": """Build a Driver & Vehicle Dispatch Roster in pods/shifts of {size} for {klass}, optimised by: {basis}.
+Vehicles / Drivers provided: {students}
 
-If no names were given, look up the class first.
+If no list was given, call `look_up_class` for {klass} first.
 
-Give the groups as a table with a neutral label for each (Group A, B, …) — never a label \
-that reveals the basis to the students. Add one line on where to seat each group in a \
-room with fixed benches and a blackboard at the front, and which two groups should not \
-be next to each other.""",
+Present the dispatch roster as a clean table: Pod / Shift Slot, Vehicle & Plate, Assigned Driver / Renter, Primary Duty (Airport / Local / Outstation / Standby), and Pre-Dispatch Check. Add one operational note on which vehicle is designated as the instant replacement standby.""",
     },
     {
         "id": "doubt",
-        "group": "Teaching",
-        "name": "Solve a doubt",
-        "blurb": "A worked answer, and how to explain it at the board.",
+        "group": "Customer Comms",
+        "name": "Resolve a rental dispute",
+        "blurb": "Fair policy breakdown + calm counter script for scratch disputes, fuel, tolls or late returns.",
         "icon": "doubt",
         "fields": [
             _CLASS, _SUBJECT,
-            _f("question", "The question", "textarea", rows=5),
-            _f("level", "Explain for", "select",
-               options=["A student who is behind", "The average student", "A student who wants more"]),
+            _f("question", "What the customer is disputing", "textarea", rows=5,
+               placeholder="Customer says the front bumper scratch was already there at night pickup and refuses to pay ₹2,500 deduction from deposit."),
+            _f("level", "Customer profile", "select",
+               options=["First-time retail renter (upset at counter)", "High-value repeat / VIP customer", "Corporate account admin / travel desk"]),
         ],
-        "prompt": """A Class {klass} {subject} student asked: {question}
+        "prompt": """A {subject} ({klass}) customer is disputing: {question}
+Customer profile: {level}.
 
-Answer it for: {level}.
-
-Give me: the answer worked through step by step, with the reason for each step, not just \
-the algebra · the one step students most often get wrong here · how to put it on the \
-blackboard, including what to draw · one analogy that holds up, and where the analogy \
-breaks (say so — a broken analogy taught as true costs more than no analogy) · one \
-follow-up question to check they actually got it.""",
+Give me:
+1. Immediate 3-step verification check for the desk agent (check-out timestamped photos/video, signed handover sheet, FASTag/GPS log).
+2. Fair commercial resolution options (Option A: full policy enforcement if proof is solid; Option B: 50% goodwill split / polish-only charge; Option C: VIP waiver with future booking credit) — with the exact rupee impact of each.
+3. Word-for-word calm counter script the desk agent can say right now to de-escalate without losing authority.
+4. A 3-line written settlement confirmation to send on WhatsApp once agreed.""",
     },
     {
         "id": "assembly",
-        "group": "Communication",
-        "name": "Assembly speech",
-        "blurb": "Two to three minutes, in a student's voice.",
+        "group": "Desk & Handover",
+        "name": "Morning shift briefing",
+        "blurb": "2-minute counter & yard team huddle covering today's pickups, returns and priorities.",
         "icon": "assembly",
         "fields": [
-            _f("occasion", "Occasion or theme", "text",
-               placeholder="Republic Day / World Environment Day / Exam week"),
-            _f("speaker", "Who is speaking", "select",
-               options=["A student", "The class teacher", "The head boy / head girl"]),
+            _f("occasion", "Today's focus / peak event", "text",
+               placeholder="Long weekend rush — 18 self-drive check-outs + 6 airport VIP arrivals"),
+            _f("speaker", "Led by", "select",
+               options=["Branch / Station Manager", "Lead Dispatch Executive", "Fleet Yard Supervisor"]),
             _CLASS,
-            _f("minutes", "Minutes", "number", value=3, min=1, max=10),
+            _f("minutes", "Briefing length (minutes)", "number", value=2, min=1, max=10),
         ],
-        "prompt": """Write a school assembly speech for {occasion}, delivered by {speaker} \
-from Class {klass}, {minutes} minutes long (about {minutes}50 words).
+        "prompt": """Write a {minutes}-minute morning shift huddle briefing for {occasion}, delivered by the {speaker} to the {klass} counter, yard, and driver team.
 
-Written for the voice of a {speaker} — sentences short enough to say out loud without \
-losing breath, no vocabulary they would not use. Open with something concrete rather \
-than a definition. One idea, carried through. End on something the school can actually \
-do this week, not a general sentiment.
+Keep sentences punchy and action-oriented:
+1. Today's numbers & peak pickup/return windows.
+2. Top 3 non-negotiables on the lot today (360° handover photos, fuel & FASTag check, zero-delay VIP arrivals).
+3. One specific recognition or safety reminder for the team.
 
-Mark the places to pause.""",
+Mark natural pauses for team confirmation.""",
     },
     {
         "id": "hpc",
-        "group": "Reporting",
-        "name": "Holistic progress descriptors",
-        "blurb": "NEP-style descriptors across domains, not a single grade.",
+        "group": "Fleet & Maintenance",
+        "name": "Vehicle health & audit report",
+        "blurb": "360° multi-domain vehicle dossier covering mechanicals, body/cabin, unit economics & compliance.",
         "icon": "holistic",
         "kind": "docx",
         "fields": [
             _CLASS,
-            _f("student", "Student", "text"),
-            _f("observations", "What you've noticed", "textarea", rows=8,
-               placeholder="Finishes work fast but won't check it. Helps others. Goes quiet in group work."),
-            _f("domains", "Domains", "select",
-               options=["Academic + socio-emotional + physical", "Academic only",
-                        "Socio-emotional and life skills only"]),
+            _f("student", "Vehicle plate & model", "text", placeholder="MH-02-AB-4589 · Hyundai Creta SX (48,200 km)"),
+            _f("observations", "Service logs, condition notes & earnings history", "textarea", rows=6,
+               placeholder="48,200 km on odo. Front tyres at 35% tread. Earned ₹78,000 last month (24 days billed). Minor AC cooling lag in peak afternoon. Insurance valid till Dec."),
+            _f("domains", "Audit scope", "select",
+               options=["Mechanical + Exterior/Cabin + Unit Economics + Compliance", "Mechanical & Safety Only",
+                        "Revenue, Cost-per-Km & Hold/Sell Decision"]),
         ],
-        "prompt": """Write holistic progress descriptors for {student}, Class {klass}, \
-covering: {domains}.
+        "prompt": """Write a comprehensive Vehicle Health, Compliance & Unit Economics Audit Report for {student} ({klass}), covering: {domains}.
 
-What the teacher has observed: {observations}
+Logged observations & history: {observations}
 
-For each domain: two or three sentences describing what this child does, in observable \
-terms — what they were seen doing, not what they are. Then one thing that would help \
-them next, addressed to the child. Then one line for the parent.
+For each audit domain:
+- Clear factual assessment based on the logged observations (never invent service history not provided).
+- Immediate workshop or compliance action required before the next long trip, with estimated cost/downtime.
+- Fleet Manager Recommendation: Keep in Prime Self-Drive Fleet, Reassign to Local/City Tier, Send for Preventive Overhaul, or Flag for Resale/Replacement.
 
-No grades, no ranking, no comparison with other children, no words that fix a trait in \
-place. If the observations do not support a domain, say the teacher has not recorded \
-enough yet rather than inventing it.
-
-Create it as a Word file named "{student} — progress descriptors".""",
+Create it as a Word file named "{student} — vehicle health report".""",
     },
 ]
 
-TOOLKIT_GROUPS = ["Planning", "Teaching", "Assessment", "Reporting", "Communication"]
+TOOLKIT_GROUPS = [
+    "Bookings & Quotes",
+    "Desk & Handover",
+    "Fleet & Maintenance",
+    "Billing & Claims",
+    "Customer Comms",
+]
+
+_TOOLKIT_ALIASES = {
+    "rental-agreement": "lesson-plan",
+    "lesson_plan": "lesson-plan",
+    "handover-checklist": "question-paper",
+    "question_paper": "question-paper",
+    "rate-card": "worksheet",
+    "instant-quote": "worksheet",
+    "damage-assessment": "marking",
+    "inspection-standard": "rubric",
+    "booking-notes": "remarks",
+    "customer-message": "parent-message",
+    "parent_message": "parent-message",
+    "driver-briefing": "bilingual",
+    "promo-campaign": "activity",
+    "fleet-recovery": "remedial",
+    "fleet-schedule": "pacing",
+    "fleet-analytics": "analysis",
+    "ops-circular": "notice",
+    "official-letter": "letter",
+    "corporate-pitch": "slides",
+    "dispatch-roster": "seating",
+    "policy-advisor": "doubt",
+    "shift-huddle": "assembly",
+    "vehicle-health": "hpc",
+}
 
 
 def toolkit_entry(entry_id: str) -> dict[str, Any] | None:
+    norm = _TOOLKIT_ALIASES.get(entry_id, entry_id)
     for entry in TOOLKIT:
-        if entry["id"] == entry_id:
+        if entry["id"] == norm:
             return entry
     return None
 

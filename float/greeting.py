@@ -1,20 +1,18 @@
-"""Float — the line the teacher sees first.
+"""Float — the line the rental operator sees first.
 
-A greeting is worth writing properly because it is the only part of the interface
-every teacher reads every day. Three rules it follows:
+A greeting is worth writing properly because it is the first thing the rental desk
+or fleet manager reads on every shift. Three rules it follows:
 
-*It is built from their day, not from a list.* The time, the weekday, what is on
-their timetable in the next hour, what they left unfinished. "Good morning" is
-not information; "Period 3 starts in 20 minutes — Class 8B, Science" is.
+*It is built from their shift, not from a generic list.* The time, the weekday,
+what pickup or return slot is coming up in the next hour, and what ops tasks are
+still open. "Good morning" is not operational; "Airport SUV Pickup starts in 20
+minutes — Bay 2" is.
 
 *It costs nothing.* No model call, no network. It is assembled locally in about a
 millisecond, so the window is useful before anything has loaded.
 
-*It says one thing.* A greeting, then at most one fact, then at most one nudge.
-A dashboard of six numbers at 7:40 in the morning is not a welcome.
-
-The front end sets this in Times New Roman, which is the one typographic
-instruction the brief pinned down.
+*It says one thing.* A greeting, then at most one operational fact, then at most
+one nudge.
 """
 
 from __future__ import annotations
@@ -25,9 +23,6 @@ from typing import Any
 
 from . import db
 
-#: Hindi/regional salutations are offered to teachers whose language is set to
-#: something other than English. They are greetings, not translations of the
-#: whole line — mixing scripts mid-sentence reads badly.
 SALUTATIONS = {
     "en": {"morning": "Good morning", "afternoon": "Good afternoon", "evening": "Good evening"},
     "hi": {"morning": "सुप्रभात", "afternoon": "नमस्कार", "evening": "शुभ संध्या"},
@@ -45,55 +40,52 @@ SALUTATIONS = {
 }
 
 
-#: Creative one-liners, picked fresh on every sign-in. ``, {name}`` is dropped
-#: cleanly when the teacher has no name set. Kept short: one line, one idea.
 LINES = {
     "morning": (
-        "Chai and Float time, {name}?",
-        "A fresh page awaits, {name}.",
-        "Chalk up, {name}. The day is yours.",
-        "Bright and early, {name}.",
-        "The bell hasn't rung yet, {name}.",
-        "Let's make today a good one, {name}.",
-        "Morning, {name}. Who are we teaching today?",
+        "Keys on the hook, {name}. Ready for today's pickups?",
+        "Lot is ready, {name}. Let's roll.",
+        "Coffee and Float time, {name}?",
+        "Bright and early at the desk, {name}.",
+        "First handovers coming up, {name}.",
+        "Let's keep the fleet moving today, {name}.",
+        "Morning, {name}. Which vehicles are heading out first?",
     ),
     "afternoon": (
-        "Second wind time, {name}?",
-        "Survived the staff room, {name}?",
-        "Still going strong, {name}.",
-        "Take a breath, {name}. What's next?",
-        "Chai refill and Float time, {name}?",
-        "Halfway through the day, {name}.",
+        "Midday turnaround time, {name}?",
+        "Peak counter hours, {name}. Need a fast quote or agreement?",
+        "Fleet moving smoothly, {name}?",
+        "Take a breath, {name}. What's checking in next?",
+        "Afternoon shift, {name}. Ready for the next handover?",
+        "Halfway through today's dispatches, {name}.",
     ),
     "evening": (
-        "Marking pile or planning, {name}?",
-        "The bell has rung. What's left on the desk, {name}?",
-        "Winding down, {name}?",
-        "Let's tidy up tomorrow tonight, {name}.",
-        "Good evening, {name}. One last thing?",
+        "Evening returns rolling in, {name}?",
+        "Closing out today's trips or lining up tomorrow, {name}?",
+        "Winding down the counter, {name}?",
+        "Let's lock in tomorrow's fleet schedule tonight, {name}.",
+        "Good evening, {name}. One last booking or invoice?",
     ),
     "night": (
-        "Burning the midnight diya, {name}?",
-        "Still up, {name}? Let's make it quick.",
-        "Late night lesson planning, {name}?",
+        "Night desk or late airport transfer, {name}?",
+        "Still on shift, {name}? Let's get it done in seconds.",
+        "Late-night fleet check, {name}?",
     ),
 }
 
 DAY_LINES = {
-    0: ("Monday again, {name}. We've got this.",),
-    4: ("It's Friday, {name}. Nearly there.",),
-    5: ("Weekend planning, {name}? Admirable.",),
-    6: ("Sunday prep, {name}? Future you says thanks.",),
+    0: ("Monday rush, {name}. Corporate and airport fleet ready.",),
+    4: ("It's Friday, {name}. Weekend self-drive rush is here.",),
+    5: ("Saturday peak on the lot, {name}. Let's move keys fast.",),
+    6: ("Sunday returns and turnaround, {name}. Smooth handovers ahead.",),
 }
 
 WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
-#: Said once, quietly, under the greeting. Never more than one.
 OPENERS = (
-    "What are we working on?",
-    "Where would you like to start?",
-    "What's first today?",
-    "Tell me what you need.",
+    "What do you need — a quote, contract, checklist, or message?",
+    "Which vehicle or booking are we handling?",
+    "What's first on the desk today?",
+    "Tell me what you need done in seconds.",
 )
 
 
@@ -112,7 +104,6 @@ def _first_name(name: str) -> str:
     if not name:
         return ""
     parts = [p for p in name.replace(".", " ").split() if p]
-    # "Mrs Anita Sharma" → "Anita"; a lone honorific is not a name.
     honorifics = {"mr", "mrs", "ms", "miss", "dr", "prof", "shri", "smt", "sir", "madam"}
     if not parts:
         return ""
@@ -134,7 +125,7 @@ def _parse_clock(value: str) -> dt.time | None:
 
 
 def next_period(user_id: int, now: dt.datetime | None = None) -> dict[str, Any] | None:
-    """The teacher's next scheduled period today, if there is one."""
+    """The operator's next scheduled pickup/return slot today, if there is one."""
     now = now or dt.datetime.now()
     weekday = now.weekday()
     rows = db.list_periods(user_id, weekday)
@@ -157,7 +148,6 @@ def build(user: dict[str, Any], now: dt.datetime | None = None) -> dict[str, Any
     language = user.get("language", "en")
     part = _part_of_day(now.hour)
     if language in SALUTATIONS and language != "en":
-        # Regional salutation + name; mixing scripts mid-sentence reads badly.
         salutation = SALUTATIONS[language].get(part, SALUTATIONS[language]["evening"])
         headline = f"{salutation}, {name}." if name else f"{salutation}."
     else:
@@ -173,17 +163,17 @@ def build(user: dict[str, Any], now: dt.datetime | None = None) -> dict[str, Any
     period = next_period(int(user["id"]), now)
 
     if period:
-        label = period.get("label") or "your next class"
+        label = period.get("label") or "your next handover"
         minutes = period["in_minutes"]
-        room = f" in {period['room']}" if period.get("room") else ""
+        room = f" at {period['room']}" if period.get("room") else ""
         if minutes <= 0:
-            detail = f"{label}{room} is on now."
+            detail = f"{label}{room} is due now."
             tone = "urgent"
         elif minutes <= 30:
-            detail = f"{label}{room} starts in {minutes} minute{'s' if minutes != 1 else ''}."
+            detail = f"{label}{room} in {minutes} minute{'s' if minutes != 1 else ''}."
             tone = "urgent"
         else:
-            detail = f"Next up: {label}{room} at {period['starts']}."
+            detail = f"Next slot: {label}{room} at {period['starts']}."
 
     if not detail:
         open_tasks = db.list_tasks(int(user["id"]))
@@ -195,13 +185,13 @@ def build(user: dict[str, Any], now: dt.datetime | None = None) -> dict[str, Any
             detail = f"Due today: {first}" + (f", and {extra} more." if extra else ".")
             tone = "urgent" if len(due_today) > 2 else "calm"
         elif open_tasks:
-            detail = f"{len(open_tasks)} thing{'s' if len(open_tasks) != 1 else ''} on your list."
+            detail = f"{len(open_tasks)} ops task{'s' if len(open_tasks) != 1 else ''} on your checklist."
         elif now.weekday() == 4 and now.hour >= 14:
-            detail = "It's Friday afternoon. Worth closing the week off."
+            detail = "Friday afternoon — weekend fleet dispatches and check-outs ahead."
         elif now.weekday() >= 5:
-            detail = f"It's {WEEKDAYS[now.weekday()]} — planning day, if you want it to be."
+            detail = f"It's {WEEKDAYS[now.weekday()]} — peak weekend fleet operations."
         elif user.get("sign_ins", 0) <= 1:
-            detail = "First time here. Tell me what you teach and I'll fit around it."
+            detail = "Welcome to Float. Tell me about your fleet or ask for an instant quote, contract, or checklist."
 
     return {
         "headline": headline,
@@ -215,12 +205,7 @@ def build(user: dict[str, Any], now: dt.datetime | None = None) -> dict[str, Any
 
 
 def week_reflection(user_id: int) -> str | None:
-    """Friday's note about what the teacher built, not what Float did.
-
-    Deliberately phrased around their contribution. A tool that reports its own
-    output volume back at you every week is training you to measure the wrong
-    thing.
-    """
+    """Friday's note about the operator's week."""
     now = dt.datetime.now()
     if now.weekday() != 4:
         return None
@@ -229,7 +214,7 @@ def week_reflection(user_id: int) -> str | None:
         return None
     share = summary["own_share"]
     if share >= 50:
-        return f"This week, {share}% of what went out was in your own words. That's the right shape."
+        return f"This week, {share}% of your agreements and messages were tailored in your own words. Sharp operations."
     if share >= 20:
-        return f"This week you reworked about {share}% of the drafts. Worth a look at the ones you didn't."
-    return "Most of this week's drafts went out close to as written. Worth a read-through before Monday."
+        return f"This week you customised {share}% of your fleet drafts. Double-check any standard contracts before weekend dispatch."
+    return "Most of this week's drafts went out close to standard template. Worth a quick review of rates and terms before weekend rush."

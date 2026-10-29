@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Float</title>
+<title>Float · Fleet &amp; Rental Operations</title>
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="/app.css">
 <link rel="icon" href="/float.ico">
@@ -27,25 +27,25 @@
       <div class="school-tag" id="school-tag"></div>
     </div>
 
-    <button class="rail-new" id="new-thread" data-tip="New conversation" title="New conversation">
+    <button class="rail-new" id="new-thread" data-tip="New task or quote" title="New task or quote">
       <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>
-      <span class="lbl">New conversation</span>
+      <span class="lbl">New task or quote</span>
     </button>
 
     <div class="rail-nav">
-      <button class="rail-link" data-panel="toolkit" data-tip="Toolkit">
+      <button class="rail-link" data-panel="toolkit" data-tip="Rental Toolkit">
         <svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="2.2" width="4.6" height="4.6" rx="1.3"/><rect x="9.2" y="2.2" width="4.6" height="4.6" rx="1.3"/><rect x="2.2" y="9.2" width="4.6" height="4.6" rx="1.3"/><rect x="9.2" y="9.2" width="4.6" height="4.6" rx="1.3"/></svg>
         <span class="lbl">Toolkit</span> <span class="count" id="count-kit"></span>
       </button>
-      <button class="rail-link" data-panel="classes" data-tip="Classes">
-        <svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.6" cy="5.8" r="2.2"/><circle cx="11.1" cy="6.5" r="1.7"/><path d="M1.8 13.2c.4-2.3 1.9-3.4 3.8-3.4s3.4 1.1 3.8 3.4M10 10c1.6-.3 3.3.6 3.7 3.1"/></svg>
-        <span class="lbl">Classes</span> <span class="count" id="count-classes"></span>
+      <button class="rail-link" data-panel="classes" data-tip="Fleet &amp; Bookings">
+        <svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.2 9.5 3.6 5.2a1.4 1.4 0 0 1 1.3-.9h6.2c.6 0 1.1.4 1.3.9l1.4 4.3"/><rect x="1.6" y="9.2" width="12.8" height="3.8" rx="1.2"/><circle cx="4.4" cy="13.2" r="1.1"/><circle cx="11.6" cy="13.2" r="1.1"/></svg>
+        <span class="lbl">Fleet</span> <span class="count" id="count-classes"></span>
       </button>
-      <button class="rail-link" data-panel="tasks" data-tip="To do">
+      <button class="rail-link" data-panel="tasks" data-tip="Ops checklist">
         <svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="5.8"/><path d="M5.4 8.2 7.2 10l3.5-3.9"/></svg>
-        <span class="lbl">To do</span> <span class="count" id="count-tasks"></span>
+        <span class="lbl">Ops to-do</span> <span class="count" id="count-tasks"></span>
       </button>
-      <button class="rail-link" data-panel="files" data-tip="Files">
+      <button class="rail-link" data-panel="files" data-tip="Contracts &amp; Files">
         <svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4.7A1.7 1.7 0 0 1 3.7 3h2.8l1.5 1.7h4.3A1.7 1.7 0 0 1 14 6.4v5A1.7 1.7 0 0 1 12.3 13H3.7A1.7 1.7 0 0 1 2 11.4z"/></svg>
         <span class="lbl">Files</span> <span class="count" id="count-files"></span>
       </button>
@@ -56,9 +56,9 @@
 
     <div class="rail-foot">
       <button class="rail-foot-name" id="open-settings" data-tip="Settings" title="Settings">
-        <span class="avatar" id="me-avatar">T</span>
+        <span class="avatar" id="me-avatar">F</span>
         <span class="grow">
-          <b id="me-name">Teacher</b>
+          <b id="me-name">Fleet Operator</b>
           <small id="me-sub">Settings</small>
         </span>
       </button>
@@ -103,8 +103,6 @@
       <section class="greeting" id="greeting">
         <h2 id="g-headline">Hello.</h2>
         <p class="detail" id="g-detail"></p>
-
-        
       </section>
 
         <div id="turns"></div>
@@ -115,10 +113,10 @@
     <div class="composer-wrap">
       <div class="composer">
         <div class="composer-bar" id="attach-bar" hidden></div>
-        <textarea id="input" rows="1" placeholder="How can I help you today?"
+        <textarea id="input" rows="1" placeholder="Quote a 4-day SUV trip, draft a rental agreement, or check handover rules…"
                   aria-label="Message Float" spellcheck="true"></textarea>
         <div class="composer-bar">
-          <button type="button" class="icon-btn plus" id="attach" data-pop title="Add a photo or file, or open the toolkit" aria-label="Add">
+          <button type="button" class="icon-btn plus" id="attach" data-pop title="Attach vehicle photo/doc, or open the rental toolkit" aria-label="Add">
             <svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           </button>
           <input type="file" id="file-input" hidden multiple
@@ -138,10 +136,11 @@
       </div>
       <div class="home-extras" id="home-extras">
         <div class="starters">
-          <button type="button" class="starter" data-kit="lesson_plan">Lesson plan</button>
-          <button type="button" class="starter" data-kit="question_paper">Question paper</button>
-          <button type="button" class="starter" data-kit="worksheet">Worksheet</button>
-          <button type="button" class="starter" data-kit="parent_message">Parent message</button>
+          <button type="button" class="starter" data-kit="lesson-plan">Rental agreement</button>
+          <button type="button" class="starter" data-kit="question-paper">Handover checklist</button>
+          <button type="button" class="starter" data-kit="worksheet">Instant quote</button>
+          <button type="button" class="starter" data-kit="parent-message">Customer WhatsApp</button>
+          <button type="button" class="starter" data-kit="marking">Damage &amp; deposit calc</button>
         </div>
         <div class="reflection" id="reflection" hidden>
           <b>This week</b>
@@ -149,7 +148,7 @@
         </div>
       </div>
       <p class="composer-note">
-        Float can be wrong about syllabus detail and page numbers. Your judgement is the point.
+        Float drafts contracts, quotes and checklists in seconds. Always verify plate numbers, odometer readings and DL details at handover.
       </p>
     </div>
   </main>

@@ -1,8 +1,8 @@
 """Float — the turn loop.
 
 One function does the work: ``run`` takes a conversation and yields events for
-the browser. Between the model and the teacher it handles the tool round trip,
-retries the one failure worth retrying, keeps the transcript in the database, and
+the browser. Between the model and the operator it handles the tool round trip,
+retries transient provider errors, keeps the transcript in the database, and
 records what the turn cost.
 
 Events yielded (each is sent to the browser as one SSE frame)::
@@ -27,13 +27,14 @@ from typing import Any, Iterator
 from . import attachments as attachment_reader
 from . import config, db, providers, tools
 
-MAX_TOOL_ROUNDS = 10      # a pointer task is look -> act -> look; six rounds ran out mid-job
+MAX_TOOL_ROUNDS = 15      # enough for multi-tool fleet lookup + quote calculation + file creation + task logging
 TOOL_LABELS = {
-    "create_file": "Making the file",
-    "look_up_class": "Looking up the class",
-    "save_task": "Adding to your list",
+    "create_file": "Building your document",
+    "look_up_class": "Checking fleet & booking records",
+    "save_task": "Adding to your ops checklist",
     "use_computer": "Using your computer",
-    "read_my_day": "Checking your day",
+    "read_my_day": "Checking today's pickups & returns",
+    "calculate_quote": "Calculating exact rental quote",
 }
 
 
@@ -79,7 +80,7 @@ def title_for(text: str) -> str:
 
 
 def pick_model(user: dict[str, Any], requested: str = "") -> tuple[str, str, str]:
-    """Return (provider, model, key). Falls back to whatever the school has set up."""
+    """Return (provider, model, key). Falls back to whatever the agency has set up."""
     allowed = db.allowed_providers()
     provider, _, model = (requested or "").partition(":")
 
@@ -291,11 +292,7 @@ def _call_tool(call: dict[str, Any], user: dict[str, Any], conv_id: int,
 def _with_retry(provider: str, key: str, model: str, system: str,
                 history: list[dict[str, Any]], schemas: list[dict[str, Any]]
                 ) -> Iterator[dict[str, Any]]:
-    """One retry, and only for the failures where retrying is the right answer.
-
-    Retrying a rejected key just rejects it again more slowly, so that one goes
-    straight back to the teacher.
-    """
+    """One retry, and only for the failures where retrying is the right answer."""
     attempt = 0
     while True:
         try:

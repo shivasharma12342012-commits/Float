@@ -66,10 +66,10 @@ function rupees(paise) { return "₹" + ((Number(paise) || 0) / 100).toFixed(2);
 
 const TABS = [
   ["overview", "Overview"],
-  ["teachers", "Teachers"],
+  ["teachers", "Team & Agents"],
   ["fair", "Fairness & privacy"],
-  ["org", "School settings"],
-  ["notices", "Notices"],
+  ["org", "Agency settings"],
+  ["notices", "Ops notices"],
   ["audit", "Audit log"],
 ];
 
@@ -109,15 +109,15 @@ function viewOverview(wrap) {
   if (DATA.lan_url) {
     const lan = make("div", "panel");
     lan.append(
-      make("h2", null, "School server address"),
-      make("p", null, `Teachers on other PCs on the network open ${DATA.lan_url} in their browser.`),
+      make("h2", null, "Agency server address"),
+      make("p", null, `Team members on other PCs on the network open ${DATA.lan_url} in their browser.`),
     );
     wrap.append(lan);
   }
   const t = DATA.totals;
   const grid = make("div", "stat-grid");
   [
-    ["Teachers", t.teachers, `${t.active} active`],
+    ["Team members", t.teachers, `${t.active} active`],
     ["Signed in now", t.signed_in, ""],
     ["Answers · 30 days", t.calls, ""],
     ["Tokens · 30 days", t.tokens.toLocaleString("en-IN"), ""],
@@ -169,7 +169,7 @@ function viewOverview(wrap) {
     row.append(make("span", provider.allowed ? "pill" : "pill off",
       provider.allowed ? "allowed" : "off"));
     row.append(make("span", provider.key ? "pill admin" : "pill off",
-      provider.key ? "school key set" : "no school key"));
+      provider.key ? "agency key set" : "no agency key"));
     provBody.append(row);
   });
   providers.append(provBody);
@@ -268,12 +268,12 @@ function viewTeachers(wrap) {
   const headBody = make("div", "panel-body");
   const row = make("div", "row");
   const grow = make("div", "grow");
-  grow.append(make("b", null, "Add a teacher"));
+  grow.append(make("b", null, "Add a team member / agent"));
   grow.append(make("small", null, "Float makes a temporary password — hand it over however you normally would."));
   row.append(grow);
 
   const email = document.createElement("input");
-  email.placeholder = "teacher@school.edu.in";
+  email.placeholder = "agent@agency.in";
   email.style.cssText = "padding:8px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--paper);width:220px";
   const name = document.createElement("input");
   name.placeholder = "Name";
@@ -302,7 +302,7 @@ function viewTeachers(wrap) {
   const table = document.createElement("table");
   table.className = "grid";
   const thead = document.createElement("thead");
-  thead.innerHTML = "<tr><th>Teacher</th><th>Role</th><th>Usage</th><th class=num>Sign-ins</th>" +
+  thead.innerHTML = "<tr><th>Team Member</th><th>Role</th><th>Usage</th><th class=num>Sign-ins</th>" +
     "<th class=num>Answers</th><th class=num>Tokens</th><th class=num>₹ (estimate)</th><th></th></tr>";
   table.append(thead);
   const tbody = document.createElement("tbody");
@@ -373,7 +373,7 @@ function actionMenu(user) {
     wrap.append(button("Reset password", () =>
       act("reset_password", `Reset ${user.email}'s password? They'll need the new one.`)));
     wrap.append(button("Adjust limit", async () => {
-      const v = prompt(`Monthly AI limit for ${user.name || user.email}, in ₹.\nLeave empty to use the school default. 0 means no limit.`, "");
+      const v = prompt(`Monthly AI limit for ${user.name || user.email}, in ₹.\nLeave empty to use the agency default. 0 means no limit.`, "");
       if (v === null) return;
       let body = { action: "set_cap", paise: "" };
       if (v.trim() !== "") {
@@ -388,7 +388,7 @@ function actionMenu(user) {
     }));
     wrap.append(button("Sign out", () => act("sign_out")));
     if (user.role === "teacher") wrap.append(button("Make admin", () => act("make_admin")));
-    else wrap.append(button("Make teacher", () => act("make_teacher")));
+    else wrap.append(button("Make operator", () => act("make_teacher")));
     wrap.append(button("Deactivate", () => act("deactivate"), true));
   } else {
     wrap.append(button("Reactivate", () => act("activate")));
@@ -422,7 +422,7 @@ function viewFair(wrap) {
     ["Yet to start", `${f.not_started} of ${f.accounts}`, "a walkthrough helps more than a nudge"],
     ["Top fifth's share of spend", f.top_fifth_share + "%", "near 20% would be even"],
     ["Near their limit", f.near_cap, "80% or more used"],
-    ["School spend this month (estimate)", "₹" + (f.pool_spent / 100).toFixed(2), pct],
+    ["Agency spend this month (estimate)", "₹" + (f.pool_spent / 100).toFixed(2), pct],
   ].forEach(([label, value, sub]) => {
     const card = make("div", "stat");
     card.append(make("b", null, String(value)));
@@ -441,9 +441,9 @@ function viewFair(wrap) {
     const input = document.createElement("input"); input.type = "number"; input.min = "0";
     input.value = value; field.append(input); body.append(field); return input;
   };
-  const cap = mk("Monthly limit per teacher (₹, 0 = none)", Math.round(+(org.teacher_monthly_paise_cap || 0) / 100));
-  const pool = mk("School monthly budget (₹, 0 = none) · shown as a warning, never blocks anyone", Math.round(+(org.monthly_paise_budget || 0) / 100));
-  const vis = make("div", "field"); vis.append(make("label", null, "What you see about each teacher"));
+  const cap = mk("Monthly limit per operator (₹, 0 = none)", Math.round(+(org.teacher_monthly_paise_cap || 0) / 100));
+  const pool = mk("Agency monthly budget (₹, 0 = none) · shown as a warning, never blocks anyone", Math.round(+(org.monthly_paise_budget || 0) / 100));
+  const vis = make("div", "field"); vis.append(make("label", null, "What you see about each operator"));
   const sel = document.createElement("select");
   [["bands", "Usage band only (recommended)"], ["exact", "Exact counts and ₹"]].forEach(([v, t]) => {
     const o = document.createElement("option"); o.value = v; o.textContent = t;
@@ -465,7 +465,7 @@ function viewFair(wrap) {
   pb.append(make("b", null, "What this panel can and cannot see"));
   [
     "Can see: account names, roles, sign-in counts, and usage as a band or totals.",
-    "Cannot see: any chat, draft, file, class list, mark, or attendance record. There is no screen or API for it.",
+    "Cannot see: any chat, draft, contract, fleet group, booking, or inspection record. There is no screen or API for it.",
     "Never shown: rankings. Teachers are listed alphabetically, and fairness figures are school-wide, never named.",
     "Always logged: limit changes (with reason), exports, resets and role changes, visible in the Audit log.",
   ].forEach((t) => { const p = make("p", null, t); p.style.margin = "8px 0"; pb.append(p); });
@@ -481,7 +481,7 @@ function viewOrg(wrap) {
   const body = make("div", "panel-body");
 
   const nameField = make("div", "field");
-  nameField.append(make("label", null, "School name"));
+  nameField.append(make("label", null, "Agency / Branch name"));
   const nameInput = document.createElement("input");
   nameInput.type = "text";
   nameInput.value = org.school_name || "";
@@ -490,9 +490,9 @@ function viewOrg(wrap) {
 
   const toggles = [
     ["computer_control", "Let Float use the computer", "Mouse and keyboard control for repetitive on-screen tasks."],
-    ["teacher_own_keys", "Teachers may add their own API key", "Turn off if only the school key should be used."],
-    ["self_signup", "Anyone with the right email can sign up", "Off means you add every teacher yourself, from this page."],
-    ["require_pin", "Require a quick PIN", "Ask every teacher to set one, for faster sign-in between periods."],
+    ["teacher_own_keys", "Operators may add their own API key", "Turn off if only the shared agency key should be used."],
+    ["self_signup", "Anyone with the right email can sign up", "Off means you add every team member yourself, from this page."],
+    ["require_pin", "Require a quick PIN", "Ask every desk agent to set one, for 1-second sign-in at the counter."],
   ];
   toggles.forEach(([key, label, hint]) => {
     const row = make("div", "row");
@@ -509,7 +509,7 @@ function viewOrg(wrap) {
   });
 
   const providersField = make("div", "field");
-  providersField.append(make("label", null, "Providers teachers may use"));
+  providersField.append(make("label", null, "Providers your team may use"));
   const providersBox = make("div", "tagbox");
   const allowed = new Set(DATA.providers.filter((p) => p.allowed).map((p) => p.id));
   DATA.providers.forEach((p) => {
@@ -579,7 +579,7 @@ function viewOrg(wrap) {
   const stopRow = make("div", "row");
   const stopGrow = make("div", "grow");
   stopGrow.append(make("b", null, "Shut down Float server"));
-  stopGrow.append(make("small", null, "Safely stop the server process. Any connected teachers will be disconnected until Float is started again."));
+  stopGrow.append(make("small", null, "Safely stop the server process. Any connected desk agents will be disconnected until Float is started again."));
   stopRow.append(stopGrow);
   const stopBtn = make("button", "btn danger", "Shut down");
   stopBtn.addEventListener("click", async () => {
@@ -605,7 +605,7 @@ function viewOrg(wrap) {
 
 function viewNotices(wrap) {
   wrap.append(make("p", "inline-note",
-    "A notice appears as a strip at the top of every teacher's Float, until you retire it."));
+    "A notice appears as a strip at the top of every operator's Float, until you retire it."));
 
   const panel = make("div", "panel");
   const body = make("div", "panel-body");

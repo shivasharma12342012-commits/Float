@@ -442,6 +442,28 @@ class SecurityTests(unittest.TestCase):
         self.assertIn('use_computer', with_comp)
         self.assertNotIn('use_computer', without_comp)
 
+    def test_tools_calculate_quote_exact_math_and_aliases(self):
+        import float.tools as tools
+        res = tools.execute('calculate_quote', {
+            'vehicle': 'Hyundai Creta SX',
+            'days': 3,
+            'daily_rate': 3000,
+            'included_km_per_day': 250,
+            'actual_km': 900,
+            'extra_km_rate': 14,
+            'extra_hours': 2,
+            'extra_hour_rate': 250,
+            'toll_parking': 450,
+            'gst_percent': 5,
+            'security_deposit': 10000,
+        }, {'id': 1}, None)
+        # Base: 9000, Extra km: 150*14=2100, Extra hr: 500 -> Taxable: 11600
+        # GST 5%: 580 -> +450 tolls = 12630 Grand Total -> 2630 balance after 10000 deposit
+        self.assertIn('12,630.00', res['text'])
+        self.assertIn('2,630.00', res['text'])
+        self.assertEqual(tools.toolkit_entry('rental-agreement')['id'], 'lesson-plan')
+        self.assertEqual(tools.toolkit_entry('handover-checklist')['id'], 'question-paper')
+
     def test_tools_execute_rejects_unknown_tool(self):
         import float.tools as tools
         res = tools.execute('nonexistent_tool', {}, {'id': 1}, None)
@@ -1184,7 +1206,7 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(config.PROVIDER_ORDER, ('anthropic', 'openai', 'openrouter', 'google'))
 
     def test_hardening_070(self):
-        self.assertIn('CBSE', config.BOARDS)
+        self.assertIn('Self-Drive Daily', config.BOARDS)
 
     def test_hardening_071(self):
         self.assertEqual(len(config.GRADES), 12)
@@ -1375,43 +1397,43 @@ class HardeningTests(unittest.TestCase):
         self.assertIn('Diya', res)
 
     def test_hardening_128(self):
-        self.assertEqual(tools.toolkit_entry('rubric')['name'], 'Rubric')
+        self.assertEqual(tools.toolkit_entry('rubric')['name'], 'Vehicle condition grading')
 
     def test_hardening_129(self):
-        self.assertEqual(tools.toolkit_entry('worksheet')['name'], 'Worksheet')
+        self.assertEqual(tools.toolkit_entry('worksheet')['name'], 'Instant quote & rate card')
 
     def test_hardening_130(self):
-        self.assertEqual(tools.toolkit_entry('notice')['name'], 'Notice or circular')
+        self.assertEqual(tools.toolkit_entry('notice')['name'], 'Branch & driver notice')
 
     def test_hardening_131(self):
-        self.assertEqual(tools.toolkit_entry('letter')['name'], 'Letter to the principal')
+        self.assertEqual(tools.toolkit_entry('letter')['name'], 'Insurance, RTO or vendor letter')
 
     def test_hardening_132(self):
-        self.assertEqual(tools.toolkit_entry('slides')['name'], 'Lesson slides')
+        self.assertEqual(tools.toolkit_entry('slides')['name'], 'Corporate fleet pitch deck')
 
     def test_hardening_133(self):
-        self.assertEqual(tools.toolkit_entry('activity')['name'], 'Classroom activity')
+        self.assertEqual(tools.toolkit_entry('activity')['name'], 'Weekend & seasonal promo')
 
     def test_hardening_134(self):
-        self.assertEqual(tools.toolkit_entry('remedial')['name'], 'Remedial plan')
+        self.assertEqual(tools.toolkit_entry('remedial')['name'], 'Downtime & turnaround plan')
 
     def test_hardening_135(self):
-        self.assertEqual(tools.toolkit_entry('pacing')['name'], 'Syllabus pacing')
+        self.assertEqual(tools.toolkit_entry('pacing')['name'], 'Fleet & service planner')
 
     def test_hardening_136(self):
-        self.assertEqual(tools.toolkit_entry('doubt')['name'], 'Solve a doubt')
+        self.assertEqual(tools.toolkit_entry('doubt')['name'], 'Resolve a rental dispute')
 
     def test_hardening_137(self):
-        self.assertEqual(tools.toolkit_entry('bilingual')['name'], 'Explain in two languages')
+        self.assertEqual(tools.toolkit_entry('bilingual')['name'], 'Bilingual driver & renter rules')
 
     def test_hardening_138(self):
-        self.assertEqual(tools.toolkit_entry('seating')['name'], 'Seating and groups')
+        self.assertEqual(tools.toolkit_entry('seating')['name'], 'Driver & vehicle dispatch roster')
 
     def test_hardening_139(self):
-        self.assertEqual(tools.toolkit_entry('assembly')['name'], 'Assembly speech')
+        self.assertEqual(tools.toolkit_entry('assembly')['name'], 'Morning shift briefing')
 
     def test_hardening_140(self):
-        self.assertEqual(tools.toolkit_entry('hpc')['name'], 'Holistic progress descriptors')
+        self.assertEqual(tools.toolkit_entry('hpc')['name'], 'Vehicle health & audit report')
 
     def test_hardening_141(self):
         runs = artifacts.inline_runs('Hello **teacher** friend')
@@ -1541,7 +1563,7 @@ class HardeningTests(unittest.TestCase):
         self.assertFalse(config.env_bool('FLOAT_TEST_NONEXISTENT_KEY', False))
 
     def test_hardening_174(self):
-        self.assertEqual(config.BOARDS[0], 'CBSE')
+        self.assertEqual(config.BOARDS[0], 'Self-Drive Daily')
 
     def test_hardening_175(self):
         self.assertEqual(config.GRADES[0], '1')
@@ -1556,10 +1578,10 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(config.PROVIDER_ORDER[-1], 'google')
 
     def test_hardening_179(self):
-        self.assertIn('Physics', config.SUBJECTS)
+        self.assertIn('Compact SUV', config.SUBJECTS)
 
     def test_hardening_180(self):
-        self.assertIn('Chemistry', config.SUBJECTS)
+        self.assertIn('Luxury Sedan', config.SUBJECTS)
 
     def test_hardening_181(self):
         db.audit('test.event.181', user_id=1, actor='Teacher', detail='Test audit action')

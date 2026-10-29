@@ -113,8 +113,8 @@ async function boot() {
     return;
   }
 
-  el("signup-title").textContent = "Join your staff room.";
-  el("signup-sub").textContent = "Float keeps your classes, files and drafts to yourself.";
+  el("signup-title").textContent = "Join your rental desk.";
+  el("signup-sub").textContent = "Float keeps your fleet groups, contracts and drafts to yourself.";
   el("su-school-field").hidden = true;
   el("signin-switch").hidden = !state.self_signup;
 

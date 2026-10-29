@@ -8,7 +8,7 @@ file beside the project root, and from the organisation settings row in SQLite
 
 No third-party settings library: this reads plain text and casts it, so the app
 installs from a three-line requirements file and starts in under a second on a
-school laptop.
+rental counter laptop.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 APP_NAME = "Float"
-APP_TAGLINE = "Your teaching, lighter."
+APP_TAGLINE = "Your fleet, faster."
 VERSION = "1.0.0"
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -102,15 +102,6 @@ def env_bool(name: str, default: bool) -> bool:
 
 # ----------------------------------------------------------------------------
 # MODEL PRICES — the one place to update them.
-#
-# Rupees per million tokens: (input, output). These are ESTIMATES from published
-# per-token prices; the provider's own bill is the real number. Prices change, so
-# the admin panel warns when PRICES_LAST_CHECKED is more than 90 days old, and the
-# admin can override any model's price from the panel without editing this file.
-#
-# PRICES_LAST_CHECKED is a placeholder: these figures carried no recorded check
-# date. After comparing them with each provider's pricing page, set the date here
-# (or press "Mark prices as checked" in the admin panel).
 # ----------------------------------------------------------------------------
 PRICES_LAST_CHECKED = "2025-01-01"
 PRICE_STALE_AFTER_DAYS = 90
@@ -132,10 +123,6 @@ MODEL_PRICES: dict[str, tuple[float, float]] = {
 
 # ----------------------------------------------------------------------------
 # Model providers.
-#
-# Three are offered in the interface, each keyed by the school's own API key.
-# A fourth transport exists for offline development and is not listed anywhere
-# a teacher can see; see ``float/_runtime_ext.py``.
 # ----------------------------------------------------------------------------
 @dataclass(frozen=True)
 class ModelSpec:
@@ -226,16 +213,8 @@ PROVIDER_ORDER = ("anthropic", "openai", "openrouter", "google")
 
 # ----------------------------------------------------------------------------
 # Local runtime gate.
-#
-# Off unless this machine says otherwise. Three ways to say so, all of them
-# local to the box: an environment variable, a marker file, or the passphrase
-# typed into the unlock field. The passphrase is compared as a hash so the
-# phrase itself is not in the repository.
-#
-# No default passphrase ships with the code; set FLOAT_RT_HASH (sha256 hex).
 # ----------------------------------------------------------------------------
 _RT_MARKER = DATA_DIR / ".rt"
-# No built-in default: the passphrase hash must be supplied via FLOAT_RT_HASH.
 _RT_PHRASE_SHA256 = env("FLOAT_RT_HASH", "")
 
 
@@ -273,7 +252,7 @@ RT_MODEL = env("FLOAT_RT_MODEL", "llama3.1:8b")
 # ----------------------------------------------------------------------------
 @dataclass
 class Settings:
-    #: School-server mode: one Float computer holds every account; teachers on other
+    #: Agency-server mode: one Float computer holds every account; desk agents on other
     #: PCs just open it in a browser. Nothing needs syncing because there is one copy.
     lan: bool = field(default_factory=lambda: env_bool("FLOAT_LAN", False))
     host: str = field(default_factory=lambda: env("FLOAT_HOST", "0.0.0.0" if env_bool("FLOAT_LAN", False) else "127.0.0.1"))
@@ -282,7 +261,7 @@ class Settings:
     tls_key: str = field(default_factory=lambda: env("FLOAT_TLS_KEY", ""))
     port: int = field(default_factory=lambda: env_int("FLOAT_PORT", 8766))
 
-    school_name: str = field(default_factory=lambda: env("FLOAT_SCHOOL", "Your School"))
+    school_name: str = field(default_factory=lambda: env("FLOAT_SCHOOL", "Your Rental Agency"))
 
     #: Sessions die when the process does — see security.BOOT_NONCE. This is the
     #: ceiling while it is running.
@@ -299,12 +278,11 @@ class Settings:
     google_client_id: str = field(default_factory=lambda: env("GOOGLE_CLIENT_ID"))
     google_client_secret: str = field(default_factory=lambda: env("GOOGLE_CLIENT_SECRET"))
 
-    #: School-wide kill switch for pointer control. The admin panel writes this.
+    #: Agency-wide kill switch for pointer control. The admin panel writes this.
     computer_control: bool = field(default_factory=lambda: env_bool("FLOAT_COMPUTER_CONTROL", True))
 
     #: Whether Float sends a screenshot back to the model after a pointer run so
-    #: it can SEE the screen. "auto" = providers known to read images (Anthropic,
-    #: OpenAI, Google); "on" = every provider except the local one; "off" = text only.
+    #: it can SEE the screen.
     computer_vision: str = field(default_factory=lambda: (env("FLOAT_COMPUTER_VISION") or "auto").lower())
 
     open_browser: bool = field(default_factory=lambda: env_bool("FLOAT_OPEN_BROWSER", True))
@@ -312,8 +290,6 @@ class Settings:
     def __setattr__(self, name: str, value: object) -> None:
         object.__setattr__(self, name, value)
         if name == "lan" and not env("FLOAT_IDLE_MINUTES"):
-            # `python main.py --lan` sets settings.lan after import; keep the
-            # 20-minute lab-PC idle timeout unless the school set FLOAT_IDLE_MINUTES.
             current = getattr(self, "idle_minutes", None)
             if value and current == 45.0:
                 object.__setattr__(self, "idle_minutes", 20.0)
@@ -349,12 +325,12 @@ def tls_files() -> tuple[str, str] | None:
     if env_bool("FLOAT_ALLOW_PLAINTEXT", False):
         return None
     if settings.lan and not (cert or key):
-        return _auto_cert()          # school-server mode: never run on plain HTTP
+        return _auto_cert()
     return None
 
 
 def _auto_cert() -> tuple[str, str] | None:
-    """Self-signed certificate for school-server mode (browsers warn once per PC)."""
+    """Self-signed certificate for LAN server mode (browsers warn once per PC)."""
     crt, key = DATA_DIR / "float-auto.crt", DATA_DIR / "float-auto.key"
     try:
         import datetime, ipaddress, socket
@@ -405,11 +381,8 @@ def _auto_cert() -> tuple[str, str] | None:
         private = None
     if not isinstance(private, ec.EllipticCurvePrivateKey):
         private = ec.generate_private_key(ec.SECP256R1())
-    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Float school server")])
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Float server")])
     san = [x509.DNSName(n) for n in sorted(names)] + [x509.IPAddress(ipaddress.ip_address(i)) for i in sorted(ips)]
-    # 825 days is the modern browser ceiling (Apple / Chrome reject longer leaf
-    # lifetimes); BasicConstraints(ca=True) + KeyUsage lets the same .crt file be
-    # installed into the Trusted Root store on lab PCs so warnings disappear.
     cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name)
             .public_key(private.public_key()).serial_number(x509.random_serial_number())
             .not_valid_before(now - datetime.timedelta(days=1))
@@ -451,18 +424,23 @@ def ensure_dirs() -> None:
 
 
 # ----------------------------------------------------------------------------
-# Indian school context. Used by the teaching tools so their output is not
-# generically American.
+# Car rental operations & fleet context.
 # ----------------------------------------------------------------------------
-BOARDS = ("CBSE", "ICSE / ISC", "State Board", "IB", "Cambridge (IGCSE/A-Level)", "NIOS")
+BOARDS = (
+    "Self-Drive Daily",
+    "Chauffeur-Driven",
+    "Corporate / B2B Fleet",
+    "Airport & Hotel Transfer",
+    "Long-Term Subscription",
+    "Luxury & Wedding Fleet",
+)
 GRADES = tuple(str(n) for n in range(1, 13))
 SUBJECTS = (
-    "English", "Hindi", "Mathematics", "Science", "Physics", "Chemistry", "Biology",
-    "Social Science", "History", "Geography", "Civics / Political Science", "Economics",
-    "Computer Science", "Information Technology", "Sanskrit", "Marathi", "Bengali",
-    "Tamil", "Telugu", "Kannada", "Gujarati", "Punjabi", "Urdu",
-    "Accountancy", "Business Studies", "Physical Education", "Art", "Music",
-    "Environmental Studies (EVS)", "General Knowledge",
+    "Hatchback", "Compact Sedan", "Executive Sedan", "Compact SUV",
+    "7-Seater SUV / MUV", "Luxury Sedan", "Luxury SUV", "Electric (EV)",
+    "Convertible / Sports", "Tempo Traveller / Van", "Pickup / Utility",
+    "Minibus", "Chauffeur Service", "Airport Transfer", "Corporate Lease",
+    "Outstation Tour", "Wedding Fleet", "Self-Drive Urban",
 )
 LANGUAGES = {
     "en": "English",
@@ -480,11 +458,10 @@ LANGUAGES = {
     "ur": "اردو",
 }
 
-#: How much of the work Float does for you. The point of the ladder is that the
-#: top rung is not the default — see docs/DESIGN.md.
+#: How much of the work Float does for you.
 ASSIST_LEVELS = {
-    "coach": "Coach — ask me questions, give me a frame, let me write it",
-    "draft": "Draft — give me something to edit",
-    "full": "Finish — give me the complete version",
+    "coach": "Coach — give me the pricing/policy structure and key checks",
+    "draft": "Draft — write the complete agreement, quote or message ready to review",
+    "full": "Finish — instant, counter-ready output with zero back-and-forth",
 }
 DEFAULT_ASSIST = "draft"

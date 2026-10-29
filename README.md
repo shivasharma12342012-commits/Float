@@ -4,7 +4,7 @@
 
 # Float
 
-### Your teaching, lighter.
+### Your fleet, faster.
 
 *Some tools ask for your attention. Float gives it back.*
 
