@@ -1,6 +1,6 @@
 @echo off
 rem School-server mode: run this ONCE on the one computer that holds every
-rem teacher's account. Teachers on other PCs open the address Float prints
+rem operator's account. Operators on other PCs open the address Float prints
 rem (see docs\SCHOOL_SERVER.md). Float generates a self-signed HTTPS certificate
 rem automatically in data\float-auto.crt, or you can set your own below.
 cd /d "%~dp0"
