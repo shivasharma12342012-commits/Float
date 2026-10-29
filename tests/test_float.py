@@ -1821,5 +1821,10 @@ class HardeningTests(unittest.TestCase):
         res = tools.execute("calculate_quote", {"days": 2, "daily_rate": 2000, "gst_percent": 0, "security_deposit": 4000}, {"id": 1, "name": "Operator"}, None)
         self.assertIn("SETTLEMENT STATUS: ₹0.00 balance (Deposit exactly covers bill)", res["text"])
 
+    def test_quote_damage_charge_included_in_settlement(self):
+        res = tools.execute("calculate_quote", {"days": 2, "daily_rate": 1500, "damage_charge": 1200, "gst_percent": 0}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("Damage / Cleaning / Penalty: ₹1,200.00", res["text"])
+        self.assertIn("GRAND TOTAL BILL: ₹4,200.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
