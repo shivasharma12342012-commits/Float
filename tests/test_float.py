@@ -1842,5 +1842,16 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(computed["easiest"]["index"], 0)
         self.assertEqual(computed["hardest"]["index"], 1)
 
+    def test_attachments_xlsx_text_preserves_empty_column_gaps(self):
+        import io, zipfile
+        from float import attachments
+        ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("xl/sharedStrings.xml", f'<sst xmlns="{ns}"><si><t>Car</t></si><si><t>Status</t></si></sst>')
+            zf.writestr("xl/worksheets/sheet1.xml", f'<worksheet xmlns="{ns}"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="C1" t="s"><v>1</v></c></row></sheetData></worksheet>')
+        out = attachments.xlsx_text(buf.getvalue())
+        self.assertEqual(out, "Car\t\tStatus")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
