@@ -107,7 +107,7 @@ def _open_window(url: str) -> None:
 
 
 def _lan_address() -> str:
-    """The address teachers on other PCs should type."""
+    """The address operators on other PCs should type."""
     import socket
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
@@ -185,7 +185,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     print(f"{APP_NAME} {VERSION} — {APP_TAGLINE}")
     print(f"Running at {url}")
     if config.settings.lan:
-        print(f"School server: teachers on other PCs open {scheme}://{_lan_address()}:{srv.server_port}")
+        print(f"Agency server: operators on other PCs open {scheme}://{_lan_address()}:{srv.server_port}")
         if scheme == "http":
             print("WARNING: no HTTPS configured - passwords cross the network unencrypted. See docs/SCHOOL_SERVER.md")
     print("Close this window, or press Ctrl+C, to sign everyone out and stop Float.")
@@ -403,7 +403,7 @@ def main() -> None:
     run_p.add_argument("--tab", action="store_true", help="Open in a normal browser tab instead of an app window.")
     run_p.set_defaults(func=_cmd_run)
 
-    pass_p = sub.add_parser("set-password", help="Reset a teacher's password from the terminal.")
+    pass_p = sub.add_parser("set-password", help="Reset an operator's password from the terminal.")
     pass_p.add_argument("email")
     pass_p.add_argument("--password", default=None, help="Omit to generate one.")
     pass_p.set_defaults(func=_cmd_set_password)
@@ -424,7 +424,7 @@ def main() -> None:
 
     # `python main.py [--host ...] [--port ...] [--no-browser]` with no
     # subcommand named should just start Float — that's the common case a
-    # teacher or admin actually types.
+    # operator or admin actually types.
     raw = sys.argv[1:]
     if not raw or raw[0] not in _KNOWN_COMMANDS:
         args = run_p.parse_args(raw)
