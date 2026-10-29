@@ -3,7 +3,7 @@
  * One admin, one small school, one page. Nothing here is trying to be a
  * multi-tenant console — it's the handful of controls a head of department
  * actually reaches for: who's using it, what it's costing, and a switch to
- * turn a teacher's account off when they leave.
+ * turn an operator's account off when they leave.
  */
 
 const TOKEN = sessionStorage.getItem("float.token");
@@ -433,9 +433,9 @@ function viewFair(wrap) {
 
   const panel = make("div", "panel"), body = make("div", "panel-body");
   body.append(make("b", null, "Equal share, by default"));
-  body.append(make("small", null, "Every teacher gets the same monthly allowance. Exceptions (for example a head of department "
-    + "or a teacher with accessibility needs) are set per person from the Teachers tab and need a recorded reason. "
-    + "Teachers using their own API key are never limited."));
+  body.append(make("small", null, "Every operator gets the same monthly allowance. Exceptions (for example a shift lead "
+    + "or a fleet manager) are set per person from the Team & Agents tab and need a recorded reason. "
+    + "Operators using their own API key are never limited."));
   const mk = (label, value) => {
     const field = make("div", "field"); field.append(make("label", null, label));
     const input = document.createElement("input"); input.type = "number"; input.min = "0";
@@ -466,7 +466,7 @@ function viewFair(wrap) {
   [
     "Can see: account names, roles, sign-in counts, and usage as a band or totals.",
     "Cannot see: any chat, draft, contract, fleet group, booking, or inspection record. There is no screen or API for it.",
-    "Never shown: rankings. Teachers are listed alphabetically, and fairness figures are school-wide, never named.",
+    "Never shown: rankings. Operators are listed alphabetically, and fairness figures are agency-wide, never named.",
     "Always logged: limit changes (with reason), exports, resets and role changes, visible in the Audit log.",
   ].forEach((t) => { const p = make("p", null, t); p.style.margin = "8px 0"; pb.append(p); });
   priv.append(pb); wrap.append(priv);
