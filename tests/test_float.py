@@ -1830,5 +1830,10 @@ class HardeningTests(unittest.TestCase):
         cleaned = artifacts.strip_markdown("View [Rental Terms](https://example.com/terms) and **Policy**")
         self.assertEqual(cleaned, "View Rental Terms and Policy")
 
+    def test_artifacts_docx_table_no_double_bold_headers(self):
+        xml = artifacts._docx_table([["**Vehicle**", "**Daily Rate**"], ["Creta", "2800"]])
+        self.assertIn("<w:b/>", xml)
+        self.assertNotIn("****", xml)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
