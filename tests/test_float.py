@@ -1853,5 +1853,11 @@ class HardeningTests(unittest.TestCase):
         out = attachments.xlsx_text(buf.getvalue())
         self.assertEqual(out, "Car\t\tStatus")
 
+    def test_config_rental_modes_and_fleet_categories(self):
+        self.assertIn("Self-Drive Daily", config.BOARDS)
+        self.assertIn("Chauffeur-Driven", config.BOARDS)
+        self.assertIn("Compact SUV", config.SUBJECTS)
+        self.assertIn("7-Seater SUV / MUV", config.SUBJECTS)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
