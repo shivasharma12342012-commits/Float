@@ -2290,5 +2290,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Mercedes-Benz E-Class handover check #284", saved["text"])
         self.assertEqual(saved["card"]["type"], "task")
 
+    def test_rental_tariff_285_bmw_5_series_self_drive(self):
+        res = tools.execute("calculate_quote", {"vehicle": "BMW 5 Series", "days": 6, "daily_rate": 12500, "security_deposit": 25000, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹75,000.00", res["text"])
+        self.assertIn("Security Deposit Held: ₹25,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
