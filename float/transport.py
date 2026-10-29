@@ -3,7 +3,7 @@
 The browser and the server agree on a one-off AES-256 key with ECDH (P-256) and
 HKDF-SHA256, then every sensitive request body travels as AES-256-GCM. Neither
 the key nor the password ever crosses the network in the clear, so someone
-sniffing the school Wi-Fi sees only ciphertext. Responses to those requests
+sniffing the counter Wi-Fi sees only ciphertext. Responses to those requests
 (for example a temporary password) come back encrypted the same way.
 
 * The server's ECDH key lives in memory only and changes on every start.
@@ -12,7 +12,7 @@ sniffing the school Wi-Fi sees only ciphertext. Responses to those requests
   be replayed against a different endpoint.
 
 This hides secrets from passive eavesdroppers. Against someone who can actively
-tamper with traffic, HTTPS is what protects you; School-server mode now turns
+tamper with traffic, HTTPS is what protects you; Agency-server mode now turns
 HTTPS on by itself (see config.tls_files).
 """
 
@@ -39,7 +39,7 @@ except ImportError:  # pragma: no cover
 
 _SALT = b"float-transport-v1"
 _INFO = b"aes-256-gcm"
-_SKEW_MS = 15 * 60 * 1000          # tolerate badly-set school PC clocks
+_SKEW_MS = 15 * 60 * 1000          # tolerate badly-set counter PC clocks
 _lock = threading.Lock()
 _private = None
 _seen: dict[str, float] = {}
