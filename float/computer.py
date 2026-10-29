@@ -1,6 +1,6 @@
 """Float — using the computer, visibly.
 
-When a teacher says "open the attendance sheet and fill in today's column", Float
+When an operator says "open the dispatch sheet and fill in today's bookings", Float
 can do it: move the pointer, click, type. That is a serious capability to hand to
 a program, so three things are true of it here.
 
@@ -13,8 +13,8 @@ Automation you cannot see is automation you cannot supervise.
 app. The flag is checked between every step, so the worst case is one action in
 flight, not a queue draining into your files.
 
-**It is written down.** Every step goes to the audit log with the teacher's name
-against it, and an admin can switch the whole capability off for the school.
+**It is written down.** Every step goes to the audit log with the operator's name
+against it, and an admin can switch the whole capability off for the agency.
 
 **It can see.** After every run Float looks at the screen and hands the model a
 numbered list of the buttons, links and boxes in the front window (with their
@@ -79,7 +79,7 @@ _SHOT_MAX = 1400
 
 
 class Stopped(Exception):
-    """Raised when the teacher interrupts a run."""
+    """Raised when the operator interrupts a run."""
 
 
 @dataclass
@@ -109,7 +109,7 @@ def available() -> tuple[bool, str]:
             "`pip install pyautogui` in the Float folder, then restart Float."
         )
     if db.org_get("computer_control", "1") != "1":
-        return False, "Your school has switched pointer control off for all accounts."
+        return False, "Your agency has switched pointer control off for all accounts."
     return True, "Ready."
 
 
@@ -314,7 +314,7 @@ class _Overlay:
 # Escape watcher
 # ---------------------------------------------------------------------------
 def _watch_for_escape(session: Session) -> None:
-    """Watch for Escape and stop the run the moment *the teacher* presses it.
+    """Watch for Escape and stop the run the moment *the operator* presses it.
 
     Best effort, never required - the stop button and the API both work without
     this. Float's own Escape presses (closing a menu, say) are muted, or the run
@@ -381,8 +381,8 @@ def stop_current() -> bool:
             return False
         session.stop.set()
         db.audit("computer.stop", user_id=session.user_id, actor=session.user_name,
-                 detail="stopped by the teacher", level="warn")
-        end("stopped by the teacher")
+                 detail="stopped by the operator", level="warn")
+        end("stopped by the operator")
     return True
 
 
@@ -551,7 +551,7 @@ def observe(session: Session | None = None, want_image: bool = False,
     else:
         lines.append("I can't read named controls here. " + (
             "Use the screenshot's red grid (labels are screen pixels) with click x,y, or keyboard shortcuts."
-            if want_image else "Use keyboard shortcuts (ctrl+l, tab, enter) or a click x,y the teacher gave."))
+            if want_image else "Use keyboard shortcuts (ctrl+l, tab, enter) or a click x,y the operator gave."))
     overlay = _overlay
     if show and overlay and elements:
         overlay.look([(e.id, e.x - e.w // 2, e.y - e.h // 2, e.w, e.h) for e in elements])
