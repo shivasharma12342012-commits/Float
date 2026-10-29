@@ -1,7 +1,7 @@
-"""School-server mode: one Float computer, many teachers on other PCs.
+"""Agency-server mode: one Float computer, many operators on other PCs.
 
 A request carrying X-Forwarded-For is never treated as coming from the Float
-computer itself, which lets these tests stand in for "a teacher on another PC".
+computer itself, which lets these tests stand in for "an operator on another PC".
 """
 from __future__ import annotations
 
