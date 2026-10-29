@@ -134,6 +134,7 @@ class McpStdioClient:
                     bufsize=1,
                     encoding="utf-8",
                     errors="replace",
+                    env=merged_env,
                     creationflags=creationflags,
                 )
             except Exception as exc:

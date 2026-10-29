@@ -371,7 +371,7 @@ def _cmd_stop(args: argparse.Namespace) -> None:
             stopped = True
 
     # 3. On Windows, if still not stopped, try port-based process termination
-    if not stopped and sys.platform == "win32":
+    if not stopped and force and sys.platform == "win32":
         stopped = _stop_windows_process_by_port(port)
 
     # 4. Clean up PID file

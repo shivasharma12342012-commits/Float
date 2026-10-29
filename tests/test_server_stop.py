@@ -70,7 +70,7 @@ class ServerStopTests(unittest.TestCase):
                 local = False
                 user = {"id": 2, "name": "Teacher", "role": "teacher"}
                 ip = "192.168.1.50"
-                request = type("Req", (), {"server": srv})()
+                request = type("Req", (), {"server": srv, "headers": {"Content-Type": "application/json"}})()
 
             # Calling system_shutdown directly with remote non-admin should raise HttpError 403
             with self.assertRaises(server.HttpError) as ctx:

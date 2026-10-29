@@ -682,7 +682,7 @@ def mcp_status(ctx: Route) -> dict[str, Any]:
     }
 
 
-@route("POST", "/api/mcp/servers")
+@route("POST", "/api/mcp/servers", auth="admin")
 def mcp_add_server(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
     body = ctx.body
@@ -703,6 +703,8 @@ def mcp_add_server(ctx: Route) -> dict[str, Any]:
     disabled = bool(body.get("disabled", False))
 
     spec: dict[str, Any] = {"disabled": disabled}
+    if command and not ctx.local:
+        raise HttpError(403, "Local MCP commands can only be added at the Float computer itself.")
     if command:
         spec["command"] = command
         spec["args"] = args
@@ -725,7 +727,7 @@ def mcp_add_server(ctx: Route) -> dict[str, Any]:
     return {"ok": True, "servers": mcp.list_servers(), "tools": mcp.get_tools()}
 
 
-@route("DELETE", "/api/mcp/servers/{name}")
+@route("DELETE", "/api/mcp/servers/{name}", auth="admin")
 def mcp_delete_server(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
     name = str(ctx.params["name"]).strip()
@@ -735,7 +737,7 @@ def mcp_delete_server(ctx: Route) -> dict[str, Any]:
     return {"ok": True, "servers": mcp.list_servers(), "tools": mcp.get_tools()}
 
 
-@route("POST", "/api/mcp/refresh")
+@route("POST", "/api/mcp/refresh", auth="admin")
 def mcp_refresh_tools(ctx: Route) -> dict[str, Any]:
     ctx.require_user()
     return mcp.refresh()
@@ -1284,6 +1286,8 @@ def admin_export(ctx: Route) -> Any:
 @route("POST", "/api/system/shutdown", auth="none")
 def system_shutdown(ctx: Route) -> dict[str, Any]:
     """Gracefully shut down the Float server."""
+    if "application/json" not in (ctx.request.headers.get("Content-Type") or "").lower():
+        raise HttpError(415, "Send this request as JSON.")
     is_admin = ctx.user and ctx.user.get("role") == "admin"
     if not (ctx.local or is_admin):
         raise HttpError(403, "Only someone at the Float computer or a school admin can shut down the server.")
