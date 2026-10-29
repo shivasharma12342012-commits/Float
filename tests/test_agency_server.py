@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 REMOTE = {"X-Forwarded-For": "10.0.0.23"}
 
 
-class SchoolServerTests(unittest.TestCase):
+class AgencyServerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.data_dir = Path(tempfile.mkdtemp(prefix="float-lan-"))

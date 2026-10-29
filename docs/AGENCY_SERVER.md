@@ -12,7 +12,7 @@ Run from PowerShell or Command Prompt:
 python main.py --lan
 ```
 
-Or double-click **`Start Float School Server.bat`**.
+Or double-click **`Start Float Agency Server.bat`**.
 
 Float will bind to `0.0.0.0:8000` and display the local network URL (for example `http://192.168.1.40:8000`).
 

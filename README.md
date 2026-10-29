@@ -105,7 +105,7 @@ Float requires **only Python 3.10 or newer**. There is no `requirements.txt` and
 | Launcher | What It Does |
 | :--- | :--- |
 | **`Start Float.bat`** | Starts Float in single-counter mode and opens `http://127.0.0.1:8000` in your browser. |
-| **`Start Float School Server.bat`** | Starts Float in **Branch LAN Agency Mode** (`0.0.0.0:8000`) so every desk PC and tablet on branch Wi-Fi can sign in. |
+| **`Start Float Agency Server.bat`** | Starts Float in **Branch LAN Agency Mode** (`0.0.0.0:8000`) so every desk PC and tablet on branch Wi-Fi can sign in. |
 | **`Stop Float.bat`** | Cleanly stops a running Float server in the background. |
 
 ### 💻 Terminal (Windows / macOS / Linux)
@@ -197,7 +197,7 @@ Switch providers or models at any time from **Settings** (or branch-wide from **
 Float/
 ├── main.py                        # CLI entry point (serve, --lan, stop, status, doctor, set-password)
 ├── Start Float.bat                # One-click Windows local desk launcher
-├── Start Float School Server.bat  # One-click Windows branch LAN server launcher
+├── Start Float Agency Server.bat  # One-click Windows branch LAN server launcher
 ├── Stop Float.bat                 # One-click Windows server stopper
 ├── float/
 │   ├── agent.py                   # System prompt, car rental persona & streaming tool loop
@@ -216,7 +216,7 @@ Float/
 │   └── web/                       # Zero-build vanilla JS/CSS counter workspace & Admin UI
 ├── docs/
 │   ├── DESIGN.md                  # Architecture & zero-dependency engineering notes
-│   └── SCHOOL_SERVER.md           # Branch LAN deployment & administration guide
+│   └── AGENCY_SERVER.md           # Branch LAN deployment & administration guide
 └── tests/                         # 475 unit & integration tests
 ```
 

@@ -155,7 +155,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
             alt_alive = False
         if alt_alive and config.settings.lan:
             _tell_user(f"Float is already running in single-computer mode on port {port}.\n\n"
-                       "Close that Float window first, then start the School Server again.")
+                       "Close that Float window first, then start the Agency Server again.")
             raise SystemExit(1)
         _tell_user(f"Port {port} is being used by another program, so Float could not start.\n\n"
                    f"Close that program, or start Float with a different port:\npython main.py --port {port + 1}")
@@ -187,7 +187,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     if config.settings.lan:
         print(f"Agency server: operators on other PCs open {scheme}://{_lan_address()}:{srv.server_port}")
         if scheme == "http":
-            print("WARNING: no HTTPS configured - passwords cross the network unencrypted. See docs/SCHOOL_SERVER.md")
+            print("WARNING: no HTTPS configured - passwords cross the network unencrypted. See docs/AGENCY_SERVER.md")
     print("Close this window, or press Ctrl+C, to sign everyone out and stop Float.")
 
     if not args.no_browser:
@@ -399,7 +399,7 @@ def main() -> None:
     run_p.add_argument("--host", default=None)
     run_p.add_argument("--port", type=int, default=None)
     run_p.add_argument("--no-browser", action="store_true")
-    run_p.add_argument("--lan", action="store_true", help="School-server mode: let other PCs on the network use this Float.")
+    run_p.add_argument("--lan", action="store_true", help="Agency-server mode: let other PCs on the network use this Float.")
     run_p.add_argument("--tab", action="store_true", help="Open in a normal browser tab instead of an app window.")
     run_p.set_defaults(func=_cmd_run)
 
