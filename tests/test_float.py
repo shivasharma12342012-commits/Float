@@ -1787,5 +1787,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("GST (0%): ₹0.00", res["text"])
         self.assertIn("GRAND TOTAL BILL: ₹10,000.00", res["text"])
 
+    def test_quote_eighteen_percent_gst_calculation(self):
+        res = tools.execute("calculate_quote", {"days": 1, "daily_rate": 1000, "gst_percent": 18, "security_deposit": 0}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("GST (18%): ₹180.00", res["text"])
+        self.assertIn("GRAND TOTAL BILL: ₹1,180.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
