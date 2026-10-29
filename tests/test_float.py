@@ -1803,5 +1803,9 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Taxable Subtotal: ₹0.00", res["text"])
         self.assertIn("GST (5%): ₹0.00", res["text"])
 
+    def test_quote_driver_allowance_per_day_multiplied(self):
+        res = tools.execute("calculate_quote", {"days": 5, "daily_rate": 2000, "driver_allowance_per_day": 500, "gst_percent": 0}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("Chauffeur Allowance: 5 day(s) @ ₹500.00/day = ₹2,500.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
