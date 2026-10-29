@@ -479,7 +479,7 @@ class SecurityTests(unittest.TestCase):
     def test_db_tasks_crud_lifecycle(self):
         import importlib, float.config as config, float.db as db
         importlib.reload(config); importlib.reload(db); db.init()
-        uid = db.create_user('t1@school.in', 'Teacher 1', 'passphrase123')['id']
+        uid = db.create_user('t1@school.in', 'Operator 1', 'passphrase123')['id']
         tid = db.add_task(uid, 'Check copies', '2026-11-01')
         self.assertEqual(len(db.list_tasks(uid)), 1)
         db.set_task_done(tid, uid, True)
@@ -500,7 +500,7 @@ class SecurityTests(unittest.TestCase):
     def test_db_timetable_periods_roundtrip(self):
         import importlib, float.config as config, float.db as db
         importlib.reload(config); importlib.reload(db); db.init()
-        uid = db.create_user('tt@school.in', 'Timetable Teacher', 'passphrase123')['id']
+        uid = db.create_user('tt@school.in', 'Schedule Operator', 'passphrase123')['id']
         db.set_periods(uid, [{'weekday': 0, 'slot': 1, 'starts': '08:00', 'ends': '08:40', 'label': '8B Maths', 'room': '204'}])
         periods = db.list_periods(uid, weekday=0)
         self.assertEqual(len(periods), 1)
@@ -509,7 +509,7 @@ class SecurityTests(unittest.TestCase):
     def test_db_conversation_rename_and_delete(self):
         import importlib, float.config as config, float.db as db
         importlib.reload(config); importlib.reload(db); db.init()
-        uid = db.create_user('conv@school.in', 'Conv Teacher', 'passphrase123')['id']
+        uid = db.create_user('conv@school.in', 'Conv Operator', 'passphrase123')['id']
         cid = db.new_conversation(uid, 'Initial', 'chat')
         db.rename_conversation(cid, uid, 'Updated Title')
         self.assertEqual(db.get_conversation(cid, uid)['title'], 'Updated Title')
@@ -519,7 +519,7 @@ class SecurityTests(unittest.TestCase):
     def test_db_attendance_save_and_range(self):
         import importlib, float.config as config, float.db as db
         importlib.reload(config); importlib.reload(db); db.init()
-        uid = db.create_user('att@school.in', 'Att Teacher', 'passphrase123')['id']
+        uid = db.create_user('att@school.in', 'Att Operator', 'passphrase123')['id']
         klid = db.add_class(uid, '7A', '7', 'A', 'English', 'CBSE')
         db.add_students(klid, [{'roll': '1', 'name': 'Aarav'}, {'roll': '2', 'name': 'Diya'}])
         students = db.list_students(klid)
@@ -531,7 +531,7 @@ class SecurityTests(unittest.TestCase):
     def test_db_cap_override_and_default(self):
         import importlib, float.config as config, float.db as db
         importlib.reload(config); importlib.reload(db); db.init()
-        uid = db.create_user('cap@school.in', 'Cap Teacher', 'passphrase123')['id']
+        uid = db.create_user('cap@school.in', 'Cap Operator', 'passphrase123')['id']
         db.org_set('teacher_monthly_paise_cap', '5000')
         self.assertEqual(db.cap_for(uid), (5000, False))
         db.set_cap_override(uid, 12000)
@@ -648,7 +648,7 @@ class ServerTests(unittest.TestCase):
 
     def test_09_non_admin_cannot_reach_admin_routes(self):
         # self_signup is off by default, so the admin adds the second
-        # teacher from the admin panel rather than the teacher signing up.
+        # operator from the admin panel rather than the operator signing up.
         status, data = self.call("/api/admin/users", {
             "email": "raj@school.edu.in", "name": "Raj Verma",
         }, token=self.token)
@@ -828,7 +828,7 @@ class HardeningTests(unittest.TestCase):
         config.ensure_dirs()
         db.init()
         if db.count_users() == 0:
-            db.create_user("teacher1@school.in", "Teacher One", "TeacherPass123!", role="admin")
+            db.create_user("operator1@agency.in", "Operator One", "OperatorPass123!", role="admin")
 
     @classmethod
     def tearDownClass(cls):
@@ -1056,7 +1056,7 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(artifacts.parse_markdown('| Col A | Col B |\n|---|---|\n| Val 1 | Val 2 |')), 1)
 
     def test_hardening_024(self):
-        self.assertEqual(len(artifacts.parse_markdown('> Important note for KV teachers')), 1)
+        self.assertEqual(len(artifacts.parse_markdown('> Important note for fleet operators')), 1)
 
     def test_hardening_025(self):
         self.assertEqual(artifacts._column(0), 'A')
@@ -1098,7 +1098,7 @@ class HardeningTests(unittest.TestCase):
         self.assertTrue(artifacts.desktop_dir().exists())
 
     def test_hardening_038(self):
-        self.assertEqual(len(artifacts.inline_runs('Hello **teacher** friend')), 3)
+        self.assertEqual(len(artifacts.inline_runs('Hello **operator** friend')), 3)
 
     def test_hardening_039(self):
         self.assertEqual(len(artifacts.inline_runs('Hello *important* concept')), 3)
@@ -1140,11 +1140,11 @@ class HardeningTests(unittest.TestCase):
         self.assertGreater(len(security.password_problems('short')), 0)
 
     def test_hardening_052(self):
-        self.assertEqual(security.password_problems('TeacherStrongPassword123!'), [])
+        self.assertEqual(security.password_problems('OperatorStrongPassword123!'), [])
 
     def test_hardening_053(self):
-        h = security.hash_password('TeacherSecretPass1!')
-        self.assertTrue(security.verify_password('TeacherSecretPass1!', h))
+        h = security.hash_password('OperatorSecretPass1!')
+        self.assertTrue(security.verify_password('OperatorSecretPass1!', h))
         self.assertFalse(security.verify_password('WrongSecret', h))
 
     def test_hardening_054(self):
@@ -1250,7 +1250,7 @@ class HardeningTests(unittest.TestCase):
         self.assertIsNone(db.get_user(999999))
 
     def test_hardening_083(self):
-        self.assertIsNone(db.get_user_by_email('unknown_teacher_email@school.in'))
+        self.assertIsNone(db.get_user_by_email('unknown_operator_email@agency.in'))
 
     def test_hardening_084(self):
         self.assertIsNone(db.get_user_by_google('unknown_google_sub_id'))
@@ -1436,9 +1436,9 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(tools.toolkit_entry('hpc')['name'], 'Vehicle health & audit report')
 
     def test_hardening_141(self):
-        runs = artifacts.inline_runs('Hello **teacher** friend')
+        runs = artifacts.inline_runs('Hello **operator** friend')
         self.assertEqual(len(runs), 3)
-        self.assertEqual(runs[1], ('teacher', {'bold'}))
+        self.assertEqual(runs[1], ('operator', {'bold'}))
 
     def test_hardening_142(self):
         runs = artifacts.inline_runs('Hello *important* concept')
@@ -1584,7 +1584,7 @@ class HardeningTests(unittest.TestCase):
         self.assertIn('Luxury Sedan', config.SUBJECTS)
 
     def test_hardening_181(self):
-        db.audit('test.event.181', user_id=1, actor='Teacher', detail='Test audit action')
+        db.audit('test.event.181', user_id=1, actor='Operator', detail='Test audit action')
         tail = db.audit_tail(limit=5)
         self.assertTrue(any(e['action'] == 'test.event.181' for e in tail))
 
@@ -1706,17 +1706,17 @@ class HardeningTests(unittest.TestCase):
 
     def test_hardening_195(self):
         count_before = db.count_users()
-        u = db.create_user('temp_teacher_195@school.in', 'Temp Teacher', 'TempPass123!')
+        u = db.create_user('temp_operator_195@agency.in', 'Temp Operator', 'TempPass123!')
         try:
             self.assertEqual(db.count_users(), count_before + 1)
             u_fetched = db.get_user(u['id'])
             self.assertIsNotNone(u_fetched)
-            self.assertEqual(u_fetched['email'], 'temp_teacher_195@school.in')
+            self.assertEqual(u_fetched['email'], 'temp_operator_195@agency.in')
         finally:
             db.delete_user(u['id'])
 
     def test_hardening_196(self):
-        u = db.create_user('temp_pass_196@school.in', 'Temp Pass Teacher', 'TempPass123!')
+        u = db.create_user('temp_pass_196@school.in', 'Temp Pass Operator', 'TempPass123!')
         try:
             db.set_password(u['id'], 'NewPassword456!')
             u_updated = db.get_user(u['id'])
@@ -1725,7 +1725,7 @@ class HardeningTests(unittest.TestCase):
             db.delete_user(u['id'])
 
     def test_hardening_197(self):
-        u = db.create_user('temp_pin_197@school.in', 'Temp PIN Teacher', 'TempPass123!')
+        u = db.create_user('temp_pin_197@school.in', 'Temp PIN Operator', 'TempPass123!')
         try:
             db.set_pin(u['id'], '5928')
             u_updated = db.get_user(u['id'])
@@ -1734,7 +1734,7 @@ class HardeningTests(unittest.TestCase):
             db.delete_user(u['id'])
 
     def test_hardening_198(self):
-        u = db.create_user('temp_sess_198@school.in', 'Temp Sess Teacher', 'TempPass123!')
+        u = db.create_user('temp_sess_198@school.in', 'Temp Sess Operator', 'TempPass123!')
         try:
             tok = db.create_session(u['id'])
             self.assertIsNotNone(tok)
