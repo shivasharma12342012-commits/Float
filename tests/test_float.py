@@ -1864,5 +1864,11 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("morning", greeting.LINES)
         self.assertTrue(any("fleet" in l.lower() or "pickup" in l.lower() or "lot" in l.lower() for l in greeting.LINES["morning"]))
 
+    def test_greeting_build_returns_car_rental_headline(self):
+        from float import greeting
+        g = greeting.build({"id": 1, "name": "Shiva", "language": "en", "sign_ins": 1})
+        self.assertIn("Shiva", g["headline"])
+        self.assertIn("opener", g)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
