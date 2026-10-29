@@ -1766,5 +1766,9 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_user(u['id'])
 
+    def test_quote_bool_days_defaults_to_one(self):
+        res = tools.execute("calculate_quote", {"days": True, "daily_rate": 2000}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("1 day(s) @ ₹2,000.00/day = ₹2,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
