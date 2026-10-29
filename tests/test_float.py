@@ -1950,5 +1950,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Maruti Baleno handover check #216", saved["text"])
         self.assertEqual(saved["card"]["type"], "task")
 
+    def test_rental_tariff_217_honda_city_self_drive(self):
+        res = tools.execute("calculate_quote", {"vehicle": "Honda City", "days": 1, "daily_rate": 2400, "security_deposit": 5000, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹2,400.00", res["text"])
+        self.assertIn("Security Deposit Held: ₹5,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
