@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import math
 from typing import Any
 
 from . import artifacts, computer, config, db, mcp, stats
@@ -383,9 +384,10 @@ def _tool_create_file(payload: dict[str, Any], user: dict[str, Any],
 
 def _num(val: Any, default: float = 0.0) -> float:
     try:
-        if val is None or val == "":
+        if val is None or val == "" or isinstance(val, bool):
             return default
-        return float(val)
+        num = float(val)
+        return num if math.isfinite(num) else default
     except (ValueError, TypeError):
         return default
 
