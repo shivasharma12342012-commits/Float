@@ -28,7 +28,7 @@
 - Real AI provider calls with live API keys
 - "Use the computer" feature
 - Load, performance and independent security audit
-- Real use by teachers over time
+- Real use by operators over time
 
 ## Limitations
-This report covers only the checks listed above. It is not a guarantee that the software is free of defects. AI-generated output inside Float must be reviewed by a teacher before use.
+This report covers only the checks listed above. It is not a guarantee that the software is free of defects. AI-generated output inside Float must be reviewed by a operator before use.
