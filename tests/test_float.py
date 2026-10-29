@@ -1778,5 +1778,9 @@ class HardeningTests(unittest.TestCase):
         res = tools.execute("calculate_quote", {"days": 2, "daily_rate": 1500, "actual_km": "inf", "extra_km_rate": 15}, {"id": 1, "name": "Operator"}, None)
         self.assertNotIn("Extra Distance Driven", res["text"])
 
+    def test_quote_negative_inf_discount_defaults_to_zero(self):
+        res = tools.execute("calculate_quote", {"days": 2, "daily_rate": 1500, "discount_amount": "-inf"}, {"id": 1, "name": "Operator"}, None)
+        self.assertNotIn("Discount Applied", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
