@@ -10,7 +10,7 @@ What guards it:
 * It binds to 127.0.0.1. Nothing on the school network can reach it.
 * The ``Host`` header is checked, which closes the DNS-rebinding version of the
   same problem — a page on the internet resolving a name to 127.0.0.1 and
-  talking to this port from the teacher's own browser.
+  talking to this port from the operator's own browser.
 * Authentication is a bearer token in a header, never a cookie, so there is no
   CSRF surface to defend: a cross-origin page cannot make the browser attach it.
 * The token is kept in ``sessionStorage``, which the browser discards when the
@@ -112,7 +112,7 @@ class Route:
         """True only when the request comes from the Float computer itself.
 
         Anything that touches the machine Float runs on (moving its mouse, saving
-        to its Desktop) is allowed only for such requests, so a teacher on another
+        to its Desktop) is allowed only for such requests, so an operator on another
         PC can never act on - or see - what happens on the server. A request that
         carries proxy headers is never treated as local."""
         headers = self.request.headers
@@ -260,14 +260,16 @@ def google_start(ctx: Route) -> dict[str, Any]:
     if not want_drive:
         raise HttpError(400, "Google sign-in has been removed. Sign in with your Float email and password.")
     if config.settings.lan:
-        raise HttpError(400, "Google Drive is switched off on a school server, so one teacher's files never touch another's account.")
+        raise HttpError(400, "Google Drive is switched off on an agency server, so one operator's files never touch another's account.")
     if not google.configured():
         raise HttpError(400, "Google Drive is not set up for this installation.")
     user_id = None
     if want_drive:
         user = ctx.require_user()
         user_id = int(user["id"])
-    redirect = f"http://{config.settings.host}:{ctx.request.server.server_port}/auth/google/callback"
+    _scheme = "https" if config.tls_files() else "http"
+    _host = "127.0.0.1" if config.settings.host in ("0.0.0.0", "::") else config.settings.host
+    redirect = f"{_scheme}://{_host}:{ctx.request.server.server_port}/auth/google/callback"
     return {"url": google.start(redirect, want_drive, user_id)}
 
 
@@ -376,7 +378,7 @@ def me_password(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
     body = ctx.body
     current = str(body.get("current", ""))
-    new = str(body.get("new", ""))
+    new = str(body.get("new") or body.get("next") or "")
     if user["password_hash"] and not security.verify_password(current, user["password_hash"]):
         raise HttpError(403, "That current password is not right.")
     problems = security.password_problems(new)
@@ -756,9 +758,9 @@ def keys_put(ctx: Route) -> dict[str, Any]:
     if provider not in config.PROVIDERS:
         raise HttpError(400, "Unknown provider.")
     if scope == "org" and user["role"] != "admin":
-        raise HttpError(403, "Only an admin can set the school's key.")
+        raise HttpError(403, "Only an admin can set the agency's key.")
     if scope == "user" and db.org_get("teacher_own_keys", "1") != "1":
-        raise HttpError(403, "Your school has teachers use the school key. Ask your admin.")
+        raise HttpError(403, "Your agency has operators use the agency key. Ask your admin.")
     if not secret:
         raise HttpError(400, "Paste the key.")
 
@@ -823,7 +825,7 @@ def classes_add(ctx: Route) -> dict[str, Any]:
     body = ctx.body
     name = str(body.get("name", "")).strip()
     if not name:
-        raise HttpError(400, "Give the class a name, like '8B'.")
+        raise HttpError(400, "Give the fleet group a name, like 'SUV Fleet'.")
     if len(name) > 80:
         raise HttpError(400, "Class names can be up to 80 characters.")
     class_id = db.add_class(int(user["id"]), name, str(body.get("grade", "")),
@@ -996,7 +998,7 @@ def _band(calls: int) -> str:
 
 
 def _admin_users(rows: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
-    """Teacher rows for the admin screens. By default exact per-person numbers are
+    """Operator rows for the admin screens. By default exact per-person numbers are
     replaced by a usage band, so the panel manages accounts, not individuals' habits."""
     rows = rows if rows is not None else db.usage_summary(30)
     exact = db.org_get("usage_detail", "bands") == "exact"
@@ -1033,7 +1035,7 @@ def _fairness(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _lan_url(port: int) -> str:
-    """The address teachers on other PCs type when school-server mode is on."""
+    """The address operators on other PCs type when agency-server mode is on."""
     if not config.settings.lan:
         return ""
     scheme = "https" if config.tls_files() else "http"
@@ -1140,7 +1142,7 @@ def admin_update_user(ctx: Route) -> dict[str, Any]:
     user_id = int(ctx.params["user_id"])
     target = db.get_user(user_id)
     if target is None:
-        raise HttpError(404, "No such teacher.")
+        raise HttpError(404, "No such operator.")
     body = ctx.body
     action = str(body.get("action", ""))
 
@@ -1172,11 +1174,11 @@ def admin_update_user(ctx: Route) -> dict[str, Any]:
     elif action == "make_admin":
         db.update_user(user_id, role="admin")
         detail = "made admin"
-    elif action == "make_teacher":
+    elif action in ("make_teacher", "make_operator"):
         if _admin_count() <= 1 and target["role"] == "admin":
             raise HttpError(400, "There has to be at least one admin.")
         db.update_user(user_id, role="teacher")
-        detail = "made teacher"
+        detail = "made operator"
     elif action == "reset_password":
         temporary = security.new_token(9)
         db.set_password(user_id, temporary)
@@ -1244,7 +1246,7 @@ def admin_audit(ctx: Route) -> dict[str, Any]:
     return {"entries": db.audit_tail(
         limit=lim,
         level=ctx.query.get("level", ""),
-        user_id=int(ctx.query["user_id"]) if ctx.query.get("user_id") else None,
+        user_id=int(ctx.query["user_id"]) if str(ctx.query.get("user_id", "")).isdigit() else None,
     )}
 
 
@@ -1479,7 +1481,7 @@ class FloatHandler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
         except Exception:  # pragma: no cover
-            # The details go to data/float_errors.log; the teacher gets a calm
+            # The details go to data/float_errors.log; the operator gets a calm
             # message and a reference, not a stack trace or an internal path.
             ref = _log_unexpected()
             try:
@@ -1555,7 +1557,7 @@ class FloatHandler(BaseHTTPRequestHandler):
                 self.wfile.write(frame)
                 self.wfile.flush()
         except (BrokenPipeError, ConnectionResetError):
-            pass   # the teacher closed the tab mid-answer; nothing to clean up
+            pass   # the operator closed the tab mid-answer; nothing to clean up
         except Exception:  # pragma: no cover
             ref = _log_unexpected()
             try:
@@ -1637,6 +1639,6 @@ def serve(host: str | None = None, port: int | None = None) -> FloatServer:
                                             do_handshake_on_connect=False)
     elif config.settings.lan:
         db.audit("server.insecure", level="warn",
-                 detail="School-server mode is running without HTTPS: passwords cross the network in plain text.")
+                 detail="Agency-server mode is running without HTTPS: passwords cross the network in plain text.")
     threading.Thread(target=server.serve_forever, daemon=True, name="float-http").start()
     return server
