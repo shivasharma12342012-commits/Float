@@ -2005,5 +2005,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("= ₹880.00", res["text"])
         self.assertIn("-₹300.00", res["text"])
 
+    def test_ops_task_228_skoda_slavia_handover(self):
+        saved = tools.execute("save_task", {"title": "Skoda Slavia handover check #228", "category": "Handover"}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("Skoda Slavia handover check #228", saved["text"])
+        self.assertEqual(saved["card"]["type"], "task")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
