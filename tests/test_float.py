@@ -1813,5 +1813,9 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Extra Hours: 3 hr(s) @ ₹200.00/hr = ₹600.00", res["text"])
         self.assertIn("Taxable Subtotal: ₹3,800.00", res["text"])
 
+    def test_quote_security_deposit_refund_due_calculation(self):
+        res = tools.execute("calculate_quote", {"days": 1, "daily_rate": 1000, "gst_percent": 5, "security_deposit": 5000}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("REFUND DUE TO CUSTOMER FROM DEPOSIT: ₹3,950.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
