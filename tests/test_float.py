@@ -1798,5 +1798,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Fuel Shortage Refill Charge: ₹550.00", res["text"])
         self.assertIn("GRAND TOTAL BILL: ₹5,000.00", res["text"])
 
+    def test_quote_discount_capped_at_gross_subtotal(self):
+        res = tools.execute("calculate_quote", {"days": 1, "daily_rate": 1500, "discount_amount": 9999, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("Taxable Subtotal: ₹0.00", res["text"])
+        self.assertIn("GST (5%): ₹0.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
