@@ -2165,5 +2165,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("= ₹1,280.00", res["text"])
         self.assertIn("-₹300.00", res["text"])
 
+    def test_ops_task_260_mahindra_xuv700_handover(self):
+        saved = tools.execute("save_task", {"title": "Mahindra XUV700 handover check #260", "category": "Handover"}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("Mahindra XUV700 handover check #260", saved["text"])
+        self.assertEqual(saved["card"]["type"], "task")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
