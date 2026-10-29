@@ -2150,5 +2150,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Toyota Innova Hycross handover check #256", saved["text"])
         self.assertEqual(saved["card"]["type"], "task")
 
+    def test_rental_tariff_257_mahindra_xuv700_self_drive(self):
+        res = tools.execute("calculate_quote", {"vehicle": "Mahindra XUV700", "days": 6, "daily_rate": 3900, "security_deposit": 8000, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹23,400.00", res["text"])
+        self.assertIn("Security Deposit Held: ₹8,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
