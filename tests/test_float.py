@@ -2270,5 +2270,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Toyota Fortuner handover check #280", saved["text"])
         self.assertEqual(saved["card"]["type"], "task")
 
+    def test_rental_tariff_281_mercedes_benz_e_class_self_drive(self):
+        res = tools.execute("calculate_quote", {"vehicle": "Mercedes-Benz E-Class", "days": 2, "daily_rate": 12000, "security_deposit": 25000, "gst_percent": 5}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹24,000.00", res["text"])
+        self.assertIn("Security Deposit Held: ₹25,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
