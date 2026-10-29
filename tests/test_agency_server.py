@@ -198,6 +198,41 @@ class AgencyServerTests(unittest.TestCase):
             dup = server.FloatServer(("0.0.0.0", self.port), server.FloatHandler)
             dup.server_close()
 
+    def test_13_admin_add_user_operator_role_and_set_cap_validation(self):
+        status, data = self.call("/api/admin/users", {
+            "email": "desk1@agency.in",
+            "name": "Desk Operator 1",
+            "password": "OperatorPass123!",
+            "role": "operator",
+            "school": "Hitech Hub",
+        }, token=self.token)
+        self.assertEqual(status, 200)
+        added = [u for u in data["users"] if u["email"] == "desk1@agency.in"]
+        self.assertEqual(len(added), 1)
+        uid = added[0]["id"]
+
+        status, _ = self.call(f"/api/admin/users/{uid}", {
+            "action": "set_cap",
+            "paise": "1250.0",
+            "reason": "Weekend peak dispatch",
+        }, token=self.token)
+        self.assertEqual(status, 200)
+
+        status, err = self.call(f"/api/admin/users/{uid}", {
+            "action": "set_cap",
+            "paise": "nan",
+            "reason": "Test invalid cap",
+        }, token=self.token)
+        self.assertEqual(status, 400)
+        self.assertIn("number", err.get("error", err.get("message", "")))
+
+    def test_14_cli_status_and_doctor_commands(self):
+        import main as cli_main
+        rc_status = cli_main._cmd_status([])
+        self.assertIn(rc_status, (0, 1))
+        rc_doctor = cli_main._cmd_doctor([])
+        self.assertEqual(rc_doctor, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

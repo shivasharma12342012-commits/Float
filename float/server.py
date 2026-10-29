@@ -1,13 +1,13 @@
 """Float — the server.
 
 A threaded ``http.server`` bound to loopback. No framework, for the same reason
-the rest of Float has no dependencies: the machine this runs on is a school
+the rest of Float has no dependencies: the machine this runs on is a rental counter
 laptop, and the install has to work on the first try, offline, behind a proxy
 that blocks half of PyPI.
 
 What guards it:
 
-* It binds to 127.0.0.1. Nothing on the school network can reach it.
+* It binds to 127.0.0.1. Nothing on the branch network can reach it.
 * The ``Host`` header is checked, which closes the DNS-rebinding version of the
   same problem — a page on the internet resolving a name to 127.0.0.1 and
   talking to this port from the operator's own browser.
@@ -189,9 +189,9 @@ def auth_signup(ctx: Route) -> dict[str, Any]:
     first_user = db.count_users() == 0
     if first_user and config.settings.lan and not ctx.local:
         raise HttpError(403, "The first account must be created on the Float computer itself, "
-                             "so nobody on the network can claim the school.")
+                             "so nobody on the network can claim the agency.")
     if not first_user and db.org_get("self_signup", "0") != "1":
-        raise HttpError(403, "Your school creates accounts from the admin panel. Ask your admin to add you.")
+        raise HttpError(403, "Your agency creates accounts from the admin panel. Ask your admin to add you.")
     if "@" not in email or len(email) < 6:
         raise HttpError(400, "That email address does not look right.")
     if db.get_user_by_email(email):
@@ -275,7 +275,7 @@ def google_start(ctx: Route) -> dict[str, Any]:
 
 @route("POST", "/api/auth/google/setup", auth="none")
 def google_setup(ctx: Route) -> dict[str, Any]:
-    """Save the school's Google OAuth client. First-run setup or an admin only."""
+    """Save the agency's Google OAuth client. First-run setup or an admin only."""
     if db.count_users() > 0 and (ctx.user is None or ctx.user["role"] != "admin"):
         raise HttpError(403, "Only an admin can change the Google sign-in settings.")
     client_id = str(ctx.body.get("client_id", "")).strip()
@@ -496,9 +496,9 @@ def chat(ctx: Route) -> Any:
 
     cap, _custom = db.cap_for(int(user["id"]))
     if cap > 0 and not db.has_own_key(int(user["id"])) and db.month_paise(int(user["id"])) >= cap:
-        raise HttpError(429, "You've used your share of the school's AI budget for this month. "
+        raise HttpError(429, "You've used your share of the agency's AI budget for this month. "
                              "It resets on the 1st, or your admin can adjust it. "
-                             "Your classes, marks and saved files all still work.")
+                             "Your fleet groups, logs and saved files all still work.")
 
     message = str(body.get("message", ""))
     conv_id = body.get("conv_id")
@@ -617,7 +617,7 @@ def artifact_save(ctx: Route) -> dict[str, Any]:
     where = str(ctx.body.get("where", "desktop"))
 
     if where in ("desktop", "drive") and (not ctx.local if where == "desktop" else config.settings.lan):
-        raise HttpError(400, "On a school-server PC, use Download - the file then goes to the "
+        raise HttpError(400, "On an agency-server PC, use Download - the file then goes to the "
                              "computer you are sitting at, and nowhere else.")
 
     if where == "desktop":
@@ -739,6 +739,19 @@ def mcp_delete_server(ctx: Route) -> dict[str, Any]:
     return {"ok": True, "servers": mcp.list_servers(), "tools": mcp.get_tools()}
 
 
+@route("POST", "/api/mcp/servers/{name}/toggle", auth="admin")
+def mcp_toggle_server(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_user()
+    name = str(ctx.params["name"]).strip()
+    enabled = bool(ctx.body.get("enabled", True))
+    try:
+        mcp.toggle_server(name, enabled)
+    except KeyError as exc:
+        raise HttpError(404, str(exc)) from None
+    db.audit("mcp.server.toggle", user_id=int(user["id"]), actor=user["name"],
+             detail=f"server: {name} -> {'enabled' if enabled else 'disabled'}", ip=ctx.ip)
+    return {"ok": True, "servers": mcp.list_servers(), "tools": mcp.get_tools()}
+
 @route("POST", "/api/mcp/refresh", auth="admin")
 def mcp_refresh_tools(ctx: Route) -> dict[str, Any]:
     ctx.require_user()
@@ -786,7 +799,7 @@ def keys_drop(ctx: Route) -> dict[str, Any]:
     provider = ctx.params["provider"]
     scope = ctx.query.get("scope", "user")
     if scope == "org" and user["role"] != "admin":
-        raise HttpError(403, "Only an admin can remove the school's key.")
+        raise HttpError(403, "Only an admin can remove the agency's key.")
     db.drop_key(provider, scope, int(user["id"]))
     db.audit("key.remove", user_id=int(user["id"]), actor=user["name"],
              detail=f"{provider} ({scope})", level="warn")
@@ -1118,11 +1131,14 @@ def admin_add_user(ctx: Route) -> dict[str, Any]:
     email = str(body.get("email", "")).strip().lower()
     name = str(body.get("name", "")).strip()
     password = str(body.get("password", "")) or security.new_token(9)
-    role = str(body.get("role", "teacher"))
+    raw_role = str(body.get("role", "teacher")).strip().lower()
+    if raw_role == "operator":
+        raw_role = "teacher"
+    role = raw_role
     if "@" not in email:
         raise HttpError(400, "That email address does not look right.")
     if role not in {"teacher", "admin"}:
-        raise HttpError(400, "Role must be 'teacher' or 'admin'.")
+        raise HttpError(400, "Role must be 'operator' ('teacher') or 'admin'.")
     if body.get("password"):
         problems = security.password_problems(password)
         if problems:
@@ -1160,13 +1176,14 @@ def admin_update_user(ctx: Route) -> dict[str, Any]:
         raw = body.get("paise")
         if raw in (None, ""):
             db.set_cap_override(user_id, None)
-            detail = "limit back to the school default"
+            detail = "limit back to the agency default"
         else:
             if not reason:
                 raise HttpError(400, "Add a short reason. Every limit exception is recorded so it stays fair.")
             try:
-                paise = int(raw)
-                assert paise >= 0
+                f_val = float(raw)
+                assert math.isfinite(f_val) and f_val >= 0
+                paise = int(round(f_val))
             except (TypeError, ValueError, AssertionError):
                 raise HttpError(400, "Limit must be a whole number of rupees, or 0 for none.") from None
             db.set_cap_override(user_id, paise)
@@ -1292,7 +1309,7 @@ def system_shutdown(ctx: Route) -> dict[str, Any]:
         raise HttpError(415, "Send this request as JSON.")
     is_admin = ctx.user and ctx.user.get("role") == "admin"
     if not (ctx.local or is_admin):
-        raise HttpError(403, "Only someone at the Float computer or a school admin can shut down the server.")
+        raise HttpError(403, "Only someone at the Float computer or an agency admin can shut down the server.")
 
     user_id = int(ctx.user["id"]) if ctx.user else None
     actor = ctx.user["name"] if ctx.user else ("localhost" if ctx.local else "system")

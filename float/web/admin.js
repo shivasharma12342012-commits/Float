@@ -1,6 +1,6 @@
 /* Float — admin panel.
  *
- * One admin, one small school, one page. Nothing here is trying to be a
+ * One admin, one rental agency, one page. Nothing here is trying to be a
  * multi-tenant console — it's the handful of controls a head of department
  * actually reaches for: who's using it, what it's costing, and a switch to
  * turn an operator's account off when they leave.

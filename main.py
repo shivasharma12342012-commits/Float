@@ -387,7 +387,37 @@ def _cmd_stop(args: argparse.Namespace) -> None:
         print(f"Float does not appear to be running on port {port}.")
 
 
-_KNOWN_COMMANDS = {"run", "stop", "set-password", "make-admin", "restore"}
+
+def _cmd_status(args: argparse.Namespace | list[str] | None = None) -> int:
+    pid_file = config.pid_path()
+    if pid_file.exists():
+        try:
+            data = json.loads(pid_file.read_text(encoding="utf-8"))
+            pid = int(data.get("pid", 0))
+            port = data.get("port", config.settings.port)
+            host = data.get("host", config.settings.host)
+            if _is_pid_running(pid):
+                print(f"Float is running (PID {pid}) on {host}:{port}.")
+                return 0
+        except Exception:
+            pass
+    print("Float is not currently running.")
+    return 1
+
+
+def _cmd_doctor(args: argparse.Namespace | list[str] | None = None) -> int:
+    config.ensure_dirs()
+    db.init()
+    print(f"{APP_NAME} {VERSION} — {APP_TAGLINE}")
+    print(f"Python:      {sys.version.split()[0]} ({sys.executable})")
+    print(f"Data dir:    {config.DATA_DIR}")
+    print(f"Database:    {config.DB_PATH} (users: {db.count_users()})")
+    print(f"Host / Port: {config.settings.host}:{config.settings.port} (LAN: {config.settings.lan})")
+    print("Status:      OK")
+    return 0
+
+
+_KNOWN_COMMANDS = {"run", "stop", "status", "doctor", "set-password", "make-admin", "restore"}
 
 
 def main() -> None:
@@ -421,6 +451,12 @@ def main() -> None:
     stop_p.add_argument("--host", default="127.0.0.1", help="Host address (defaults to 127.0.0.1).")
     stop_p.add_argument("--force", "-f", action="store_true", help="Force terminate process if it does not exit promptly.")
     stop_p.set_defaults(func=_cmd_stop)
+
+    stat_p = sub.add_parser("status", help="Check whether a Float server is running.")
+    stat_p.set_defaults(func=_cmd_status)
+
+    doc_p = sub.add_parser("doctor", help="Print environment and database health diagnostics.")
+    doc_p.set_defaults(func=_cmd_doctor)
 
     # `python main.py [--host ...] [--port ...] [--no-browser]` with no
     # subcommand named should just start Float — that's the common case a

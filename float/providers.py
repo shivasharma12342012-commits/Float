@@ -12,7 +12,7 @@ three into the same sequence of events::
 
 Transport is ``urllib`` from the standard library, reading the SSE body line by
 line. No ``requests``, no vendor SDKs — three SDKs would be 40 MB of dependency
-to send the same JSON this file sends in 200 lines, and a school laptop with a
+to send the same JSON this file sends in 200 lines, and a rental counter laptop with a
 patchy connection should not be waiting on ``pip``.
 
 Errors are translated into something an operator can act on. "401" is not a
@@ -66,7 +66,7 @@ def _friendly(status: int, body: str, provider: str) -> ProviderError:
     if status in (401, 403):
         return ProviderError(
             f"{label} rejected the API key. Open Settings → Model and check it, "
-            "or ask your admin to update the school key.",
+            "or ask your admin to update the agency key.",
             status=status,
         )
     if status == 429:
@@ -131,7 +131,7 @@ def _post_sse(url: str, payload: dict[str, Any], headers: dict[str, str],
         raise _friendly(exc.code, body, provider) from None
     except urllib.error.URLError as exc:
         raise ProviderError(
-            "Could not reach the internet. Check the school's connection and try again.",
+            "Could not reach the internet. Check the agency's connection and try again.",
             retryable=True,
         ) from exc
     except TimeoutError:
@@ -534,7 +534,7 @@ def stream(provider: str, key: str, model: str, system: str,
         label = config.PROVIDERS[provider].label
         raise ProviderError(
             f"No {label} API key yet. Add one in Settings → Model, or ask your admin "
-            "to set the school key."
+            "to set the agency key."
         )
     yield from streamer(key, model, system, messages, tools, temperature, max_tokens, timeout)
 

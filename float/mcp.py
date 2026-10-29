@@ -119,29 +119,32 @@ class McpStdioClient:
             self.status = "connecting"
             self.last_error = None
 
-            merged_env = os.environ.copy()
-            merged_env.update(self.env)
+        merged_env = os.environ.copy()
+        merged_env.update(self.env)
 
-            cmd = [self.command, *self.args]
-            creationflags = 0x08000000 if sys.platform == "win32" else 0
-            try:
-                self.proc = subprocess.Popen(
-                    cmd,
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    bufsize=1,
-                    encoding="utf-8",
-                    errors="replace",
-                    env=merged_env,
-                    creationflags=creationflags,
-                )
-            except Exception as exc:
+        cmd = [self.command, *self.args]
+        creationflags = 0x08000000 if sys.platform == "win32" else 0
+        try:
+            proc = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+                encoding="utf-8",
+                errors="replace",
+                env=merged_env,
+                creationflags=creationflags,
+            )
+        except Exception as exc:
+            with self._lock:
                 self.status = "error"
                 self.last_error = f"Could not start '{self.command}': {exc}"
-                return False
+            return False
 
+        with self._lock:
+            self.proc = proc
             self._reader_thread = threading.Thread(
                 target=self._read_stdout, daemon=True, name=f"float-mcp-stdout-{self.name}"
             )

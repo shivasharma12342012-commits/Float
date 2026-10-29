@@ -635,7 +635,7 @@ function fileCard(artifact) {
   const acts = make("div", "acts");
 
   const caps = S.boot.capabilities;
-  if (caps.local !== false) {   // on a school-server PC only Download is offered
+  if (caps.local !== false) {   // on an agency-server PC only Download is offered
     const desktop = make("button", "btn gold", "Desktop");
     desktop.title = "Save into a Float folder on your Desktop";
     desktop.addEventListener("click", () => saveFile(artifact, "desktop", acts));
@@ -958,7 +958,7 @@ function panelClasses() {
   const section = field(row, "Zone / Tier", "text", "Prime");
   const subject = field(inner, "Vehicle category", "text", "Compact SUV");
   const roster = field(inner, "Vehicles or active bookings (optional)", "textarea",
-    "1 MH-02-AB-1234 Hyundai Creta ? Rahul Verma\n2 MH-02-CD-5678 Toyota Innova ? Corp Lease\n3 MH-02-EF-9012 Tata Nexon EV ? Available");
+    "1 MH-02-AB-1234 Hyundai Creta — Rahul Verma\n2 MH-02-CD-5678 Toyota Innova — Corp Lease\n3 MH-02-EF-9012 Tata Nexon EV — Available");
 
   const add = make("button", "btn primary", "Add fleet group");
   add.addEventListener("click", async () => {
@@ -1048,7 +1048,7 @@ function panelTasks() {
 
   const add = make("div", "panel");
   const addBody = make("div", "panel-body");
-  const title = field(addBody, "Add ops task", "text", "Refund ?10,000 security deposit for MH-02-AB-1234");
+  const title = field(addBody, "Add ops task", "text", "Refund ₹10,000 security deposit for MH-02-AB-1234");
   const due = field(addBody, "By when", "date");
   const save = make("button", "btn primary", "Add");
   save.addEventListener("click", async () => {
@@ -1373,7 +1373,7 @@ function tabAssist() {
   const body = $("modal-body");
   body.innerHTML = "";
   body.append(make("p", "inline-note",
-    "Float is meant to take the typing off your hands, not the teaching. This setting " +
+    "Float is meant to take the paperwork off your hands, not the fleet decisions. This setting " +
     "decides how much it does before handing back."));
 
   const levels = [
@@ -1421,7 +1421,7 @@ function tabAssist() {
   ledgerBody.append(make("div", "hint",
     `${own.own_share || 0}% of what went out this week was in your own words, across ` +
     `${own.n || 0} pieces. Float shows this because an operator who customises everything ` +
-    "teaches better than one who forwards it."));
+    "runs a sharper counter than one who forwards templates unchanged."));
   ledgerPanel.append(ledgerBody);
   body.append(ledgerPanel);
 }
@@ -1501,6 +1501,23 @@ async function tabMcp() {
 
     head.append(make("span", "spacer"));
 
+    const toggleBtn = make("button", "btn tiny", srv.disabled ? "Enable" : "Disable");
+    toggleBtn.style.marginRight = "6px";
+    toggleBtn.addEventListener("click", async () => {
+      toggleBtn.disabled = true;
+      try {
+        await api("/api/mcp/servers/" + encodeURIComponent(srv.name) + "/toggle", {
+          body: { enabled: !!srv.disabled },
+        });
+        toast((srv.disabled ? "Enabled " : "Disabled ") + srv.name + ".");
+        tabMcp();
+      } catch (err) {
+        toast(err.message, true);
+        toggleBtn.disabled = false;
+      }
+    });
+    head.append(toggleBtn);
+
     const delBtn = make("button", "icon-btn", "");
     delBtn.title = "Remove server";
     delBtn.setAttribute("aria-label", "Remove server");
@@ -1559,7 +1576,7 @@ function renderAddMcpForm(body) {
   body.innerHTML = "";
   body.append(make("p", "inline-note", "Add a new Model Context Protocol (MCP) server."));
 
-  const nameInput = field(body, "Server Name", "text", "e.g. calculator or school_db");
+  const nameInput = field(body, "Server Name", "text", "e.g. calculator or fleet_db");
   const typeWrap = make("div", "field");
   typeWrap.append(make("label", null, "Transport Type"));
   const typeSelect = document.createElement("select");
@@ -1599,7 +1616,7 @@ function renderAddMcpForm(body) {
     if (isStdio) {
       if (!cmdInput.value.trim()) { toast("Command is required", true); return; }
       payload.command = cmdInput.value.trim();
-      payload.args = argsInput.value.trim() ? argsInput.value.trim().split(/\s+/) : [];
+      payload.args = argsInput.value.trim();
     } else {
       if (!urlInput.value.trim()) { toast("URL is required", true); return; }
       payload.url = urlInput.value.trim();
@@ -1744,7 +1761,7 @@ function tabAbout() {
 
   body.append(make("p", "inline-note",
     "Float is an AI operations companion for car rental teams. It runs entirely on this computer: " +
-    "your classes, your drafts and your files never go anywhere except to the model " +
+    "your fleet groups, your drafts and your files never go anywhere except to the model " +
     "provider whose key you supplied."));
 
   const panel = make("div", "panel");
@@ -2166,7 +2183,7 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-// Drag a photo of the blackboard straight onto the window.
+// Drag a vehicle photo, RC/DL scan, or booking sheet straight onto the window.
 document.addEventListener("dragover", (event) => event.preventDefault());
 document.addEventListener("drop", (event) => {
   event.preventDefault();

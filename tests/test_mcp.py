@@ -280,6 +280,19 @@ class McpServerHttpTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(len(data["servers"]), 1)
 
+        # 3b. POST /api/mcp/servers/{name}/toggle (disable and re-enable)
+        status, data = self.call("/api/mcp/servers/api_calc/toggle", {"enabled": False}, method="POST")
+        self.assertEqual(status, 200)
+        self.assertTrue(data["ok"])
+        self.assertTrue(data["servers"][0]["disabled"])
+        self.assertEqual(len(data["tools"]), 0)
+
+        status, data = self.call("/api/mcp/servers/api_calc/toggle", {"enabled": True}, method="POST")
+        self.assertEqual(status, 200)
+        self.assertTrue(data["ok"])
+        self.assertFalse(data["servers"][0]["disabled"])
+        self.assertEqual(len(data["tools"]), 1)
+
         # 4. DELETE /api/mcp/servers/{name}
         status, data = self.call("/api/mcp/servers/api_calc", method="DELETE")
         self.assertEqual(status, 200)
