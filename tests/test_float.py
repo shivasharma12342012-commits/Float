@@ -1782,5 +1782,10 @@ class HardeningTests(unittest.TestCase):
         res = tools.execute("calculate_quote", {"days": 2, "daily_rate": 1500, "discount_amount": "-inf"}, {"id": 1, "name": "Operator"}, None)
         self.assertNotIn("Discount Applied", res["text"])
 
+    def test_quote_zero_gst_percent_produces_zero_gst(self):
+        res = tools.execute("calculate_quote", {"days": 4, "daily_rate": 2500, "gst_percent": 0}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("GST (0%): ₹0.00", res["text"])
+        self.assertIn("GRAND TOTAL BILL: ₹10,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
