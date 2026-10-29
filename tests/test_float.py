@@ -1792,5 +1792,11 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("GST (18%): ₹180.00", res["text"])
         self.assertIn("GRAND TOTAL BILL: ₹1,180.00", res["text"])
 
+    def test_quote_toll_and_fuel_reimbursement(self):
+        res = tools.execute("calculate_quote", {"days": 2, "daily_rate": 2000, "toll_parking": 450, "fuel_charge": 550, "gst_percent": 0}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("FASTag Tolls / Parking / State Tax: ₹450.00", res["text"])
+        self.assertIn("Fuel Shortage Refill Charge: ₹550.00", res["text"])
+        self.assertIn("GRAND TOTAL BILL: ₹5,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
