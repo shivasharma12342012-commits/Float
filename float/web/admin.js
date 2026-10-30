@@ -320,7 +320,8 @@ function viewTeachers(wrap) {
     if (!user.active) tr.style.opacity = ".5";
 
     const nameTd = document.createElement("td");
-    nameTd.innerHTML = `<b>${escapeHtml(user.name || "—")}</b><br><small style="color:var(--faint)">${escapeHtml(user.email)}</small>`;
+    const deskBadge = user.desk_ip ? ` · <span class="mono" title="Assigned desk IP">${escapeHtml(user.desk_ip)}</span>` : "";
+    nameTd.innerHTML = `<b>${escapeHtml(user.name || "—")}</b><br><small style="color:var(--faint)">${escapeHtml(user.email)}${deskBadge}</small>`;
     tr.append(nameTd);
 
     const roleTd = document.createElement("td");

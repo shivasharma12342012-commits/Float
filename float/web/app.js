@@ -1478,39 +1478,44 @@ async function tabMcp() {
     "Model Context Protocol (MCP) connects external tools and data sources to Float. " +
     "Local scripts or remote servers configured here are queried for tools and made available in chat."));
 
+  const isAdmin = !!(S.user && S.user.role === "admin");
   const topRow = make("div", "row");
   topRow.style.marginBottom = "14px";
   const title = make("b", null, "Configured Servers (" + (data.servers ? data.servers.length : 0) + ")");
   topRow.append(title);
   topRow.append(make("span", "spacer"));
 
-  const refreshBtn = make("button", "btn", "Refresh");
-  refreshBtn.addEventListener("click", async () => {
-    refreshBtn.disabled = true;
-    refreshBtn.textContent = "Refreshing…";
-    try {
-      await api("/api/mcp/refresh", { method: "POST" });
-      toast("MCP tools refreshed.");
-      tabMcp();
-    } catch (err) {
-      toast(err.message, true);
-      refreshBtn.disabled = false;
-      refreshBtn.textContent = "Refresh";
-    }
-  });
-  topRow.append(refreshBtn);
+  if (isAdmin) {
+    const refreshBtn = make("button", "btn", "Refresh");
+    refreshBtn.addEventListener("click", async () => {
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = "Refreshing…";
+      try {
+        await api("/api/mcp/refresh", { method: "POST" });
+        toast("MCP tools refreshed.");
+        tabMcp();
+      } catch (err) {
+        toast(err.message, true);
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = "Refresh";
+      }
+    });
+    topRow.append(refreshBtn);
 
-  const addBtn = make("button", "btn primary", "Add Server");
-  addBtn.style.marginLeft = "7px";
-  addBtn.addEventListener("click", () => renderAddMcpForm(body));
-  topRow.append(addBtn);
+    const addBtn = make("button", "btn primary", "Add Server");
+    addBtn.style.marginLeft = "7px";
+    addBtn.addEventListener("click", () => renderAddMcpForm(body));
+    topRow.append(addBtn);
+  }
   body.append(topRow);
 
   if (!data.servers || !data.servers.length) {
     const empty = make("div", "empty");
     empty.style.padding = "30px 10px";
     empty.append(make("b", null, "No MCP servers configured"));
-    empty.append(make("small", null, "Click 'Add Server' to connect an external tool via command or HTTP URL."));
+    empty.append(make("small", null, isAdmin
+      ? "Click 'Add Server' to connect an external tool via command or HTTP URL."
+      : "Your workspace administrator has not configured any MCP servers yet."));
     body.append(empty);
     return;
   }
@@ -1536,36 +1541,38 @@ async function tabMcp() {
 
     head.append(make("span", "spacer"));
 
-    const toggleBtn = make("button", "btn tiny", srv.disabled ? "Enable" : "Disable");
-    toggleBtn.style.marginRight = "6px";
-    toggleBtn.addEventListener("click", async () => {
-      toggleBtn.disabled = true;
-      try {
-        await api("/api/mcp/servers/" + encodeURIComponent(srv.name) + "/toggle", {
-          body: { enabled: !!srv.disabled },
-        });
-        toast((srv.disabled ? "Enabled " : "Disabled ") + srv.name + ".");
-        tabMcp();
-      } catch (err) {
-        toast(err.message, true);
-        toggleBtn.disabled = false;
-      }
-    });
-    head.append(toggleBtn);
+    if (isAdmin) {
+      const toggleBtn = make("button", "btn tiny", srv.disabled ? "Enable" : "Disable");
+      toggleBtn.style.marginRight = "6px";
+      toggleBtn.addEventListener("click", async () => {
+        toggleBtn.disabled = true;
+        try {
+          await api("/api/mcp/servers/" + encodeURIComponent(srv.name) + "/toggle", {
+            body: { enabled: !!srv.disabled },
+          });
+          toast((srv.disabled ? "Enabled " : "Disabled ") + srv.name + ".");
+          tabMcp();
+        } catch (err) {
+          toast(err.message, true);
+          toggleBtn.disabled = false;
+        }
+      });
+      head.append(toggleBtn);
 
-    const delBtn = make("button", "icon-btn", "");
-    delBtn.title = "Remove server";
-    delBtn.setAttribute("aria-label", "Remove server");
-    delBtn.innerHTML = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M4.5 4.5v8.5a1.5 1.5 0 0 0 1.5 1.5h4a1.5 1.5 0 0 0 1.5-1.5V4.5"/></svg>';
-    delBtn.addEventListener("click", async () => {
-      if (!confirm("Remove MCP server '" + srv.name + "'?")) return;
-      try {
-        await api("/api/mcp/servers/" + encodeURIComponent(srv.name), { method: "DELETE" });
-        toast("Removed " + srv.name + ".");
-        tabMcp();
-      } catch (err) { toast(err.message, true); }
-    });
-    head.append(delBtn);
+      const delBtn = make("button", "icon-btn", "");
+      delBtn.title = "Remove server";
+      delBtn.setAttribute("aria-label", "Remove server");
+      delBtn.innerHTML = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M4.5 4.5v8.5a1.5 1.5 0 0 0 1.5 1.5h4a1.5 1.5 0 0 0 1.5-1.5V4.5"/></svg>';
+      delBtn.addEventListener("click", async () => {
+        if (!confirm("Remove MCP server '" + srv.name + "'?")) return;
+        try {
+          await api("/api/mcp/servers/" + encodeURIComponent(srv.name), { method: "DELETE" });
+          toast("Removed " + srv.name + ".");
+          tabMcp();
+        } catch (err) { toast(err.message, true); }
+      });
+      head.append(delBtn);
+    }
     panel.append(head);
 
     const b = make("div", "panel-body");
@@ -1808,6 +1815,9 @@ function tabAbout() {
     ["Files", "data/files — until you save them elsewhere"],
     ["Sessions", "end when the app closes"],
   ];
+  if (S.boot.capabilities && S.boot.capabilities.desk_ip) {
+    rows.push(["Assigned Desk", S.boot.capabilities.desk_ip]);
+  }
   rows.forEach(([label, value]) => {
     const row = make("div", "row");
     const grow = make("div", "grow");
@@ -1819,7 +1829,7 @@ function tabAbout() {
   panel.append(inner);
   body.append(panel);
 
-  if (S.boot.capabilities && (S.boot.capabilities.local || (S.user && S.user.role === "admin"))) {
+  if (S.user && S.user.role === "admin") {
     const srvPanel = make("div", "panel");
     srvPanel.style.marginTop = "14px";
     const srvBody = make("div", "panel-body");
@@ -1853,6 +1863,7 @@ function tabAbout() {
   mark.style.textAlign = "center";
   mark.style.cursor = "default";
   mark.addEventListener("click", () => {
+    if (!S.user || S.user.role !== "admin") return;
     aboutTaps += 1;
     if (aboutTaps < 7) return;
     aboutTaps = 0;
@@ -1888,18 +1899,21 @@ function tabAbout() {
 /* ══════════════════════════════════ 8. computer control ═════════════════ */
 
 async function pollComputer() {
-  try {
-    const status = await api("/api/computer/status");
-    if (!status) return;
-    const running = !!status.running;
-    if (running !== S.driving) {
-      S.driving = running;
-      $("driving").hidden = !running;
-      if (running) $("driving-what").textContent = status.intent || "Float is using your computer";
-      else $("driving-step").textContent = "";
-    }
-  } catch { /* the poll is a nicety; never let it break the app */ }
-  setTimeout(pollComputer, S.driving ? 900 : 4000);
+  if (!S.boot || !S.boot.capabilities || !S.boot.capabilities.computer) return;
+  if (!document.hidden || S.driving) {
+    try {
+      const status = await api("/api/computer/status");
+      if (!status) return;
+      const running = !!status.running;
+      if (running !== S.driving) {
+        S.driving = running;
+        $("driving").hidden = !running;
+        if (running) $("driving-what").textContent = status.intent || "Float is using your computer";
+        else $("driving-step").textContent = "";
+      }
+    } catch { /* the poll is a nicety; never let it break the app */ }
+  }
+  setTimeout(pollComputer, (S.driving || S.streaming) ? 900 : 15000);
 }
 
 async function stopComputer() {

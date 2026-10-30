@@ -526,30 +526,45 @@ def create_session(user_id: int, ip: str = "", agent: str = "") -> str:
     return token
 
 
-def resolve_session(token: str) -> dict[str, Any] | None:
-    """Return the signed-in user, or None. Enforces boot nonce, expiry and idle."""
+_LOOPBACK_IPS = {"", "127.0.0.1", "::1", "::ffff:127.0.0.1"}
+
+
+def resolve_session(token: str, ip: str = "") -> dict[str, Any] | None:
+    """Return the signed-in user, or None. Enforces boot nonce, expiry, idle and desk IP lock."""
     if not token:
         return None
     fp = security.token_fingerprint(token)
     now = time.time()
     with cursor() as db:
         row = db.execute(
-            """SELECT s.*, u.id AS uid FROM sessions s
+            """SELECT u.*,
+                      s.boot_nonce AS _sess_nonce,
+                      s.expires_at AS _sess_expires,
+                      s.last_seen  AS _sess_seen,
+                      s.ip         AS _sess_ip
+               FROM sessions s
                JOIN users u ON u.id = s.user_id
                WHERE s.token_fp=? AND u.active=1""",
             (fp,),
         ).fetchone()
         if row is None:
             return None
-        if row["boot_nonce"] != security.BOOT_NONCE:
+        if row["_sess_nonce"] != security.BOOT_NONCE:
             db.execute("DELETE FROM sessions WHERE token_fp=?", (fp,))
             return None
-        if now > row["expires_at"] or now - row["last_seen"] > config.settings.idle_minutes * 60:
+        if now > row["_sess_expires"] or now - row["_sess_seen"] > config.settings.idle_minutes * 60:
             db.execute("DELETE FROM sessions WHERE token_fp=?", (fp,))
             return None
-        db.execute("UPDATE sessions SET last_seen=? WHERE token_fp=?", (now, fp))
-        user = db.execute("SELECT * FROM users WHERE id=?", (row["user_id"],)).fetchone()
-    return dict(user) if user else None
+        sess_ip = str(row["_sess_ip"] or "").strip()
+        req_ip = str(ip or "").strip()
+        if sess_ip not in _LOOPBACK_IPS and req_ip not in _LOOPBACK_IPS and sess_ip != req_ip:
+            return None
+        if now - row["_sess_seen"] >= 15.0:
+            db.execute("UPDATE sessions SET last_seen=? WHERE token_fp=?", (now, fp))
+    user = dict(row)
+    for k in ("_sess_nonce", "_sess_expires", "_sess_seen", "_sess_ip"):
+        user.pop(k, None)
+    return user
 
 
 def end_session(token: str) -> None:
@@ -750,12 +765,18 @@ def get_artifact(artifact_id: int, user_id: int) -> dict[str, Any] | None:
         )
 
 
-def list_artifacts(user_id: int, limit: int = 100) -> list[dict[str, Any]]:
+def list_artifacts(user_id: int, limit: int = 100, conv_id: int | None = None) -> list[dict[str, Any]]:
     with cursor() as db:
-        rows = db.execute(
-            "SELECT * FROM artifacts WHERE user_id=? ORDER BY created_at DESC LIMIT ?",
-            (user_id, limit),
-        ).fetchall()
+        if conv_id is not None:
+            rows = db.execute(
+                "SELECT * FROM artifacts WHERE user_id=? AND conv_id=? ORDER BY created_at DESC LIMIT ?",
+                (user_id, conv_id, limit),
+            ).fetchall()
+        else:
+            rows = db.execute(
+                "SELECT * FROM artifacts WHERE user_id=? ORDER BY created_at DESC LIMIT ?",
+                (user_id, limit),
+            ).fetchall()
     return [dict(r) for r in rows]
 
 
@@ -1002,6 +1023,12 @@ def list_tasks(user_id: int, include_done: bool = False) -> list[dict[str, Any]]
     sql += " ORDER BY done, CASE WHEN due='' THEN 1 ELSE 0 END, due, id DESC LIMIT 200"
     with cursor() as db:
         return [dict(r) for r in db.execute(sql, (user_id,)).fetchall()]
+
+
+def owns_task(task_id: int, user_id: int) -> bool:
+    with cursor() as db:
+        row = db.execute("SELECT 1 FROM tasks WHERE id=? AND user_id=?", (task_id, user_id)).fetchone()
+    return row is not None
 
 
 def set_task_done(task_id: int, user_id: int, done: bool) -> None:

@@ -20,14 +20,18 @@ What guards it:
 
 from __future__ import annotations
 
+import concurrent.futures
+import hashlib
+import ipaddress
 import json
 import math
-import ssl
-import socket
-import ipaddress
 import mimetypes
+import os
 import posixpath
 import re
+import shlex
+import socket
+import ssl
 import sys
 import threading
 import time
@@ -42,6 +46,10 @@ from . import agent, artifacts, computer, config, db, google, greeting, maintena
 
 Handler = Callable[["Route"], Any]
 _routes: list[tuple[str, re.Pattern[str], Handler, str]] = []
+_exact_routes: dict[tuple[str, str], tuple[re.Pattern[str], Handler, str]] = {}
+_LOCAL_HOSTNAME = socket.gethostname().lower()
+_STATIC_CACHE: dict[Path, tuple[int, int, bytes, str, str]] = {}
+_STATIC_LOCK = threading.Lock()
 
 
 class HttpError(Exception):
@@ -155,6 +163,8 @@ def route(method: str, pattern: str, auth: str = "user") -> Callable[[Handler], 
 
     def decorate(handler: Handler) -> Handler:
         _routes.append((method, regex, handler, auth))
+        if "{" not in pattern:
+            _exact_routes[(method, pattern)] = (regex, handler, auth)
         return handler
 
     return decorate
@@ -470,6 +480,7 @@ def bootstrap(ctx: Route) -> dict[str, Any]:
             "google": google.configured() and not config.settings.lan,
             "local": ctx.local,
             "lan": config.settings.lan,
+            "desk_ip": ctx.ip,
             "secure": bool(config.tls_files()),
             "computer": control_ok,
             "computer_why": control_why,
@@ -538,8 +549,7 @@ def conversation_detail(ctx: Route) -> dict[str, Any]:
         if m["role"] in {"user", "assistant"} and m["content"].strip()
     ]
     return {"conversation": conversation, "messages": messages,
-            "artifacts": [a for a in db.list_artifacts(int(user["id"]), 200)
-                          if a["conv_id"] == conv_id]}
+            "artifacts": db.list_artifacts(int(user["id"]), 200, conv_id=conv_id)}
 
 
 @route("POST", "/api/conversations/{conv_id}")
@@ -686,7 +696,7 @@ def mcp_status(ctx: Route) -> dict[str, Any]:
 
 @route("POST", "/api/mcp/servers", auth="admin")
 def mcp_add_server(ctx: Route) -> dict[str, Any]:
-    user = ctx.require_user()
+    user = ctx.require_admin()
     body = ctx.body
     name = str(body.get("name", "")).strip()
     if not name:
@@ -695,7 +705,6 @@ def mcp_add_server(ctx: Route) -> dict[str, Any]:
     command = str(body.get("command", "")).strip()
     args = body.get("args")
     if isinstance(args, str):
-        import shlex
         args = shlex.split(args)
     elif not isinstance(args, list):
         args = []
@@ -731,7 +740,7 @@ def mcp_add_server(ctx: Route) -> dict[str, Any]:
 
 @route("DELETE", "/api/mcp/servers/{name}", auth="admin")
 def mcp_delete_server(ctx: Route) -> dict[str, Any]:
-    user = ctx.require_user()
+    user = ctx.require_admin()
     name = str(ctx.params["name"]).strip()
     mcp.remove_server(name)
     db.audit("mcp.server.remove", user_id=int(user["id"]), actor=user["name"],
@@ -741,7 +750,7 @@ def mcp_delete_server(ctx: Route) -> dict[str, Any]:
 
 @route("POST", "/api/mcp/servers/{name}/toggle", auth="admin")
 def mcp_toggle_server(ctx: Route) -> dict[str, Any]:
-    user = ctx.require_user()
+    user = ctx.require_admin()
     name = str(ctx.params["name"]).strip()
     enabled = bool(ctx.body.get("enabled", True))
     try:
@@ -754,7 +763,7 @@ def mcp_toggle_server(ctx: Route) -> dict[str, Any]:
 
 @route("POST", "/api/mcp/refresh", auth="admin")
 def mcp_refresh_tools(ctx: Route) -> dict[str, Any]:
-    ctx.require_user()
+    ctx.require_admin()
     return mcp.refresh()
 
 # ---------------------------------------------------------------------------
@@ -806,10 +815,12 @@ def keys_drop(ctx: Route) -> dict[str, Any]:
     return {"ok": True, "keys": db.key_status(int(user["id"]))}
 
 
-@route("POST", "/api/unlock")
+@route("POST", "/api/unlock", auth="admin")
 def unlock(ctx: Route) -> dict[str, Any]:
-    """The local transport. Not advertised; the passphrase is the whole gate."""
-    user = ctx.require_user()
+    """The local transport. Restricted to an admin at the Float host machine."""
+    user = ctx.require_admin()
+    if not ctx.local:
+        raise HttpError(403, "Local runtime settings can only be changed at the Float computer itself.")
     phrase = str(ctx.body.get("phrase", ""))
     allowed, wait = security.unlock_limiter.check(f"unlock:{ctx.ip}")
     if not allowed:
@@ -973,18 +984,20 @@ def tasks_add(ctx: Route) -> dict[str, Any]:
 @route("POST", "/api/tasks/{task_id}")
 def tasks_update(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
-    if int(ctx.params["task_id"]) not in {int(t["id"]) for t in db.list_tasks(int(user["id"]), True)}:
+    task_id = int(ctx.params["task_id"])
+    if not db.owns_task(task_id, int(user["id"])):
         raise HttpError(404, "No such task.")
-    db.set_task_done(int(ctx.params["task_id"]), int(user["id"]), bool(ctx.body.get("done")))
+    db.set_task_done(task_id, int(user["id"]), bool(ctx.body.get("done")))
     return {"ok": True, "tasks": db.list_tasks(int(user["id"]))}
 
 
 @route("DELETE", "/api/tasks/{task_id}")
 def tasks_delete(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
-    if int(ctx.params["task_id"]) not in {int(t["id"]) for t in db.list_tasks(int(user["id"]), True)}:
+    task_id = int(ctx.params["task_id"])
+    if not db.owns_task(task_id, int(user["id"])):
         raise HttpError(404, "No such task.")
-    db.delete_task(int(ctx.params["task_id"]), int(user["id"]))
+    db.delete_task(task_id, int(user["id"]))
     return {"ok": True, "tasks": db.list_tasks(int(user["id"]))}
 
 
@@ -1010,16 +1023,36 @@ def _band(calls: int) -> str:
     return "No use" if calls == 0 else "Light" if calls < 20 else "Regular" if calls < 100 else "Frequent"
 
 
-def _admin_users(rows: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+def _resolve_caps() -> tuple[dict[str, int], int]:
+    custom = db.cap_overrides()
+    try:
+        default_cap = max(0, int(db.org_get("teacher_monthly_paise_cap", "0") or 0))
+    except ValueError:
+        default_cap = 0
+    return custom, default_cap
+
+
+def _admin_users(rows: list[dict[str, Any]] | None = None,
+                 sessions: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """Operator rows for the admin screens. By default exact per-person numbers are
     replaced by a usage band, so the panel manages accounts, not individuals' habits."""
     rows = rows if rows is not None else db.usage_summary(30)
+    sessions = sessions if sessions is not None else db.active_sessions()
+    desk_by_user: dict[int, str] = {}
+    for s in sessions:
+        uid = int(s["user_id"])
+        if uid not in desk_by_user and s.get("ip"):
+            desk_by_user[uid] = str(s["ip"])
     exact = db.org_get("usage_detail", "bands") == "exact"
+    custom_map, default_cap = _resolve_caps()
     out = []
     for r in rows:
         r = dict(r)
-        cap, custom = db.cap_for(int(r["id"]))
-        r["band"], r["cap_paise"], r["custom_cap"] = _band(r["calls"]), cap, custom
+        uid_str = str(r["id"])
+        is_custom = uid_str in custom_map
+        cap = custom_map[uid_str] if is_custom else default_cap
+        r["band"], r["cap_paise"], r["custom_cap"] = _band(r["calls"]), cap, is_custom
+        r["desk_ip"] = desk_by_user.get(int(r["id"]), "")
         if not exact:
             for k in ("calls", "tin", "tout", "paise", "latency"):
                 r[k] = None
@@ -1033,9 +1066,11 @@ def _fairness(rows: list[dict[str, Any]]) -> dict[str, Any]:
     spend = sorted((r["paise"] for r in live), reverse=True)
     total = sum(spend)
     top = max(1, round(n * 0.2)) if n else 0
+    custom_map, default_cap = _resolve_caps()
     near = 0
     for r in live:
-        cap, _ = db.cap_for(int(r["id"]))
+        uid_str = str(r["id"])
+        cap = custom_map[uid_str] if uid_str in custom_map else default_cap
         if cap > 0 and db.month_paise(int(r["id"])) >= 0.8 * cap:
             near += 1
     try:
@@ -1065,18 +1100,19 @@ def _lan_url(port: int) -> str:
 def admin_overview(ctx: Route) -> dict[str, Any]:
     ctx.require_admin()
     rows = db.usage_summary(30)
+    sessions = db.active_sessions()
     total_paise = sum(r["paise"] for r in rows)
     return {
         "org": db.org_all(),
         "lan_url": _lan_url(ctx.request.server.server_port),
-        "users": _admin_users(rows),
+        "users": _admin_users(rows, sessions),
         "fairness": _fairness(rows),
-        "sessions": db.active_sessions(),
+        "sessions": sessions,
         "by_day": db.usage_by_day(14),
         "totals": {
             "teachers": len(rows),
             "active": len([r for r in rows if r["active"]]),
-            "signed_in": len(db.active_sessions()),
+            "signed_in": len(sessions),
             "calls": sum(r["calls"] for r in rows),
             "tokens": sum(r["tin"] + r["tout"] for r in rows),
             "rupees": round(total_paise / 100, 2),
@@ -1316,13 +1352,11 @@ def system_shutdown(ctx: Route) -> dict[str, Any]:
     db.audit("server.shutdown", user_id=user_id, actor=actor, ip=ctx.ip, level="warn")
 
     try:
-        from . import mcp
         mcp.shutdown()
     except Exception:
         pass
 
     try:
-        from . import computer
         computer.stop_current()
     except Exception:
         pass
@@ -1425,9 +1459,8 @@ class FloatHandler(BaseHTTPRequestHandler):
             return True
         if not config.settings.lan:
             return False
-        hostname = socket.gethostname().lower()
         allowed = {h.strip().lower() for h in config.settings.allowed_hosts.split(",") if h.strip()}
-        allowed.update({hostname, f"{hostname}.local"})
+        allowed.update({_LOCAL_HOSTNAME, f"{_LOCAL_HOSTNAME}.local"})
         if host.lower() in allowed:
             return True
         try:   # a bare IP address cannot be a DNS-rebinding name
@@ -1461,21 +1494,30 @@ class FloatHandler(BaseHTTPRequestHandler):
                 raise HttpError(403, "Refused: unexpected Host header.")
 
             path = urllib.parse.urlparse(self.path).path
-            for verb, pattern, handler, auth in _routes:
-                if verb != method:
-                    continue
-                match = pattern.match(path)
-                if not match:
-                    continue
+            matched_route: tuple[dict[str, str], Handler, str] | None = None
+            exact = _exact_routes.get((method, path))
+            if exact is not None and (method, exact[0], exact[1], exact[2]) in _routes:
+                matched_route = ({}, exact[1], exact[2])
+            else:
+                for verb, pattern, handler, auth in _routes:
+                    if verb != method:
+                        continue
+                    match = pattern.match(path)
+                    if match:
+                        matched_route = (match.groupdict(), handler, auth)
+                        break
+
+            if matched_route is not None:
+                params, handler, auth = matched_route
                 if method == "POST" and _SEALED.match(path):
                     self.json_body()
                     if self._enc_key is None and not transport.plaintext_allowed():
                         raise HttpError(400, "Please reload Float. This page is out of date and "
                                              "would send your password unprotected.")
-                ctx = Route(self, match.groupdict())
+                ctx = Route(self, params)
                 ctx.token = self._bearer()
                 if ctx.token:
-                    ctx.user = db.resolve_session(ctx.token)
+                    ctx.user = db.resolve_session(ctx.token, ctx.ip)
                 if auth != "none" and ctx.user is None:
                     raise HttpError(401, "Sign in to continue.")
                 if (auth != "none" and ctx.user is not None and ctx.user["must_change"]
@@ -1603,26 +1645,61 @@ class FloatHandler(BaseHTTPRequestHandler):
         if not target.is_file():
             raise HttpError(404, "Not found.")
 
-        mime = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
-        if mime.startswith("text/") or mime in {"application/javascript", "application/json"}:
-            mime += "; charset=utf-8"
-        data = target.read_bytes()
-        extra = {
-            "Content-Security-Policy":
+        st = target.stat()
+        mtime_ns, size = st.st_mtime_ns, st.st_size
+        with _STATIC_LOCK:
+            cached = _STATIC_CACHE.get(target)
+            if cached and cached[0] == mtime_ns and cached[1] == size:
+                _, _, data, mime, etag = cached
+            else:
+                mime = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
+                if mime.startswith("text/") or mime in {"application/javascript", "application/json"}:
+                    mime += "; charset=utf-8"
+                data = target.read_bytes()
+                etag = f'"{hashlib.blake2b(data, digest_size=8).hexdigest()}"'
+                _STATIC_CACHE[target] = (mtime_ns, size, data, mime, etag)
+
+        if target.suffix != ".html" and self.headers.get("If-None-Match") == etag:
+            self.send_response(HTTPStatus.NOT_MODIFIED)
+            self.send_header("ETag", etag)
+            self.end_headers()
+            return
+
+        extra: dict[str, str] = {"ETag": etag}
+        if target.suffix == ".html":
+            extra["Content-Security-Policy"] = (
                 "default-src 'self'; img-src 'self' data: blob: https:; "
                 "style-src 'self' 'unsafe-inline'; script-src 'self'; "
-                "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'",
-        } if target.suffix == ".html" else {}
+                "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+            )
         self._headers(200, mime, len(data), extra)
         self.wfile.write(data)
 
 
 class FloatServer(ThreadingHTTPServer):
     daemon_threads = True
+    request_queue_size = 64
     # On Windows SO_REUSEADDR lets a second process steal an already-bound port
     # (for example 0.0.0.0 alongside 127.0.0.1). Keep exclusive port ownership
     # on Windows so "port already in use" is detected reliably.
     allow_reuse_address = sys.platform != "win32"
+
+    def __init__(self, server_address: tuple[str, int], RequestHandlerClass: type[BaseHTTPRequestHandler]) -> None:
+        self._pool = concurrent.futures.ThreadPoolExecutor(max_workers=24, thread_name_prefix="float-http")
+        super().__init__(server_address, RequestHandlerClass)
+
+    def process_request(self, request: Any, client_address: Any) -> None:
+        try:
+            self._pool.submit(self.process_request_thread, request, client_address)
+        except RuntimeError:
+            self.close_request(request)
+
+    def server_close(self) -> None:
+        try:
+            self._pool.shutdown(wait=False, cancel_futures=True)
+        except Exception:
+            pass
+        super().server_close()
 
     def server_bind(self) -> None:
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):

@@ -233,6 +233,42 @@ class AgencyServerTests(unittest.TestCase):
         rc_doctor = cli_main._cmd_doctor([])
         self.assertEqual(rc_doctor, 0)
 
+    def test_15_desk_ip_session_binding_prevents_cross_desk_replay(self):
+        import float.db as db
+        user = db.get_user_by_email("admin@school.in")
+        desk_token = db.create_session(int(user["id"]), ip="10.0.0.42", agent="DeskBrowser/1.0")
+        # Same desk IP succeeds
+        resolved = db.resolve_session(desk_token, ip="10.0.0.42")
+        self.assertIsNotNone(resolved)
+        self.assertEqual(int(resolved["id"]), int(user["id"]))
+        # Replay from another desk IP on the LAN is rejected
+        hijacked = db.resolve_session(desk_token, ip="10.0.0.99")
+        self.assertIsNone(hijacked)
+
+    def test_16_non_admin_cannot_unlock_runtime_or_modify_mcp_servers(self):
+        import float.db as db
+        emp = db.create_user("desk2@agency.in", "Desk 2", role="teacher", password="Password12345")
+        emp_token = db.create_session(int(emp["id"]), ip="127.0.0.1", agent="Test")
+        status_unlock, _ = self.call("/api/unlock", {"phrase": "anything", "enable": True}, token=emp_token)
+        self.assertEqual(status_unlock, 403)
+        status_mcp, _ = self.call("/api/mcp/servers", {"name": "rogue", "command": "python"}, token=emp_token)
+        self.assertEqual(status_mcp, 403)
+        status_refresh, _ = self.call("/api/mcp/refresh", {}, token=emp_token)
+        self.assertEqual(status_refresh, 403)
+
+    def test_17_static_assets_use_etag_304_caching(self):
+        req1 = urllib.request.Request(f"{self.base}/app.js", headers={"Host": "127.0.0.1"})
+        with urllib.request.urlopen(req1) as resp1:
+            self.assertEqual(resp1.status, 200)
+            etag = resp1.headers.get("ETag")
+            self.assertTrue(etag)
+        req2 = urllib.request.Request(f"{self.base}/app.js", headers={"Host": "127.0.0.1", "If-None-Match": etag})
+        try:
+            urllib.request.urlopen(req2)
+            self.fail("Expected HTTP 304 Not Modified")
+        except urllib.error.HTTPError as e:
+            self.assertEqual(e.code, 304)
+
 
 if __name__ == "__main__":
     unittest.main()
