@@ -1,0 +1,18 @@
+#!/bin/bash
+# Native macOS App Bundle launcher for Float
+MACOS_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONTENTS_DIR="$(cd "$MACOS_DIR/.." && pwd)"
+OUTER_DIR="$(cd "$CONTENTS_DIR/../.." && pwd)"
+
+xattr -cr "$CONTENTS_DIR/.." 2>/dev/null || true
+
+if [ -f "$OUTER_DIR/Start Float.command" ] && [ -f "$OUTER_DIR/main.py" ]; then
+    exec /bin/bash "$OUTER_DIR/Start Float.command"
+elif [ -f "$CONTENTS_DIR/Resources/app/Start Float.command" ]; then
+    export FLOAT_DATA_DIR="${FLOAT_DATA_DIR:-$HOME/Library/Application Support/Float/data}"
+    mkdir -p "$FLOAT_DATA_DIR"
+    exec /bin/bash "$CONTENTS_DIR/Resources/app/Start Float.command"
+else
+    osascript -e 'display alert "Float" message "Could not locate Float application files." as critical' >/dev/null 2>&1 || true
+    exit 1
+fi

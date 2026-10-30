@@ -104,9 +104,18 @@ Float requires **only Python 3.10 or newer**. There is no `requirements.txt` and
 
 | Launcher | What It Does |
 | :--- | :--- |
-| **`Start Float.bat`** | Starts Float in single-counter mode and opens `http://127.0.0.1:8000` in your browser. |
-| **`Start Float Agency Server.bat`** | Starts Float in **Branch LAN Agency Mode** (`0.0.0.0:8000`) so every desk PC and tablet on branch Wi-Fi can sign in. |
-| **`Stop Float.bat`** | Cleanly stops a running Float server in the background. |
+| **`Start Float.bat`** / **`Start Float.vbs`** | Starts Float in single-counter mode with instant window launch (`http://127.0.0.1:8766`). |
+| **`Start Float Agency Server.bat`** | Starts Float in **Branch LAN Agency Mode** (`0.0.0.0:8766`) so every fixed desk PC on branch LAN can sign in. |
+| **`Stop Float.bat`** / **`Stop Float.vbs`** | Cleanly stops a running Float server in the background. |
+
+### 🍎 macOS (MacBook & Mac One-Click Launchers)
+
+| Launcher | What It Does |
+| :--- | :--- |
+| **`Float.app`** | Native macOS Application Bundle with Retina icon?double-click in Finder or drag to Dock for instant launch. |
+| **`Start Float.command`** | One-click Finder script that clears Gatekeeper quarantine attributes and starts Float immediately. |
+| **`Start Float Agency Server.command`** | Starts Float in **Branch LAN Agency Mode** (`0.0.0.0:8766`) on a central Mac server. |
+| **`Stop Float.command`** | Cleanly stops a running Float server and displays a native macOS notification. |
 
 ### 💻 Terminal (Windows / macOS / Linux)
 

@@ -45,6 +45,14 @@ def _tell_user(message: str) -> None:
         if sys.platform == "win32":
             import ctypes
             ctypes.windll.user32.MessageBoxW(None, message[:900], "Float couldn't start", 0x10)
+        elif sys.platform == "darwin":
+            import subprocess
+            safe_msg = message[:600].replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+            subprocess.run(
+                ["osascript", "-e", f'display alert "Float couldn\'t start" message "{safe_msg}" as critical'],
+                capture_output=True, timeout=10,
+            )
+            print(message, file=sys.stderr)
         else:
             print(message, file=sys.stderr)
     except Exception:
@@ -91,18 +99,36 @@ def _open_window(url: str) -> None:
             candidates.append(os.path.join(root, "Microsoft", "Edge", "Application", "msedge.exe"))
             candidates.append(os.path.join(root, "Google", "Chrome", "Application", "chrome.exe"))
     elif sys.platform == "darwin":
-        candidates = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-                      "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"]
+        home_apps = os.path.expanduser("~/Applications")
+        candidates = [
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            os.path.join(home_apps, "Google Chrome.app/Contents/MacOS/Google Chrome"),
+            os.path.join(home_apps, "Microsoft Edge.app/Contents/MacOS/Microsoft Edge"),
+            os.path.join(home_apps, "Brave Browser.app/Contents/MacOS/Brave Browser"),
+        ]
     else:
         candidates = [shutil.which(n) for n in ("google-chrome", "chromium", "chromium-browser", "microsoft-edge")]
 
     for exe in candidates:
         if exe and os.path.exists(exe):
             try:
-                subprocess.Popen([exe, f"--app={url}", "--window-size=1280,820"], close_fds=True)
+                subprocess.Popen(
+                    [exe, f"--app={url}", "--window-size=1280,820"],
+                    close_fds=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
                 return
             except OSError:
                 continue
+    if sys.platform == "darwin":
+        try:
+            subprocess.Popen(["open", url], close_fds=True)
+            return
+        except OSError:
+            pass
     webbrowser.open(url)
 
 
@@ -191,7 +217,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     print("Close this window, or press Ctrl+C, to sign everyone out and stop Float.")
 
     if not args.no_browser:
-        time.sleep(0.35)
+        time.sleep(0.05)
         if args.tab:
             webbrowser.open(url)
         else:
@@ -305,6 +331,24 @@ def _kill_pid(pid: int) -> None:
             pass
 
 
+def _stop_posix_process_by_port(port: int) -> bool:
+    import subprocess
+    try:
+        res = subprocess.run(["lsof", "-ti", f"tcp:{port}", "-sTCP:LISTEN"],
+                             capture_output=True, text=True, timeout=5)
+        killed = False
+        for line in res.stdout.splitlines():
+            line = line.strip()
+            if line.isdigit():
+                pid = int(line)
+                if pid > 0 and pid != os.getpid():
+                    _kill_pid(pid)
+                    killed = True
+        return killed
+    except Exception:
+        return False
+
+
 def _stop_windows_process_by_port(port: int) -> bool:
     import subprocess
     try:
@@ -370,9 +414,12 @@ def _cmd_stop(args: argparse.Namespace) -> None:
             _kill_pid(target_pid)
             stopped = True
 
-    # 3. On Windows, if still not stopped, try port-based process termination
-    if not stopped and force and sys.platform == "win32":
-        stopped = _stop_windows_process_by_port(port)
+    # 3. If still not stopped, try port-based process termination
+    if not stopped and force:
+        if sys.platform == "win32":
+            stopped = _stop_windows_process_by_port(port)
+        else:
+            stopped = _stop_posix_process_by_port(port)
 
     # 4. Clean up PID file
     try:
@@ -496,6 +543,16 @@ def _report_crash() -> None:
                 f"Float couldn't start.\n\n{last}\n\nFull details saved to:\n{log}",
                 "Float",
                 0x10,
+            )
+        except Exception:
+            pass
+    elif sys.platform == "darwin":
+        try:
+            import subprocess
+            last = text.strip().splitlines()[-1][:300].replace("\\", "\\\\").replace('"', '\\"')
+            subprocess.run(
+                ["osascript", "-e", f'display alert "Float couldn\'t start" message "{last}\n\nDetails saved to: {log}" as critical'],
+                capture_output=True, timeout=10,
             )
         except Exception:
             pass

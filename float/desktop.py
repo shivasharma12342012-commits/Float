@@ -211,7 +211,8 @@ def focus(w: Win) -> None:
         u.BringWindowToTop(w.handle)
         u.SetForegroundWindow(w.handle)
     elif SYSTEM == "Darwin":
-        _mac(f'tell application "{w.title}" to activate')
+        safe_title = w.title.replace("\\", "\\\\").replace('"', '\\"')
+        _mac(f'tell application "{safe_title}" to activate')
     elif w.handle and shutil.which("wmctrl"):
         subprocess.run(["wmctrl", "-i", "-a", hex(w.handle)], timeout=5)
 
@@ -381,10 +382,27 @@ def _launch(raw: str, key: str, launch: list[str], fallback: Callable[[str], Non
             return True
         raise ActionFailed(f"I couldn't find an app called '{raw}' on this computer.")
     if SYSTEM == "Darwin":
-        r = subprocess.run(["open", "-a", raw], capture_output=True, timeout=20)
-        if r.returncode != 0:
-            raise ActionFailed(f"I couldn't find an app called '{raw}' on this Mac.")
-        return False
+        mac_map = {
+            "chrome": "Google Chrome", "google chrome": "Google Chrome",
+            "edge": "Microsoft Edge", "brave": "Brave Browser", "firefox": "Firefox",
+            "safari": "Safari", "notepad": "TextEdit", "textedit": "TextEdit",
+            "calculator": "Calculator", "calc": "Calculator",
+            "word": "Microsoft Word", "excel": "Microsoft Excel",
+            "powerpoint": "Microsoft PowerPoint", "outlook": "Microsoft Outlook",
+            "onenote": "Microsoft OneNote", "file explorer": "Finder", "explorer": "Finder",
+            "finder": "Finder", "settings": "System Settings", "cmd": "Terminal",
+            "command prompt": "Terminal", "terminal": "Terminal",
+            "task manager": "Activity Monitor", "notes": "Notes", "preview": "Preview",
+        }
+        candidates = list(dict.fromkeys([mac_map.get(key, ""), raw] + launch))
+        for cand in [c for c in candidates if c]:
+            r = subprocess.run(["open", "-a", cand], capture_output=True, timeout=20)
+            if r.returncode == 0:
+                return False
+        if fallback:
+            fallback(raw)
+            return True
+        raise ActionFailed(f"I couldn't find an app called '{raw}' on this Mac.")
     for cand in dict.fromkeys(launch + [key.replace(" ", "-"), key.split(" ")[0] if key else ""]):
         exe = shutil.which(cand) if cand else None
         if exe:
@@ -393,13 +411,17 @@ def _launch(raw: str, key: str, launch: list[str], fallback: Callable[[str], Non
     raise ActionFailed(f"I couldn't find an app called '{raw}' on this computer.")
 
 
-def _wait_for(hints: list[str], before: set[int], timeout: float) -> Win | None:
+def _win_id(w: Win) -> int | str:
+    return w.handle if w.handle else w.title.lower()
+
+
+def _wait_for(hints: list[str], before: set[Any], timeout: float) -> Win | None:
     start = time.time()
     while time.time() - start < timeout:
         wins = list_windows()
         found = find_window(hints, wins) if hints else None
         if not found and time.time() - start > 3:           # unknown title: accept a brand-new window
-            fresh = [w for w in wins if w.handle not in before and not looks_like_float(w)]
+            fresh = [w for w in wins if _win_id(w) not in before and not looks_like_float(w)]
             found = fresh[0] if fresh else None
         if found:
             return found
@@ -420,7 +442,7 @@ def open_app(name: str, fallback: Callable[[str], None] | None = None,
             if not bring_forward(existing):
                 raise ActionFailed(f"{raw} is open but I couldn't bring it to the front.")
             return existing, f"Switched to {raw}"
-    before = {w.handle for w in list_windows()}
+    before = {_win_id(w) for w in list_windows()}
     used_search = _launch(raw, key, launch, fallback)
     if not can_verify():
         time.sleep(1.5)
@@ -441,7 +463,7 @@ def open_app(name: str, fallback: Callable[[str], None] | None = None,
 
 
 def open_path(path: str, timeout: float = 10.0) -> tuple[Win | None, str]:
-    before = {w.handle for w in list_windows()}
+    before = {_win_id(w) for w in list_windows()}
     if SYSTEM == "Windows":
         os.startfile(path)                                  # type: ignore[attr-defined]
     elif SYSTEM == "Darwin":
@@ -453,7 +475,7 @@ def open_path(path: str, timeout: float = 10.0) -> tuple[Win | None, str]:
         return None, f"Opened {path}"
     start = time.time()
     while time.time() - start < timeout:
-        fresh = [w for w in list_windows() if w.handle not in before and not looks_like_float(w)]
+        fresh = [w for w in list_windows() if _win_id(w) not in before and not looks_like_float(w)]
         if fresh:
             bring_forward(fresh[0])
             return fresh[0], f"Opened {Path(path).name or path}"

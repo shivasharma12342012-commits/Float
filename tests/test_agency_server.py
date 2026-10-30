@@ -269,6 +269,28 @@ class AgencyServerTests(unittest.TestCase):
         except urllib.error.HTTPError as e:
             self.assertEqual(e.code, 304)
 
+    def test_18_macos_bundle_and_launchers_are_valid_and_darwin_overlay_safe(self):
+        import unittest.mock as mock
+        import float.computer as computer
+        root_dir = Path(__file__).resolve().parent.parent
+        for rel in (
+            "Start Float.command",
+            "Stop Float.command",
+            "Start Float Agency Server.command",
+            "Float.app/Contents/MacOS/Float",
+            "Float.app/Contents/Info.plist",
+        ):
+            p = root_dir / rel
+            self.assertTrue(p.exists(), f"Missing {rel}")
+            raw = p.read_bytes()
+            self.assertNotIn(b"\r\n", raw, f"{rel} must use LF line endings for macOS")
+        icns = (root_dir / "Float.app/Contents/Resources/AppIcon.icns").read_bytes()
+        self.assertTrue(icns.startswith(b"icns"))
+        with mock.patch.object(computer, "SYSTEM", "Darwin"):
+            ov = computer._Overlay()
+            self.assertFalse(ov.ok)
+            self.assertIsNone(ov._thread)
+
 
 if __name__ == "__main__":
     unittest.main()

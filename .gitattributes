@@ -1,0 +1,5 @@
+*.command text eol=lf
+Float.app/Contents/MacOS/Float text eol=lf
+Float.app/Contents/Info.plist text eol=lf
+*.bat text eol=crlf
+*.vbs text eol=crlf

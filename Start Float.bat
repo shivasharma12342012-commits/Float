@@ -36,12 +36,11 @@ if "%PY%"=="" (
     exit /b 1
 )
 
-rem --- first run only: install the optional extras ----------------------
+rem --- first run only: install the optional extras in the background ----
 if not exist "data\.deps_v3" (
-    %PY% -m pip install "cryptography>=42.0" --quiet --disable-pip-version-check >"%TEMP%\float_pip0.log" 2>&1
-    %PY% -m pip install -r requirements.txt --quiet --disable-pip-version-check >"%TEMP%\float_pip.log" 2>&1
     if not exist "data" mkdir "data"
     echo ok > "data\.deps_v3"
+    start "" /b /low cmd /c "%PY% -m pip install ""cryptography>=42.0"" --quiet --disable-pip-version-check >""%TEMP%\float_pip0.log"" 2>&1 & %PY% -m pip install -r requirements.txt --quiet --disable-pip-version-check >""%TEMP%\float_pip.log"" 2>&1"
 )
 
 rem --- showing the output on purpose? ---------------------------------------

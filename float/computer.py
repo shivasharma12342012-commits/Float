@@ -175,8 +175,13 @@ class _Overlay:
         self._banner = None
         self._banner_bg = None
         self._width = 0
-        self._thread = threading.Thread(target=self._run, daemon=True, name="float-overlay")
         self._ready = threading.Event()
+        if SYSTEM == "Darwin":
+            # macOS Cocoa/AppKit aborts the process if Tk NSWindow is created off the main thread.
+            self._thread = None
+            self._ready.set()
+            return
+        self._thread = threading.Thread(target=self._run, daemon=True, name="float-overlay")
         self._thread.start()
         self._ready.wait(timeout=3.0)
 
@@ -474,6 +479,10 @@ def _screenshot_b64(elements: list[desktop.Element]) -> dict[str, str] | None:
         from PIL import ImageDraw  # type: ignore
 
         img = pyautogui.screenshot().convert("RGB")
+        scr_w, scr_h = screen_size()
+        if scr_w > 0 and scr_h > 0 and img.size != (scr_w, scr_h):
+            # Normalize macOS Retina (2x) screenshots to logical screen coordinates
+            img = img.resize((scr_w, scr_h))
         full_w, full_h = img.size
         scale = min(1.0, _SHOT_MAX / max(full_w, full_h))
         if scale < 1.0:
@@ -920,7 +929,10 @@ def _looks_like_path(target: str) -> bool:
 
 def _launch_via_search(name: str) -> None:
     """Last resort for an app Float can't find by name: the system search box."""
-    pyautogui.press("command" if SYSTEM == "Darwin" else "win")
+    if SYSTEM == "Darwin":
+        pyautogui.hotkey("command", "space")
+    else:
+        pyautogui.press("win")
     time.sleep(0.8)
     _type_text(name)
     time.sleep(1.0)
@@ -932,19 +944,35 @@ def _paste_text(text: str) -> bool:
     and accents. Returns False if there is no working clipboard, in which case
     nothing has been typed yet. Once the paste keystroke is sent it returns True
     even if restoring the clipboard fails - typing again would duplicate the text."""
+    use_pbcopy = False
     try:
         import pyperclip  # type: ignore
     except Exception:
-        return False
+        pyperclip = None  # type: ignore
+        if SYSTEM == "Darwin":
+            use_pbcopy = True
+        else:
+            return False
     previous = None
-    try:
-        previous = pyperclip.paste()
-    except Exception:
-        pass
-    try:
-        pyperclip.copy(text)
-    except Exception:
-        return False
+    if use_pbcopy:
+        import subprocess
+        try:
+            previous = subprocess.run(["pbpaste"], capture_output=True, text=True, timeout=2).stdout
+        except Exception:
+            pass
+        try:
+            subprocess.run(["pbcopy"], input=text, text=True, timeout=2, check=True)
+        except Exception:
+            return False
+    else:
+        try:
+            previous = pyperclip.paste()
+        except Exception:
+            pass
+        try:
+            pyperclip.copy(text)
+        except Exception:
+            return False
     time.sleep(0.05)
     try:
         pyautogui.hotkey(_MOD, "v")
@@ -955,7 +983,11 @@ def _paste_text(text: str) -> bool:
     time.sleep(0.25)
     if previous is not None:
         try:
-            pyperclip.copy(previous)
+            if use_pbcopy:
+                import subprocess
+                subprocess.run(["pbcopy"], input=previous, text=True, timeout=2)
+            else:
+                pyperclip.copy(previous)
         except Exception:
             pass
     return True
