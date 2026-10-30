@@ -1686,3 +1686,12 @@ table.grid td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .rail, .topbar, .composer-wrap, .driving, .drawer, .modal-scrim, .toast { display: none !important; }
   body, .shell, .main, .stream { height: auto !important; overflow: visible !important; display: block !important; background: #fff !important; color: #000 !important; }
 }
+
+/* ?? speed & smoothness ?? */
+button, a, .tag, .kit-item, .thread, .rail-link { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.stream, .drawer-body, .modal-body, .rail-scroll { -webkit-overflow-scrolling: touch; }
+.drawer { will-change: transform; }
+.turn { contain: layout style; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

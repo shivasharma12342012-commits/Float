@@ -284,6 +284,7 @@ async function navGo(step) {
 }
 
 function newThread() {
+  if (S.streaming && S.abort) S.abort.abort();
   navPush({ t: "home" });
   S.conv = null;
   $("composer-note").textContent = "";
@@ -294,9 +295,13 @@ function newThread() {
   $("input").focus();
 }
 
+let openSeq = 0;
 async function openThread(convId) {
+  if (S.streaming) { toast("Wait for this answer to finish, or press stop."); return; }
+  const seq = ++openSeq;
+  document.querySelectorAll(".thread").forEach((t) => t.setAttribute("aria-current", String(t.dataset.id === String(convId))));
   const data = await api(`/api/conversations/${convId}`);
-  if (!data) return;
+  if (!data || seq !== openSeq) return;
   navPush({ t: "thread", id: convId });
   S.conv = convId;
   showGreeting(false);
@@ -370,11 +375,18 @@ function addFloatTurn() {
   return { node: turn, prose, append: (child) => turn.append(child) };
 }
 
-function scrollDown() {
+let stickToBottom = true;
+function scrollDown(force = true) {
   const stream = $("stream");
+  if (!force && !stickToBottom) return;
   stream.style.scrollBehavior = "auto";   // smooth-scroll made streaming lag
   stream.scrollTop = stream.scrollHeight;
+  stickToBottom = true;
 }
+$("stream").addEventListener("scroll", () => {
+  const s = $("stream");
+  stickToBottom = s.scrollHeight - s.scrollTop - s.clientHeight < 80;
+}, { passive: true });
 
 /** Send whatever is in the composer (or a prompt handed in by the toolkit). */
 async function send(prompt, convId) {
@@ -456,7 +468,7 @@ async function send(prompt, convId) {
             requestAnimationFrame(() => {
               renderQueued = false;
               turn.prose.innerHTML = markdown(raw) + '<span class="caret"></span>';
-              scrollDown();
+              scrollDown(false);
             });
           }
         } else if (event.type === "tool") {
@@ -739,7 +751,9 @@ async function refreshTasks() {
 
 let currentPanel = null;
 
+let drawerTimer = null;
 function openDrawer(title) {
+  clearTimeout(drawerTimer);
   $("drawer-title").textContent = title;
   $("drawer").hidden = false;
   $("drawer-scrim").hidden = false;
@@ -754,7 +768,8 @@ function closeDrawer() {
   $("drawer").classList.remove("open");
   $("drawer-scrim").classList.remove("on");
   document.querySelectorAll(".rail-link").forEach((l) => l.setAttribute("aria-current", "false"));
-  setTimeout(() => { $("drawer").hidden = true; $("drawer-scrim").hidden = true; }, 260);
+  clearTimeout(drawerTimer);
+  drawerTimer = setTimeout(() => { $("drawer").hidden = true; $("drawer-scrim").hidden = true; }, 260);
 }
 
 function showPanel(name) {
@@ -901,8 +916,8 @@ function panelClasses() {
   body.innerHTML = "";
 
   body.append(make("p", "inline-note",
-    "Register a class once and Float stops asking who is in it — names, marks and " +
-    "attendance come from here."));
+    "Register a fleet group once and Float stops asking what is in it — plates, " +
+    "inspection scores and availability come from here."));
 
   if (!S.boot.classes.length) {
     const empty = make("div", "empty");
@@ -928,7 +943,7 @@ function panelClasses() {
     const ask = make("button", "btn tiny", "Ask Float about this fleet group");
     ask.addEventListener("click", () => {
       closeDrawer();
-      $("input").value = `Tell me how ${klass.name} is doing — marks, attendance, who needs help.`;
+      $("input").value = `Summarise ${klass.name} — inspection scores, availability, which vehicles need attention.`;
       send();
     });
     const drop = make("button", "btn tiny danger", "Remove group");
@@ -1067,11 +1082,15 @@ function panelTasks() {
   const due = field(addBody, "By when", "date");
   const save = make("button", "btn primary", "Add");
   save.addEventListener("click", async () => {
-    if (!title.value.trim()) return;
-    await api("/api/tasks", { body: { title: title.value, due: due.value } });
-    await refreshTasks();
-    panelTasks();
+    if (!title.value.trim() || save.disabled) return;
+    save.disabled = true;
+    try {
+      await api("/api/tasks", { body: { title: title.value, due: due.value } });
+      await refreshTasks();
+      panelTasks();
+    } catch (err) { toast(friendly(err), true); save.disabled = false; }
   });
+  title.addEventListener("keydown", (e) => { if (e.key === "Enter") save.click(); });
   addBody.append(save);
   add.append(addBody);
   body.append(add);
@@ -1142,8 +1161,8 @@ function tabYou() {
   const body = $("modal-body");
   body.innerHTML = "";
   body.append(make("p", "inline-note",
-    "Float uses this to pitch its answers right — the board, the grades, the language " +
-    "you'd use with parents. Nothing here leaves your computer."));
+    "Float uses this to pitch its answers right — your service model, fleet and the language " +
+    "you use with customers. Nothing here leaves your computer."));
 
   const name = field(body, "Name", "text", "", S.user.name);
   const school = field(body, "Rental agency / Branch", "text", "", S.user.school);
@@ -1398,7 +1417,7 @@ function tabAssist() {
     ["draft", "Draft it",
       "Float writes a first version and says plainly what it guessed at, so you know where to look."],
     ["full", "Do it all",
-      "Float finishes the job. Useful for routine paperwork — notices, seating, mark sheets."],
+      "Float finishes the job. Useful for routine paperwork — quotes, checklists, rosters."],
   ];
 
   levels.forEach(([id, title, blurb]) => {
@@ -1689,7 +1708,7 @@ function tabSecurity() {
   pinPanel.append(pinHead);
   const pinBody = make("div", "panel-body");
   pinBody.append(make("div", "hint",
-    "Between periods you don't want to type a password. Set a 4–8 digit PIN and Float " +
+    "Between customers you don't want to type a password. Set a 4–8 digit PIN and Float " +
     "asks only for that on this computer. Your password still works everywhere."));
   const pinPass = field(pinBody, "Your password", "password");
   const pin = field(pinBody, "New PIN", "password", "4–8 digits");
@@ -1830,7 +1849,7 @@ function tabAbout() {
     body.append(srvPanel);
   }
 
-  const mark = make("p", "hint", "Float · Your teaching, lighter.");
+  const mark = make("p", "hint", "Float · Your fleet, faster.");
   mark.style.textAlign = "center";
   mark.style.cursor = "default";
   mark.addEventListener("click", () => {
@@ -2019,7 +2038,7 @@ function popMenu(anchor, items, up = false) {
 const LENSES = {
   plain:    { name: "Plain",    hint: "Straight answers, as usual.", rule: "" },
   socratic: { name: "Socratic", hint: "Guides you with questions before giving the answer.",
-              rule: "Teach Socratically: ask 2-3 short guiding questions first, give a hint, and only reveal the full answer if I ask." },
+              rule: "Guide me Socratically: ask 2-3 short guiding questions first, give a hint, and only reveal the full answer if I ask." },
   skeptic:  { name: "Skeptic",  hint: "Answers, then attacks its own answer and rates confidence.",
               rule: "Answer, then add a 'Where I could be wrong' section (max 3 bullets) and a confidence rating (low/medium/high) with what to verify." },
   brief:    { name: "Brief",    hint: "Three bullets, then stops.",
