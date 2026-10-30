@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="panelBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <style>
+      .font { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+      .mono { font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace; }
+    </style>
+  </defs>
+
+  <rect width="960" height="320" rx="16" fill="url(#panelBg)" stroke="#334155" stroke-width="1.5"/>
+
+  <!-- Header -->
+  <text x="28" y="38" fill="#F8FAFC" font-size="16" font-weight="700" class="font">
+    ?? Branch Control Room ? Fixed-Desk Session Binding &amp; Least-Privilege Architecture
+  </text>
+  <rect x="740" y="18" width="192" height="26" rx="13" fill="#1E3A8A" stroke="#3B82F6"/>
+  <text x="836" y="35" text-anchor="middle" fill="#BFDBFE" font-size="11.5" font-weight="700" class="mono">
+    24-Worker Bounded Pool
+  </text>
+
+  <!-- Desk Card 1 -->
+  <rect x="24" y="62" width="216" height="175" rx="12" fill="#0B1120" stroke="#10B981" stroke-width="1.5"/>
+  <rect x="38" y="76" width="84" height="20" rx="6" fill="#064E3B"/>
+  <text x="80" y="90" text-anchor="middle" fill="#34D399" font-size="10.5" font-weight="700" class="mono">DESK #01</text>
+  <text x="132" y="90" fill="#94A3B8" font-size="11" class="mono">10.0.0.21 ??</text>
+  <text x="38" y="118" fill="#F8FAFC" font-size="13.5" font-weight="700" class="font">Rohan (Counter Ops)</text>
+  <text x="38" y="138" fill="#94A3B8" font-size="11.5" class="font">Role: Operator (Read-Only MCP)</text>
+  <text x="38" y="162" fill="#CBD5E1" font-size="11.5" class="font">Active: Self-Drive Contract</text>
+  <rect x="38" y="180" width="188" height="8" rx="4" fill="#1E293B"/>
+  <rect x="38" y="180" width="68" height="8" rx="4" fill="#10B981"/>
+  <text x="38" y="206" fill="#64748B" font-size="10.5" class="mono">Cap: ?185 / ?500 used ? Normal</text>
+  <text x="38" y="224" fill="#EF4444" font-size="10" class="mono">? Cannot shut down server</text>
+
+  <!-- Desk Card 2 -->
+  <rect x="256" y="62" width="216" height="175" rx="12" fill="#0B1120" stroke="#10B981" stroke-width="1.5"/>
+  <rect x="270" y="76" width="84" height="20" rx="6" fill="#064E3B"/>
+  <text x="312" y="90" text-anchor="middle" fill="#34D399" font-size="10.5" font-weight="700" class="mono">DESK #02</text>
+  <text x="364" y="90" fill="#94A3B8" font-size="11" class="mono">10.0.0.22 ??</text>
+  <text x="270" y="118" fill="#F8FAFC" font-size="13.5" font-weight="700" class="font">Priya (Return Bay)</text>
+  <text x="270" y="138" fill="#94A3B8" font-size="11.5" class="font">Role: Operator (Read-Only MCP)</text>
+  <text x="270" y="162" fill="#CBD5E1" font-size="11.5" class="font">Active: Damage Claim Notice</text>
+  <rect x="270" y="180" width="188" height="8" rx="4" fill="#1E293B"/>
+  <rect x="270" y="180" width="110" height="8" rx="4" fill="#10B981"/>
+  <text x="270" y="206" fill="#64748B" font-size="10.5" class="mono">Cap: ?290 / ?500 used ? Normal</text>
+  <text x="270" y="224" fill="#EF4444" font-size="10" class="mono">? Cross-desk token replay blocked</text>
+
+  <!-- Desk Card 3 -->
+  <rect x="488" y="62" width="216" height="175" rx="12" fill="#0B1120" stroke="#10B981" stroke-width="1.5"/>
+  <rect x="502" y="76" width="84" height="20" rx="6" fill="#064E3B"/>
+  <text x="544" y="90" text-anchor="middle" fill="#34D399" font-size="10.5" font-weight="700" class="mono">DESK #03</text>
+  <text x="596" y="90" fill="#94A3B8" font-size="11" class="mono">10.0.0.23 ??</text>
+  <text x="502" y="118" fill="#F8FAFC" font-size="13.5" font-weight="700" class="font">Arjun (Corporate B2B)</text>
+  <text x="502" y="138" fill="#94A3B8" font-size="11.5" class="font">Role: Operator (Read-Only MCP)</text>
+  <text x="502" y="162" fill="#CBD5E1" font-size="11.5" class="font">Active: 15-Car Monthly Quote</text>
+  <rect x="502" y="180" width="188" height="8" rx="4" fill="#1E293B"/>
+  <rect x="502" y="180" width="92" height="8" rx="4" fill="#10B981"/>
+  <text x="502" y="206" fill="#64748B" font-size="10.5" class="mono">Cap: ?240 / ?500 used ? Normal</text>
+  <text x="502" y="224" fill="#EF4444" font-size="10" class="mono">? API key hidden on server</text>
+
+  <!-- Admin Card -->
+  <rect x="720" y="62" width="216" height="175" rx="12" fill="#0B1120" stroke="#F59E0B" stroke-width="1.5"/>
+  <rect x="734" y="76" width="96" height="20" rx="6" fill="#78350F"/>
+  <text x="782" y="90" text-anchor="middle" fill="#FDE68A" font-size="10.5" font-weight="700" class="mono">ADMIN DESK</text>
+  <text x="840" y="90" fill="#94A3B8" font-size="11" class="mono">127.0.0.1 ??</text>
+  <text x="734" y="118" fill="#F8FAFC" font-size="13.5" font-weight="700" class="font">Branch Manager</text>
+  <text x="734" y="138" fill="#FBBF24" font-size="11.5" class="font">Role: Fleet Admin (/admin)</text>
+  <text x="734" y="162" fill="#CBD5E1" font-size="11.5" class="font">? Sets shared AI key &amp; budgets</text>
+  <text x="734" y="182" fill="#CBD5E1" font-size="11.5" class="font">? Manages MCP servers</text>
+  <text x="734" y="202" fill="#CBD5E1" font-size="11.5" class="font">? Exports audit CSV &amp; backups</text>
+  <text x="734" y="224" fill="#34D399" font-size="10" class="mono">? Full server lifecycle control</text>
+
+  <!-- Bottom Performance Bar -->
+  <rect x="24" y="254" width="912" height="46" rx="10" fill="#0B1120" stroke="#334155"/>
+  <text x="44" y="282" fill="#E2E8F0" font-size="12.5" font-weight="600" class="font">
+    ? Engine Specs:
+  </text>
+  <text x="155" y="282" fill="#34D399" font-size="12" class="mono">O(1) Static Route Dispatch</text>
+  <text x="365" y="282" fill="#38BDF8" font-size="12" class="mono">? ETag 304 Memory Cache</text>
+  <text x="560" y="282" fill="#FBBF24" font-size="12" class="mono">? Throttled SQLite Session Locks</text>
+  <text x="800" y="282" fill="#A78BFA" font-size="12" class="mono">? AES-GCM + scrypt</text>
+</svg>

@@ -17,29 +17,113 @@
   <b>Instant GST Rental Quotes</b> • <b>Print-Ready Contracts (DOCX / PDF / XLSX)</b> • <b>Handover & Damage Checklists</b> • <b>Fleet Utilization Analytics</b> • <b>Fixed-Desk Enterprise LAN Server</b>
 </p>
 
----
+<br/>
+
+<img src="docs/assets/float-live-demo.svg" alt="Float Live Counter Demo" width="100%"/>
 
 </div>
 
-## ✨ Overview
+---
 
-**Float** is a fast, local-first AI operations workspace engineered for **car rental agencies, counter desk agents, dispatchers, and fleet managers** on **Windows and macOS**.
+## 🎮 Interactive Counter Simulator — *Click Any Real Rental Scenario Below*
 
-Stop juggling calculators, messy Word templates, WhatsApp rate cards, and scattered spreadsheets during peak handover hours. Float combines a **deterministic rental tariff & settlement engine** with **instant document generation** and **fleet analytics**—running 100% locally on standard Python with **zero external package installations** and opening in **under 0.3 seconds**.
+Want to see exactly how Float handles rush-hour counter chaos? **Click any of the 5 live counter scenarios below** to expand the exact operator prompt, Float's deterministic calculation, and the files it produces in under 3 seconds:
 
-> [!TIP]
-> **Built for Speed at the Counter:** Whether a customer is waiting at the airport pickup bay, asking for a 5-day outstation Innova quote on WhatsApp, or returning an SUV with extra kilometers and a scratched bumper, Float finishes the math and paperwork in seconds.
+<details open>
+<summary><b>🧾 Scenario 1: Outstation SUV Return with Extra Kilometers, FASTag Tolls & Deposit Refund (Click to Toggle)</b></summary>
+<br/>
+
+> **🗣️ What your desk operator types:**
+> *"Innova Crysta KA-01-AB-4421 returned after 4 days (1,480 km driven, 1,200 km included). Rate is ₹3,500/day, ₹18/extra km, ₹1,400 FASTag tolls, and ₹15,000 security deposit paid. Settle bill with 5% GST and give me a PDF invoice + WhatsApp summary."*
+
+| Line Item | Deterministic Calculation (`calculate_quote`) | Amount (₹) |
+| :--- | :--- | ---: |
+| **Base Tariff** | `4 days × ₹3,500/day` *(1,200 km free allowance)* | `₹14,000.00` |
+| **Extra Distance** | `(1,480 - 1,200) = 280 extra km × ₹18/km` | `₹5,040.00` |
+| **FASTag / Highway Tolls** | Actual toll pass-through | `₹1,400.00` |
+| **Taxable Subtotal** | Base + Extra KM | `₹19,040.00` |
+| **GST (5%)** | `2.5% CGST (₹476.00) + 2.5% SGST (₹476.00)` | `₹952.00` |
+| **Total Invoice Value** | Subtotal + Tolls + GST | **`₹21,392.00`** |
+| **Security Deposit Adjusted** | Less deposit collected at pickup | `- ₹15,000.00` |
+| **💳 Net Payable at Counter** | **Final balance to collect from customer** | **`₹6,392.00`** |
+
+**📦 Instant Deliverables Generated:** `📕 Tax_Invoice_KA01AB4421.pdf` · `📘 Settlement_Receipt.docx` · `💬 One-Click WhatsApp Receipt`
+
+</details>
+
+<details>
+<summary><b>🔧 Scenario 2: Bumper Scratch on Return — Damage Deduction vs. Security Deposit Settlement (Click to Expand)</b></summary>
+<br/>
+
+> **🗣️ What your return bay agent types:**
+> *"Customer returned Hyundai Creta MH-12-PQ-9081 after a 2-day self-drive (₹2,800/day, within km limit). Left rear bumper has a deep scratch (₹2,200 dent/paint + ₹500 workshop labour). Customer paid ₹10,000 deposit. Generate the Damage Claim Notice PDF and calculate the exact refund."*
+
+| Settlement Component | Breakdown | Amount (₹) |
+| :--- | :--- | ---: |
+| **2-Day Base Rental + 5% GST** | `₹5,600.00 + ₹280.00 GST` | `₹5,880.00` |
+| **Assessed Panel Repair** | Rear left bumper repaint (`₹2,200`) + labour (`₹500`) | `₹2,700.00` |
+| **Total Charges** | Rental + Damage Claim | `₹8,580.00` |
+| **Security Deposit Held** | Paid via UPI at handover | `₹10,000.00` |
+| **✅ Net Refund Due to Customer** | **Automatically computed refund balance** | **`₹1,420.00`** |
+
+**📦 Instant Deliverables Generated:** `📕 Damage_Claim_Notice_9081.pdf` *(with panel table & customer acknowledgement signature block)* · `📗 Deposit_Ledger.xlsx`
+
+</details>
+
+<details>
+<summary><b>📄 Scenario 3: 60-Second Self-Drive Rental Agreement & Outgoing Handover Sheet (Click to Expand)</b></summary>
+<br/>
+
+> **🗣️ What your desk operator types:**
+> *"Draft a Self-Drive Rental Agreement and Handover Checklist for Mr. Vikram Nair (DL: KA05-20190088121), vehicle Swift Dzire KA-05-MN-1122, odometer 34,210 km, fuel 6/8 bars, FASTag ₹850, 3 days starting today 10:00 AM, ₹10,000 deposit."*
+
+- **📘 `Rental_Agreement_KA05MN1122.docx` & `.pdf`**:
+  - Pre-filled lessee KYC table, vehicle registration, odometer & fuel readings, daily km cap, late-return penalty clauses, prohibited-use terms, and dual signature blocks.
+- **📋 `Handover_Checklist_KA05MN1122.pdf`**:
+  - Side-by-side **Outgoing vs. Incoming** inspection grid for all 4 doors, bumpers, windshield, tyres, stepney, jack/toolkit, RC/insurance copy, and fuel level.
+
+</details>
+
+<details>
+<summary><b>📊 Scenario 4: Upload Monthly Fleet Sheet (`.xlsx` / `.csv`) — Instant Revenue & Utilization Intelligence (Click to Expand)</b></summary>
+<br/>
+
+> **🗣️ What the fleet owner does:**
+> *Drops `October_Fleet_Bookings.xlsx` into Float and clicks **Fleet & Revenue Analyzer**.*
+
+- **Zero-Dependency Statistical Engine (`float/stats.py`)**:
+  - Automatically ranks **Top 5 Highest-Earning Vehicles** vs. **Under-Utilized Idle Cars** on the lot.
+  - Computes mean, median, and interquartile revenue per vehicle group (*Hatchback, Compact SUV, 7-Seater MUV, Luxury*).
+  - Renders inline **interactive SVG utilization charts** and exports a clean **Management Summary `.xlsx` & `.pdf`** for partner payouts.
+
+</details>
+
+<details>
+<summary><b>💰 Interactive ROI Calculator: How Much Time & Money Does Float Save Your Agency? (Click Your Fleet Size)</b></summary>
+<br/>
+
+| Your Fleet Size | Daily Handovers & Returns | Time Saved at the Counter | Deposit & Extra-KM Leakage Recovered | Recommended Setup |
+| :--- | :--- | :--- | :--- | :--- |
+| 🚗 **10 – 20 Cars** *(Single Counter)* | ~6 – 12 / day | **~2.5 hrs / day** *(No manual Word/Excel typing)* | **₹15,000 – ₹30,000 / mo** *(Zero missed extra-km or toll math)* | Single-Desk Mode (`Start Float.bat` / `Float.app`) |
+| 🚙 **25 – 60 Cars** *(Busy Branch)* | ~15 – 35 / day | **~6.0 hrs / day** across 3–5 fixed desks | **₹45,000 – ₹90,000 / mo** *(Standardized damage & GST invoices)* | **Branch LAN Server** (`Start Float Agency Server`) |
+| 🏢 **75+ Cars** *(Corporate & Airport Hub)* | 50+ / day | **10+ hrs / day** + full audit trail per employee | **₹1,00,000+ / mo** + per-desk rupee budget caps | **Branch LAN Server + Custom MCP (CRM/GPS)** |
+
+</details>
 
 ---
 
 ## 📦 Download & 60-Second Quick Start
 
-Download the latest pre-packaged release (**[v1.0.3](https://github.com/shivasharma12342012-commits/Float/releases/tag/1.0.3)**) for your operating system:
+Float requires **only Python 3.10 or newer** and opens in **under 0.3 seconds**. Download the latest pre-packaged release (**[v1.0.3](https://github.com/shivasharma12342012-commits/Float/releases/tag/1.0.3)**) for your operating system:
 
 | Platform | Direct Download | How to Launch |
 | :--- | :--- | :--- |
 | 🪟 **Windows (x64)** | [**`Float-Windows-x64.zip`**](https://github.com/shivasharma12342012-commits/Float/releases/download/1.0.3/Float-Windows-x64.zip) | Unzip and double-click **`Start Float.bat`** (or **`Start Float.vbs`**). |
 | 🍎 **macOS Universal** *(Apple Silicon & Intel)* | [**`Float-macOS-Universal.zip`**](https://github.com/shivasharma12342012-commits/Float/releases/download/1.0.3/Float-macOS-Universal.zip) · [**`.tar.gz`**](https://github.com/shivasharma12342012-commits/Float/releases/download/1.0.3/Float-macOS-Universal.tar.gz) | Unzip and double-click **`Float.app`** (or **`Start Float.command`**). |
+
+<details>
+<summary><b>🪟 View All Windows & 🍎 macOS Launchers + CLI Commands (Click to Expand)</b></summary>
+<br/>
 
 ### 🪟 Windows One-Click Launchers
 
@@ -58,20 +142,12 @@ Download the latest pre-packaged release (**[v1.0.3](https://github.com/shivasha
 | **`Start Float Agency Server.command`** | Starts Float in **Branch LAN Agency Mode** (`0.0.0.0:8766`) on a central Mac server. |
 | **`Stop Float.command`** | Cleanly stops a running Float server and displays a native macOS notification. |
 
-### 💻 Terminal (Windows / macOS / Linux)
+### 💻 Terminal Commands (Windows / macOS / Linux)
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/shivasharma12342012-commits/Float.git
-cd Float
-
-# 2. Start Float locally (opens http://127.0.0.1:8766)
+# Start Float locally (opens http://127.0.0.1:8766)
 python main.py
-```
 
-#### Useful CLI Commands
-
-```bash
 # Run as a multi-operator Branch LAN Server
 python main.py --lan
 
@@ -88,54 +164,26 @@ python main.py set-password operator@agency.local NewStrongPass123!
 python main.py doctor
 ```
 
----
-
-## 🎯 Six One-Click Counter Workflows
-
-| Workflow | What Float Generates in Seconds | Output Formats |
-| :--- | :--- | :--- |
-| 🧾 **1. Instant Quote & Bill** | Itemized tariff calculation with base rent, included/extra km, extra hours, chauffeur allowance, tolls, fuel refill, 5%/18% GST (CGST + SGST), and refundable deposit balance + WhatsApp summary. | `Chat` · `.pdf` · `.docx` · `.xlsx` |
-| 📄 **2. Rental Agreement** | Counter-ready Self-Drive or Chauffeur-Driven vehicle rental contract with KYC fields, odometer/fuel readings, deposit terms, liability clauses, and customer/operator signature blocks. | `.docx` · `.pdf` |
-| 📋 **3. Handover & Return Sheet** | Side-by-side Outgoing vs. Incoming inspection checklist covering exterior panels, tyres, glass, interior, spare wheel, toolkit, FASTag balance, and fuel bars. | `.docx` · `.pdf` · `.xlsx` |
-| 🔧 **4. Damage & Claim Notice** | Structured incident & damage assessment report with panel-by-panel repair estimates, workshop labour/paint breakdown, and security deposit deduction settlement. | `.docx` · `.pdf` |
-| 💬 **5. Customer Comms** | Polished, ready-to-send WhatsApp, SMS, and email messages for booking confirmations, chauffeur details, payment links, extension approvals, and deposit refunds. | `WhatsApp` · `Email` · `SMS` |
-| 📊 **6. Fleet & Revenue Analyzer** | Upload or paste any vehicle revenue sheet, trip log, or utilization table (`.csv`, `.xlsx`, `.pdf`, `.docx`) for pure-Python statistical analysis, top/bottom vehicle ranking, and SVG charts. | `SVG Charts` · `.xlsx` · `Report` |
+</details>
 
 ---
 
-## 🧠 Architecture & Agentic Flow
+## 🏢 Enterprise Branch LAN Server (Fixed-Desk Security & Least Privilege)
 
-```mermaid
-flowchart LR
-    subgraph Counter["🖥️ Fixed Rental Desks / Branch LAN"]
-        UI["Float Web Workspace\n(Windows PC / MacBook)"]
-        Admin["Fleet Admin Console\n(/admin)"]
-    end
+In a real car rental company, employees sit at dedicated desks and shouldn't have administrative power over the server. Float's **Agency Server Mode (`--lan`)** is purpose-built for fixed-desk teams:
 
-    subgraph Core["⚡ Float Zero-Dependency Core (Python 3.10+)"]
-        Server["Bounded HTTP / TLS Server\n+ Desk IP Binding & ETag Cache"]
-        Agent["Agentic Loop\n+ Shift Greeting"]
-        Tools["Built-in Rental Toolkit\n+ MCP Bridge"]
-        DB[("Encrypted SQLite\ndata/float.sqlite3")]
-    end
+<div align="center">
+  <img src="docs/assets/float-branch-desks.svg" alt="Float Fixed-Desk Branch Control Room" width="100%"/>
+</div>
 
-    subgraph Outputs["📦 Real Counter Deliverables"]
-        Quote["Exact GST & Deposit\nQuote Engine"]
-        Docs["Office Writer\n(.docx / .xlsx / .pdf)"]
-        Stats["Pure-Python Fleet\nAnalytics + SVG"]
-        MCP["External MCP Servers\n(GPS / CRM / Bookings)"]
-    end
+<br/>
 
-    UI --> Server
-    Admin --> Server
-    Server --> Agent
-    Server --> DB
-    Agent --> Tools
-    Tools --> Quote
-    Tools --> Docs
-    Tools --> Stats
-    Tools --> MCP
-```
+- **🔒 Fixed-Desk IP Session Binding**: Each employee's session is cryptographically bound to their desk IP address (`desk_ip`). A session token from Desk #1 (`10.0.0.21`) is immediately rejected if replayed from Desk #2 (`10.0.0.22`), and `/admin` shows every employee's active desk IP live.
+- **🛡️ Least-Privilege Employee Controls**: Regular desk operators have zero access to server shutdown, local runtime unlock, raw AI API keys, or MCP server configuration—those controls are strictly locked to `admin` accounts.
+- **⚡ Organised High-Speed HTTP Engine**:
+  - **Bounded `ThreadPoolExecutor` (24 workers)** prevents thread exhaustion during peak shift handovers.
+  - **O(1) Static Route Dispatch & In-Memory `ETag` (`304 Not Modified`) Cache** serves the UI instantaneously across the LAN.
+  - **Single-Join Session Resolution** with throttled `last_seen` SQLite writes eliminates database lock contention.
 
 ---
 
@@ -167,47 +215,21 @@ Float's AI assistant never guesses arithmetic—it invokes deterministic local t
 
 ---
 
-## 🔌 Clean MCP (Model Context Protocol) Support
+## 🤖 Supported AI Providers & Project Structure
 
-Connect external fleet databases, GPS telematics, CRM systems, or local filesystem tools directly into Float:
+<details>
+<summary><b>🔌 Supported AI Providers & 📂 Full Repository File Tree (Click to Expand)</b></summary>
+<br/>
 
-1. Open **Settings → MCP Tools**.
-2. Administrators can connect servers using either:
-   - **`stdio` transport** — e.g., `python -m fleet_mcp_server`
-   - **`http` transport** — e.g., `http://127.0.0.1:8000/mcp`
-3. Toggle servers **Enable / Disable** or click **Refresh** to inspect discovered tools in real time.
-4. Regular desk operators view active MCP tools in read-only mode and can invoke them seamlessly in chat.
-
----
-
-## 🏢 Enterprise Branch LAN Server (Fixed-Desk Security & Least Privilege)
-
-Running a company branch where employees sit at dedicated desks? Start Float with `python main.py --lan` (or use `Start Float Agency Server.bat` / `Start Float Agency Server.command`):
-
-- **Fixed-Desk IP Session Binding**: Each employee's session is locked to their assigned desk IP address (`desk_ip`). A session token from one desk cannot be replayed or hijacked from another desk on the network, and `/admin` displays each operator's active desk IP in real time.
-- **Least-Privilege Employee Controls**: Regular desk operators get fast access to chat, quotes, documents, and fleet rosters, while server shutdown, local runtime unlocking, and MCP server modifications are strictly restricted to `admin` accounts.
-- **One Shared Agency API Key & Fair-Share Budgets**: The Fleet Admin sets the AI key once in `/admin` and configures monthly token/rupee allowances per operator with audited overrides.
-- **High-Throughput Organised Server**:
-  - Bounded `ThreadPoolExecutor` worker pool (24 workers) to prevent thread exhaustion across busy desks.
-  - O(1) static route dispatch and in-memory static asset cache with `ETag` / `304 Not Modified` responses.
-  - Single-join session resolution with throttled `last_seen` SQLite writes.
-  - Passwords hashed with `scrypt` (`N=16384, r=8, p=1`) and API keys encrypted at rest using machine-bound AES-GCM / HMAC keys.
-
----
-
-## 🤖 Supported AI Providers
-
+### Supported AI Providers
 Switch providers or models at any time from **Settings** (or branch-wide from **`/admin`**):
-
 - **OpenRouter** *(Claude Sonnet/Haiku, GPT-4o, Gemini, Llama, DeepSeek)*
 - **Anthropic** *(Claude Sonnet 4.5, Claude Haiku 4.5, Claude Opus 4.1)*
 - **OpenAI** *(GPT-4.1, GPT-4.1 mini, GPT-4o, GPT-4o mini)*
 - **Google Gemini** *(Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.0 Flash)*
 - **Local Ollama / OpenAI-Compatible Endpoint** *(Run 100% offline on local hardware)*
 
----
-
-## 📂 Project Structure
+### Project Structure
 
 ```text
 Float/
@@ -236,10 +258,13 @@ Float/
 │   ├── tools.py                          # Native rental quote engine, document builder & tool dispatcher
 │   └── web/                              # Smooth, autofill-free vanilla JS/CSS counter workspace & Admin UI
 ├── docs/
+│   ├── assets/                           # Animated SVG counter demo & branch control room visuals
 │   ├── DESIGN.md                         # Architecture & zero-dependency engineering notes
 │   └── AGENCY_SERVER.md                  # Branch LAN deployment & administration guide
 └── tests/                                # 481 unit & integration tests
 ```
+
+</details>
 
 ---
 
