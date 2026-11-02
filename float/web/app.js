@@ -2239,4 +2239,111 @@ document.addEventListener("drop", (event) => {
   if (event.dataTransfer.files.length) attach(event.dataTransfer.files);
 });
 
+
+/* ══════════════════════════════════ pixel mascot controller ═════════════ */
+
+function initMascot() {
+  const mascot = $("float-mascot");
+  if (!mascot) return;
+  const bubble = $("mascot-bubble");
+
+  const phrases = [
+    "Beep bloop! Ready to roll! 🚘",
+    "Vroom vroom! Jamming to fleet tunes 🎧",
+    "Need a quote? Let's crunch it! ⚡",
+    "Listening for counter requests! 🎵",
+    "Fleet operations: 100% smooth! ✨",
+    "Bloop! Your trusty fleet companion! 💚",
+    "Checklists, keys, contracts... got 'em all! 📋",
+    "All vehicles accounted for! 🔑",
+    "Groovin' right by the Float logo! 🎶",
+    "Click me for a dance! 💃",
+    "Zero hallucinations, pure math! 🛡️"
+  ];
+
+  const excitedPhrases = [
+    "Wheeeee! Let's go! 🚗💨",
+    "Groovy fleet magic! 🎧✨",
+    "Full throttle speed! ⚡",
+    "You're awesome, operator! 🌟",
+    "Top gear dispatch! 🔥"
+  ];
+
+  let phraseIdx = 0;
+  let hideTimer = null;
+  let blinkTimer = null;
+
+  function speak(text, duration = 3000) {
+    if (!bubble) return;
+    bubble.textContent = text;
+    mascot.classList.add("is-speaking", "is-active");
+    clearTimeout(hideTimer);
+    if (duration > 0) {
+      hideTimer = setTimeout(() => {
+        mascot.classList.remove("is-speaking");
+        if (!mascot.matches(":hover")) mascot.classList.remove("is-active");
+      }, duration);
+    }
+  }
+
+  // Hover response: cursor above mascot
+  mascot.addEventListener("mouseenter", () => {
+    phraseIdx = (phraseIdx + 1) % phrases.length;
+    speak(phrases[phraseIdx], 3200);
+  });
+
+  mascot.addEventListener("mouseleave", () => {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      mascot.classList.remove("is-speaking", "is-active");
+    }, 800);
+  });
+
+  // Click celebration spin
+  mascot.addEventListener("click", (e) => {
+    e.stopPropagation();
+    mascot.classList.add("is-spinning");
+    const pick = excitedPhrases[Math.floor(Math.random() * excitedPhrases.length)];
+    speak(pick, 3500);
+    setTimeout(() => {
+      mascot.classList.remove("is-spinning");
+    }, 680);
+  });
+
+  mascot.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      mascot.click();
+    }
+  });
+
+  // Natural living blink cycle
+  function scheduleBlink() {
+    clearTimeout(blinkTimer);
+    const delay = 3200 + Math.random() * 3000;
+    blinkTimer = setTimeout(() => {
+      mascot.classList.add("is-blinking");
+      setTimeout(() => {
+        mascot.classList.remove("is-blinking");
+        scheduleBlink();
+      }, 160);
+    }, delay);
+  }
+  scheduleBlink();
+
+  // Also perk up mascot when hovering over the wordmark logo/title
+  const wm = document.querySelector(".wordmark");
+  if (wm) {
+    wm.addEventListener("mouseenter", (e) => {
+      if (e.target === mascot || mascot.contains(e.target)) return;
+      mascot.classList.add("is-active");
+    });
+    wm.addEventListener("mouseleave", () => {
+      if (!mascot.matches(":hover")) mascot.classList.remove("is-active");
+    });
+  }
+}
+
+
+initMascot();
 boot();
