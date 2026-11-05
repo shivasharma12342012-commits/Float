@@ -864,7 +864,7 @@ def audit_tail(limit: int = 200, level: str = "", user_id: int | None = None) ->
 
 
 # ---------------------------------------------------------------------------
-# Classes, students, marks, attendance
+# Fleet groups (klasses), vehicles (students), revenue logs (marks), availability
 # ---------------------------------------------------------------------------
 def add_class(user_id: int, name: str, grade: str = "", section: str = "",
               subject: str = "", board: str = "") -> int:
