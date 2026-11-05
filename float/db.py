@@ -981,7 +981,7 @@ def attendance_range(class_id: int, limit: int = 60) -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Timetable and tasks
+# Shift dispatch schedule (periods) and operational tasks
 # ---------------------------------------------------------------------------
 def set_periods(user_id: int, rows: list[dict[str, Any]]) -> None:
     with cursor() as db:
