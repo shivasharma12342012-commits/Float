@@ -2346,6 +2346,9 @@ function initMascot() {
       const dy = Math.max(-1, Math.min(1, (e.clientY - cy) / 48));
       eyesNormal.style.transform = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px)`;
     });
+    railTop.addEventListener("mouseleave", () => {
+      eyesNormal.style.transform = "translate(0px, 0px)";
+    });
   }
 
   // Also perk up mascot when hovering over the wordmark logo/title
