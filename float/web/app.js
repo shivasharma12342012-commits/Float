@@ -2285,6 +2285,7 @@ function initMascot() {
       }, duration);
     }
   }
+  window.floatMascotSpeak = speak;
 
   // Hover response: cursor above mascot
   mascot.addEventListener("mouseenter", () => {
