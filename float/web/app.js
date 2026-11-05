@@ -2320,6 +2320,13 @@ function initMascot() {
     }
   });
 
+  mascot.addEventListener("focus", () => {
+    mascot.classList.add("is-active");
+  });
+  mascot.addEventListener("blur", () => {
+    if (!mascot.matches(":hover")) mascot.classList.remove("is-active");
+  });
+
   // Natural living blink cycle
   function scheduleBlink() {
     clearTimeout(blinkTimer);
