@@ -102,6 +102,7 @@ function render() {
   wrap.innerHTML = "";
   ({ overview: viewOverview, teachers: viewTeachers, fair: viewFair, org: viewOrg,
      notices: viewNotices, audit: viewAudit }[TAB])(wrap);
+  if (window.FloatSecure && FloatSecure.hardenAll) FloatSecure.hardenAll(wrap);
 }
 
 /* ── overview ──────────────────────────────────────────────────────────── */
