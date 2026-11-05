@@ -1,6 +1,6 @@
 """Float — turning a reply into a file a rental desk operator can print, mail or WhatsApp.
 
-A lesson plan that only exists in a chat window is not a lesson plan. Everything
+A rental agreement or GST bill that only exists in a chat window is not counter-ready. Everything
 Float writes can become a real document, and it builds them here: Word, PDF,
 Excel, CSV, HTML, Markdown and plain text, all from the standard library.
 
