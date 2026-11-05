@@ -11,7 +11,7 @@
     python main.py --version
 
 Everything Float needs lives next to this file once it has run once:
-a `data/` folder holding `float.sqlite3` (your accounts, classes and chat
+a `data/` folder holding `float.sqlite3` (your accounts, fleet groups and chat
 history) and `data/files` (documents Float has made for you, until you save
 them to your Desktop or Drive). Delete `data/` to start over completely.
 """
