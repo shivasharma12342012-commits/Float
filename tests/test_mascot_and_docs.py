@@ -125,3 +125,10 @@ class TestMascotInteractivityAndStyles(unittest.TestCase):
         self.assertIn("@media (prefers-reduced-motion: reduce)", css)
         self.assertIn(".float-mascot:focus-visible", css)
         self.assertIn(".float-mascot.is-cheering .mascot-sprite", css)
+
+    def test_app_js_pupil_tracking_and_contextual_reactions(self) -> None:
+        js = (ROOT / "float" / "web" / "app.js").read_text(encoding="utf-8")
+        self.assertIn("window.floatMascotSpeak = speak", js)
+        self.assertIn('const eyesNormal = $("mascot-eyes-normal")', js)
+        self.assertIn("Fresh counter sheet ready!", js)
+        self.assertIn("is-cheering", js)
