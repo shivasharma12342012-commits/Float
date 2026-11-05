@@ -602,7 +602,7 @@ def put_key(provider: str, secret: str, scope: str = "org", user_id: int | None 
             added_by: int | None = None, label: str = "") -> None:
     blob = security.encrypt_secret(secret)
     with cursor() as db:
-        if user_id is None:   # UNIQUE ignores NULL user_id, so replace the school key by hand
+        if user_id is None:   # UNIQUE ignores NULL user_id, so replace the shared agency key by hand
             db.execute("DELETE FROM api_keys WHERE scope='org' AND provider=?", (provider,))
         db.execute(
             """INSERT INTO api_keys(scope,user_id,provider,secret,hint,label,added_by,created_at)
