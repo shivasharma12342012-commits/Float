@@ -11,7 +11,7 @@ Float is a **zero-dependency, local-first AI operations workspace** engineered f
    - **Vehicle Handover & Return Inspection Checklists**
    - **Damage Assessment & Security Deposit Deduction Notice**
    - **Fleet Availability & Booking Ledger Analyzer** (`.xlsx` & SVG chart generation)
-3. **19 Built-In Agentic Tools + Clean MCP Client**:
-   - Native tools for quote arithmetic, document generation, fleet group sheets, rate item banks, web search, computer use, and Model Context Protocol (`stdio` and `http`/`sse`) servers.
+3. **6 Core Native Agentic Tools + Clean MCP Client**:
+   - Deterministic tools (`calculate_quote`, `create_file`, `look_up_class`, `save_task`, `read_my_day`, `use_computer`) plus Model Context Protocol (`stdio` and `http`/`sse`) tool discovery.
 4. **Single-Operator or Multi-Operator Branch LAN Server**:
    - Works out of the box for a single rental desk or scales to a full branch with role-based access control, audit logging, and encrypted shared API keys.
