@@ -719,3 +719,21 @@ const dark = window.matchMedia("(prefers-color-scheme: dark)");
 document.documentElement.dataset.theme = dark.matches ? "dark" : "light";
 
 boot();
+
+(function initAdminMascot() {
+  const mascot = $("float-mascot");
+  const bubble = $("mascot-bubble");
+  if (!mascot || !bubble) return;
+  const quips = ["Fleet admin mode!", "All desks secure!", "Budgets on track!", "Need a backup?"];
+  let idx = 0;
+  let timer = null;
+  const react = () => {
+    bubble.textContent = quips[idx % quips.length];
+    idx += 1;
+    mascot.classList.add("is-talking");
+    clearTimeout(timer);
+    timer = setTimeout(() => mascot.classList.remove("is-talking"), 2200);
+  };
+  mascot.addEventListener("mouseenter", react);
+  mascot.addEventListener("click", react);
+})();
