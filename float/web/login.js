@@ -88,6 +88,10 @@ function enter(data) {
 /* -------------------------------------------------------------------- boot */
 
 async function boot() {
+  if (window.FloatSecure && FloatSecure.hardenInput) {
+    FloatSecure.hardenInput(el("quick-pin"));
+    FloatSecure.hardenInput(el("su-school"));
+  }
   if (sessionStorage.getItem(TOKEN)) { location.replace("/"); return; }
 
   try {
