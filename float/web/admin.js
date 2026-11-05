@@ -195,7 +195,7 @@ function viewOverview(wrap) {
   }
 }
 
-/* ── teachers ──────────────────────────────────────────────────────────── */
+/* ── team & agents ─────────────────────────────────────────────────────── */
 
 function addBackupPanel(wrap) {
   const b = DATA.backup || {};
@@ -420,8 +420,6 @@ function escapeHtml(text) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-/* ── school settings ───────────────────────────────────────────────────── */
-
 /* ── fairness & privacy ────────────────────────────────────────────────── */
 
 function viewFair(wrap) {
@@ -482,7 +480,7 @@ function viewFair(wrap) {
   priv.append(pb); wrap.append(priv);
 }
 
-/* ── school settings ───────────────────────────────────────────────────── */
+/* ── agency settings ───────────────────────────────────────────────────── */
 
 function viewOrg(wrap) {
   const org = DATA.org;
