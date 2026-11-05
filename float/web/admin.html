@@ -12,7 +12,106 @@
 <body>
 
 <header class="topbar" style="position:sticky;top:0;z-index:20">
-  <div class="wordmark" style="font-size:19px">Float<span class="wordmark-dot"></span></div>
+  <div class="wordmark" style="font-size:19px" title="Float"><img class="wm-logo" src="/float.ico" alt=""><span class="wm-text">Float</span>
+    <div class="float-mascot" id="float-mascot" role="button" tabindex="0" title="Float Mascot Buddy" aria-label="Float Mascot Buddy">
+        <div class="mascot-bubble" id="mascot-bubble" aria-live="polite"></div>
+        <div class="mascot-sprite" id="mascot-sprite">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" class="mascot-svg" shape-rendering="crispEdges" aria-hidden="true">
+            <g class="mascot-headband">
+              <rect x="7" y="2" width="10" height="1" fill="#1e3a8a"/>
+              <rect x="6" y="3" width="1" height="1" fill="#1e3a8a"/>
+              <rect x="17" y="3" width="1" height="1" fill="#1e3a8a"/>
+              <rect x="5" y="4" width="1" height="1" fill="#1e3a8a"/>
+              <rect x="18" y="4" width="1" height="1" fill="#1e3a8a"/>
+              <rect x="7" y="3" width="1" height="1" fill="#60a5fa"/>
+              <rect x="8" y="3" width="8" height="1" fill="#3b82f6"/>
+              <rect x="16" y="3" width="1" height="1" fill="#60a5fa"/>
+              <rect x="6" y="4" width="1" height="1" fill="#3b82f6"/>
+              <rect x="17" y="4" width="1" height="1" fill="#3b82f6"/>
+            </g>
+            <g class="mascot-feet">
+              <rect x="8" y="18" width="2" height="2" fill="#14532d"/>
+              <rect x="14" y="18" width="2" height="2" fill="#14532d"/>
+            </g>
+            <g class="mascot-body">
+              <rect x="6" y="5" width="12" height="1" fill="#14532d"/>
+              <rect x="6" y="17" width="12" height="1" fill="#14532d"/>
+              <rect x="5" y="6" width="1" height="11" fill="#14532d"/>
+              <rect x="18" y="6" width="1" height="11" fill="#14532d"/>
+              <rect x="6" y="6" width="1" height="1" fill="#86efac"/>
+              <rect x="7" y="6" width="11" height="1" fill="#4ade80"/>
+              <rect x="6" y="7" width="1" height="9" fill="#4ade80"/>
+              <rect x="7" y="7" width="10" height="9" fill="#22c55e"/>
+              <rect x="17" y="7" width="1" height="10" fill="#16a34a"/>
+              <rect x="7" y="16" width="10" height="1" fill="#16a34a"/>
+              <rect x="9" y="14" width="6" height="2" fill="#34d399"/>
+            </g>
+            <g class="mascot-face">
+              <g class="mascot-eyes mascot-eyes-normal">
+                <rect class="pupil-left-hi" x="8" y="8" width="1" height="1" fill="#ffffff"/>
+                <rect class="pupil-left-dark" x="9" y="8" width="1" height="1" fill="#0f172a"/>
+                <rect class="pupil-left-bot" x="8" y="9" width="2" height="1" fill="#0f172a"/>
+                <rect class="pupil-right-hi" x="14" y="8" width="1" height="1" fill="#ffffff"/>
+                <rect class="pupil-right-dark" x="15" y="8" width="1" height="1" fill="#0f172a"/>
+                <rect class="pupil-right-bot" x="14" y="9" width="2" height="1" fill="#0f172a"/>
+              </g>
+              <g class="mascot-eyes mascot-eyes-blink">
+                <rect x="8" y="9" width="2" height="1" fill="#14532d"/>
+                <rect x="14" y="9" width="2" height="1" fill="#14532d"/>
+              </g>
+              <g class="mascot-eyes mascot-eyes-happy">
+                <rect x="8" y="8" width="2" height="1" fill="#0f172a"/>
+                <rect x="7" y="9" width="1" height="1" fill="#0f172a"/>
+                <rect x="10" y="9" width="1" height="1" fill="#0f172a"/>
+                <rect x="14" y="8" width="2" height="1" fill="#0f172a"/>
+                <rect x="13" y="9" width="1" height="1" fill="#0f172a"/>
+                <rect x="16" y="9" width="1" height="1" fill="#0f172a"/>
+              </g>
+              <g class="mascot-cheeks">
+                <rect x="7" y="11" width="1" height="1" fill="#fb7185"/>
+                <rect x="16" y="11" width="1" height="1" fill="#fb7185"/>
+              </g>
+              <g class="mascot-mouth mascot-mouth-normal">
+                <rect x="11" y="12" width="2" height="1" fill="#14532d"/>
+              </g>
+              <g class="mascot-mouth mascot-mouth-happy">
+                <rect x="11" y="11" width="2" height="1" fill="#14532d"/>
+                <rect x="10" y="12" width="1" height="1" fill="#14532d"/>
+                <rect x="13" y="12" width="1" height="1" fill="#14532d"/>
+                <rect x="11" y="12" width="2" height="1" fill="#fda4af"/>
+                <rect x="11" y="13" width="2" height="1" fill="#14532d"/>
+              </g>
+            </g>
+            <g class="mascot-earcups">
+              <rect x="2" y="6" width="3" height="1" fill="#1e3a8a"/>
+              <rect x="2" y="11" width="3" height="1" fill="#1e3a8a"/>
+              <rect x="1" y="7" width="1" height="4" fill="#1e3a8a"/>
+              <rect x="2" y="7" width="2" height="4" fill="#2563eb"/>
+              <rect x="2" y="8" width="1" height="2" fill="#93c5fd"/>
+              <rect x="4" y="7" width="1" height="4" fill="#60a5fa"/>
+              <rect x="19" y="6" width="3" height="1" fill="#1e3a8a"/>
+              <rect x="19" y="11" width="3" height="1" fill="#1e3a8a"/>
+              <rect x="22" y="7" width="1" height="4" fill="#1e3a8a"/>
+              <rect x="20" y="7" width="2" height="4" fill="#2563eb"/>
+              <rect x="21" y="8" width="1" height="2" fill="#93c5fd"/>
+              <rect x="19" y="7" width="1" height="4" fill="#60a5fa"/>
+            </g>
+            <g class="mascot-notes">
+              <g class="mascot-note mascot-note-left">
+                <rect x="1" y="3" width="1" height="2" fill="#3b82f6"/>
+                <rect x="2" y="3" width="1" height="1" fill="#3b82f6"/>
+                <rect x="0" y="4" width="1" height="1" fill="#3b82f6"/>
+              </g>
+              <g class="mascot-note mascot-note-right">
+                <rect x="21" y="2" width="1" height="2" fill="#60a5fa"/>
+                <rect x="22" y="2" width="1" height="1" fill="#60a5fa"/>
+                <rect x="20" y="3" width="1" height="1" fill="#60a5fa"/>
+              </g>
+            </g>
+          </svg>
+        </div>
+      </div>
+  </div>
   <span class="chip" style="border:0;background:none;color:var(--soft)">Admin</span>
   <span class="spacer"></span>
   <button type="button" class="chip" id="back-app">Back to Float</button>
