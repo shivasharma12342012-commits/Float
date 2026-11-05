@@ -2327,6 +2327,10 @@ function initMascot() {
       setTimeout(() => {
         mascot.classList.remove("is-blinking");
         scheduleBlink();
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) clearTimeout(blinkTimer);
+    else scheduleBlink();
+  });
       }, 160);
     }, delay);
   }
