@@ -1,4 +1,4 @@
-"""Float — turning a reply into a file a teacher can print, mail or upload.
+"""Float — turning a reply into a file a rental desk operator can print, mail or WhatsApp.
 
 A lesson plan that only exists in a chat window is not a lesson plan. Everything
 Float writes can become a real document, and it builds them here: Word, PDF,
