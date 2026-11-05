@@ -1153,7 +1153,7 @@ def toolkit_entry(entry_id: str) -> dict[str, Any] | None:
 def fill_prompt(entry: dict[str, Any], values: dict[str, Any]) -> str:
     prompt = entry["prompt"]
     if entry["id"] == "analysis":
-        # Numbers come from Python, not the model. MarksError carries a plain message.
+        # Fleet & revenue stats come deterministically from Python, not the model. MarksError carries a plain message.
         values = dict(values)
         values["data"] = stats.analyse(str(values.get("data", "")))
     for field in entry["fields"]:
