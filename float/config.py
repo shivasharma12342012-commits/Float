@@ -7,8 +7,8 @@ file beside the project root, and from the organisation settings row in SQLite
     admin panel  >  environment  >  .env  >  the defaults in this file
 
 No third-party settings library: this reads plain text and casts it, so the app
-installs from a three-line requirements file and starts in under a second on a
-rental counter laptop.
+runs on the Python standard library (default port 8766) and starts in under 0.3 seconds
+on a Windows or macOS rental counter workstation.
 """
 
 from __future__ import annotations
