@@ -138,3 +138,19 @@ class TestMascotInteractivityAndStyles(unittest.TestCase):
         self.assertIn('e.key === "Escape"', js)
         self.assertIn("visibilitychange", js)
         self.assertIn("prefers-reduced-motion: reduce", js)
+
+
+class TestBackendDocstringsClean(unittest.TestCase):
+    def test_backend_docstrings_use_car_rental_terminology(self) -> None:
+        artifacts_doc = (ROOT / "float" / "artifacts.py").read_text(encoding="utf-8")[:700]
+        stats_doc = (ROOT / "float" / "stats.py").read_text(encoding="utf-8")[:600]
+        main_doc = (ROOT / "main.py").read_text(encoding="utf-8")[:900]
+        self.assertIn("rental desk operator", artifacts_doc)
+        self.assertNotIn("lesson plan", artifacts_doc)
+        self.assertIn("fleet & revenue sheet statistics", stats_doc)
+        self.assertIn("agent@agency.in", main_doc)
+        self.assertNotIn("you@school.edu.in", main_doc)
+
+
+if __name__ == "__main__":
+    unittest.main()
