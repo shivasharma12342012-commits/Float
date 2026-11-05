@@ -71,5 +71,10 @@
     return node;
   }
 
-  window.FloatSecure = { fetch: secureFetch, hardenInput };
+  function hardenAll(root = document) {
+    if (!root || typeof root.querySelectorAll !== "function") return;
+    root.querySelectorAll('input:not([type="password"]):not([type="email"]):not([type="checkbox"]), textarea').forEach(hardenInput);
+  }
+
+  window.FloatSecure = { fetch: secureFetch, hardenInput, hardenAll };
 })();
