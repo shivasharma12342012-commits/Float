@@ -241,7 +241,7 @@ function addPricesPanel(wrap) {
   pr.rows.forEach((row) => {
     const tr = document.createElement("tr");
     const name = make("td", null, row.label + (row.overridden ? " (your price)" : ""));
-    const mk = (v) => { const i = document.createElement("input"); i.type = "number"; i.min = "0"; i.step = "any"; i.value = v; i.style.width = "80px"; return i; };
+    const mk = (v) => { const i = document.createElement("input"); i.type = "number"; i.min = "0"; i.step = "any"; i.autocomplete = "off"; i.setAttribute("data-lpignore", "true"); i.setAttribute("data-1p-ignore", "true"); i.value = v; i.style.width = "80px"; return i; };
     const inI = mk(row.cost_in), outI = mk(row.cost_out);
     const a = make("td", "num"); a.append(inI);
     const o = make("td", "num"); o.append(outI);
