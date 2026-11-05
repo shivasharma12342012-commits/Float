@@ -650,7 +650,7 @@ function viewNotices(wrap) {
   const addPanel = make("div", "panel");
   const addBody = make("div", "panel-body");
   const title = document.createElement("input");
-  title.placeholder = "Title — e.g. Report cards due Friday";
+  title.placeholder = "Title — e.g. Weekend SUV tariff update";
   title.style.cssText = "width:100%;padding:8px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--paper);margin-bottom:9px";
   const text = document.createElement("textarea");
   text.placeholder = "A line or two of detail (optional)";
