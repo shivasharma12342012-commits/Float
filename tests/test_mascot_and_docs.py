@@ -53,3 +53,14 @@ class TestDocumentationIntegrity(unittest.TestCase):
         self.assertIn("Agency Server.md", text)
         self.assertIn("docs/DESIGN.md", text)
         self.assertIn("docs/AGENCY_SERVER.md", text)
+
+
+class TestMascotAndBrandingMarkup(unittest.TestCase):
+    def test_index_html_has_logo_and_pixel_mascot(self) -> None:
+        html = (ROOT / "float" / "web" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('src="/float.ico"', html)
+        self.assertIn('id="float-mascot"', html)
+        self.assertIn('id="mascot-bubble"', html)
+        self.assertIn('id="mascot-sprite"', html)
+        self.assertIn('class="mascot-earcups"', html)
+        self.assertIn('class="mascot-body"', html)
