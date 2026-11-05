@@ -1926,3 +1926,8 @@ button, a, .tag, .kit-item, .thread, .rail-link { touch-action: manipulation; -w
   border-color: #3f3f46;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
 }
+
+[data-theme="dark"] .mascot-bubble::before {
+  background: #18181b;
+  border-color: #3f3f46;
+}
