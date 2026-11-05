@@ -1919,3 +1919,10 @@ button, a, .tag, .kit-item, .thread, .rail-link { touch-action: manipulation; -w
 .mascot-eyes-normal {
   transition: transform 0.12s ease-out;
 }
+
+[data-theme="dark"] .mascot-bubble {
+  background: #18181b;
+  color: #f4f4f5;
+  border-color: #3f3f46;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
