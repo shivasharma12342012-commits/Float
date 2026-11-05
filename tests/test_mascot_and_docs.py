@@ -119,3 +119,9 @@ class TestMascotInteractivityAndStyles(unittest.TestCase):
         self.assertIn(".mascot-eyes-normal", css)
         self.assertIn('[data-theme="dark"] .mascot-bubble', css)
         self.assertIn(".float-mascot.is-talking .mascot-bubble", css)
+
+    def test_app_css_reduced_motion_and_focus_visible(self) -> None:
+        css = (ROOT / "float" / "web" / "app.css").read_text(encoding="utf-8")
+        self.assertIn("@media (prefers-reduced-motion: reduce)", css)
+        self.assertIn(".float-mascot:focus-visible", css)
+        self.assertIn(".float-mascot.is-cheering .mascot-sprite", css)
