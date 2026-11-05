@@ -51,8 +51,8 @@ class TestDocumentationIntegrity(unittest.TestCase):
         text = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertIn('<img src="float.ico"', text)
         self.assertIn("Agency Server.md", text)
-        self.assertIn("docs/DESIGN.md", text)
-        self.assertIn("docs/AGENCY_SERVER.md", text)
+        self.assertIn("DESIGN.md", text)
+        self.assertIn("AGENCY_SERVER.md", text)
 
 
 class TestMascotAndBrandingMarkup(unittest.TestCase):

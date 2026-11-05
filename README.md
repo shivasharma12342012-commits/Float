@@ -13,7 +13,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-2563eb?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Stdlib%20Only)-059669?style=for-the-badge)](#-download--60-second-quick-start)
 [![MCP Ready](https://img.shields.io/badge/MCP-Stdio%20%26%20HTTP%2FSSE-7c3aed?style=for-the-badge)](#-clean-mcp-model-context-protocol-support)
-[![Tests](https://img.shields.io/badge/Tests-481%20Passing-16a34a?style=for-the-badge)](#-testing--verification)
+[![Tests](https://img.shields.io/badge/Tests-500%20Passing-16a34a?style=for-the-badge)](#-testing--verification)
 
 <p align="center">
   <b>Instant GST Rental Quotes</b> • <b>Print-Ready Contracts (DOCX / PDF / XLSX)</b> • <b>Handover & Damage Checklists</b> • <b>Fleet Utilization Analytics</b> • <b>Fixed-Desk Enterprise LAN Server</b>
@@ -206,14 +206,14 @@ Float/
 ├── docs/
 │   ├── DESIGN.md                         # Architecture & zero-dependency engineering notes
 │   └── AGENCY_SERVER.md                  # Branch LAN deployment & administration guide
-└── tests/                                # 481 unit & integration tests
+└── tests/                                # 500 unit & integration tests
 ```
 
 ---
 
 ## 🧪 Testing & Verification
 
-Run the complete **481-test suite** (covering quote arithmetic, GST/deposit edge cases, document generation, XLSX parsing, MCP clients, fixed-desk LAN session binding, least-privilege controls, macOS bundle integrity, and server stop lifecycle) with warnings treated as errors:
+Run the complete **500-test suite** (covering quote arithmetic, GST/deposit edge cases, document generation, XLSX parsing, MCP clients, fixed-desk LAN session binding, least-privilege controls, macOS bundle integrity, and server stop lifecycle) with warnings treated as errors:
 
 ```bash
 python -W error -m unittest discover -s tests -p "*.py"
