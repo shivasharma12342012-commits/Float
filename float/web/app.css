@@ -1869,7 +1869,8 @@ button, a, .tag, .kit-item, .thread, .rail-link { touch-action: manipulation; -w
 }
 
 .float-mascot:hover .mascot-bubble,
-.float-mascot.is-speaking .mascot-bubble {
+.float-mascot.is-speaking .mascot-bubble,
+.float-mascot.is-talking .mascot-bubble {
   opacity: 1;
   visibility: visible;
   transform: translateY(0) scale(1);
