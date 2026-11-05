@@ -448,7 +448,7 @@ function viewFair(wrap) {
     + "Operators using their own API key are never limited."));
   const mk = (label, value) => {
     const field = make("div", "field"); field.append(make("label", null, label));
-    const input = document.createElement("input"); input.type = "number"; input.min = "0";
+    const input = document.createElement("input"); input.type = "number"; input.min = "0"; input.autocomplete = "off"; input.setAttribute("data-lpignore", "true"); input.setAttribute("data-1p-ignore", "true");
     input.value = value; field.append(input); body.append(field); return input;
   };
   const cap = mk("Monthly limit per operator (₹, 0 = none)", Math.round(+(org.teacher_monthly_paise_cap || 0) / 100));
