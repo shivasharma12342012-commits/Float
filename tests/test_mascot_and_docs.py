@@ -92,3 +92,9 @@ class TestMascotAndBrandingMarkup(unittest.TestCase):
         self.assertIn('id="float-mascot"', html)
         self.assertIn('id="mascot-bubble"', html)
         self.assertIn('role="tablist"', html)
+
+    def test_login_js_mascot_and_harden_input(self) -> None:
+        js = (ROOT / "float" / "web" / "login.js").read_text(encoding="utf-8")
+        self.assertIn("initLoginMascot", js)
+        self.assertIn("FloatSecure.hardenInput", js)
+        self.assertNotIn("a school that allows self sign-up", js)
