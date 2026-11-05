@@ -79,6 +79,7 @@ function paintTabs() {
   TABS.forEach(([id, label]) => {
     const button = make("button", null, label);
     button.type = "button";
+    button.setAttribute("role", "tab");
     button.setAttribute("aria-selected", String(id === TAB));
     button.addEventListener("click", () => { TAB = id; render(); });
     bar.append(button);
