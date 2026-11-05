@@ -98,3 +98,10 @@ class TestMascotAndBrandingMarkup(unittest.TestCase):
         self.assertIn("initLoginMascot", js)
         self.assertIn("FloatSecure.hardenInput", js)
         self.assertNotIn("a school that allows self sign-up", js)
+
+    def test_admin_js_mascot_and_harden_all(self) -> None:
+        js = (ROOT / "float" / "web" / "admin.js").read_text(encoding="utf-8")
+        self.assertIn("initAdminMascot", js)
+        self.assertIn("FloatSecure.hardenAll", js)
+        self.assertIn("Weekend SUV tariff update", js)
+        self.assertNotIn("Report cards due Friday", js)
