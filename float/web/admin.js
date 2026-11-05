@@ -650,6 +650,9 @@ function viewNotices(wrap) {
   const addPanel = make("div", "panel");
   const addBody = make("div", "panel-body");
   const title = document.createElement("input");
+  title.autocomplete = "off";
+  title.setAttribute("data-lpignore", "true");
+  title.setAttribute("data-1p-ignore", "true");
   title.placeholder = "Title — e.g. Weekend SUV tariff update";
   title.style.cssText = "width:100%;padding:8px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--paper);margin-bottom:9px";
   const text = document.createElement("textarea");
