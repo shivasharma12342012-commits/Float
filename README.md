@@ -202,6 +202,7 @@ Float/
 │   ├── stats.py                          # Pure-Python fleet/revenue sheet statistics & analysis
 │   ├── tools.py                          # Native rental quote engine, document builder & tool dispatcher
 │   └── web/                              # Smooth, autofill-free vanilla JS/CSS counter workspace & Admin UI
+├── Agency Server.md                      # 5-step Branch LAN quick-start sheet
 ├── docs/
 │   ├── DESIGN.md                         # Architecture & zero-dependency engineering notes
 │   └── AGENCY_SERVER.md                  # Branch LAN deployment & administration guide
