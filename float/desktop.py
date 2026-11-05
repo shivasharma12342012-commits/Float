@@ -3,8 +3,8 @@
 Clicking at guessed coordinates is how a computer assistant ends up typing into
 the wrong window. Everything here works the other way round: ask the operating
 system what is open, bring the right window forward, *confirm* it is in front,
-and (on Windows, with ``pywinauto``) find buttons and search boxes by their
-names instead of by pixels. When something cannot be done or cannot be
+and (on Windows via Win32/``pywinauto``, or on macOS via ``osascript``/System Events)
+find windows, buttons, and search boxes by their names instead of by pixels. When something cannot be done or cannot be
 confirmed, ``ActionFailed`` carries a plain sentence saying what was seen, so
 the run stops honestly instead of carrying on blind.
 """
