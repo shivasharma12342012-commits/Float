@@ -10,8 +10,8 @@ time.
 ``BOOT_NONCE``, a random value generated when the process starts. Close Float and
 the nonce is gone, so every token issued under it stops validating — which is
 exactly the behaviour asked for: shutting the app signs the operator out, on that
-machine and on any tab they left open. Idle timeout and an absolute ceiling apply
-on top of that while it is running.
+machine and on any tab they left open. Idle timeout, an absolute ceiling, and fixed-desk IP session binding (`desk_ip`)
+apply on top of that while it is running.
 
 **API keys at rest.** An agency's OpenAI or Anthropic key is a spending
 instrument, so it is encrypted before it touches SQLite, under a key derived from
