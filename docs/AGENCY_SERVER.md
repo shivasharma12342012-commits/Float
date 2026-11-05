@@ -23,7 +23,7 @@ Float will bind to `0.0.0.0:8766` and display the local network URL (for example
 1. Visit `/login` from the host machine.
 2. Create the initial **Admin** account for your rental branch.
 3. Open `/admin` to configure:
-   - **Agency Name** (e.g. *Apex Car Rentals ? Airport Desk*)
+   - **Agency Name** (e.g. *Apex Car Rentals — Airport Desk*)
    - **Shared AI Key** (OpenRouter, Gemini, OpenAI, Anthropic, Groq, or Local Ollama)
    - **Operator Accounts** (single creation or bulk CSV import)
    - **Default Rental Mode & Vehicle Category**
