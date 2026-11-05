@@ -2362,6 +2362,14 @@ function initMascot() {
       if (!mascot.matches(":hover")) mascot.classList.remove("is-active");
     });
   }
+
+  // Contextual reaction when starting a new quote or task thread
+  const newBtn = $("new-thread");
+  if (newBtn) {
+    newBtn.addEventListener("click", () => {
+      speak("Fresh counter sheet ready! 🧾", 2400);
+    });
+  }
 }
 
 
