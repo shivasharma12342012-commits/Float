@@ -7,7 +7,7 @@ that blocks half of PyPI.
 
 What guards it:
 
-* It binds to 127.0.0.1. Nothing on the branch network can reach it.
+* By default it binds to 127.0.0.1:8766 (or 0.0.0.0:8766 in --lan Agency Server mode with fixed-desk IP session binding).
 * The ``Host`` header is checked, which closes the DNS-rebinding version of the
   same problem — a page on the internet resolving a name to 127.0.0.1 and
   talking to this port from the operator's own browser.
