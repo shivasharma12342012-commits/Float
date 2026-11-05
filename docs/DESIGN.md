@@ -1,4 +1,4 @@
-# Float ? Architecture & Design
+# Float — Architecture & Design
 
 Float is a **zero-dependency, local-first AI operations workspace** engineered for **car rental agencies, fleet managers, and rental counter operators**.
 
