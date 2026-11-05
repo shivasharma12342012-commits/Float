@@ -903,7 +903,7 @@ def add_students(class_id: int, entries: list[dict[str, str]]) -> int:
     rows = [
         (class_id, str(e.get("roll", "")).strip()[:20], str(e.get("name", "")).strip()[:120],
          str(e.get("notes", "")).strip()[:500])
-        for e in list(entries)[:500]          # one request adds at most 500 students
+        for e in list(entries)[:500]          # one request adds at most 500 vehicle/fleet rows
         if str(e.get("name", "")).strip()
     ]
     if not rows:
