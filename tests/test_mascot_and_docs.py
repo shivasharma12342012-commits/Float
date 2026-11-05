@@ -64,3 +64,10 @@ class TestMascotAndBrandingMarkup(unittest.TestCase):
         self.assertIn('id="mascot-sprite"', html)
         self.assertIn('class="mascot-earcups"', html)
         self.assertIn('class="mascot-body"', html)
+
+    def test_index_html_mascot_accessibility_and_eyes_id(self) -> None:
+        html = (ROOT / "float" / "web" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('aria-describedby="mascot-bubble"', html)
+        self.assertIn('data-mascot-ready="true"', html)
+        self.assertIn('id="mascot-eyes-normal"', html)
+        self.assertIn('role="status"', html)
