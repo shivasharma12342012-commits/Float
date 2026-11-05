@@ -5,10 +5,10 @@ Float writes can become a real document, and it builds them here: Word, PDF,
 Excel, CSV, HTML, Markdown and plain text, all from the standard library.
 
 Why write OOXML and PDF by hand rather than install ``python-docx`` and
-``reportlab``. Because this runs on school machines, often behind a proxy that
+``reportlab``. Because this runs on rental counter PCs, often behind a proxy that
 blocks PyPI, and a first-run that fails at ``pip install`` is a product that does
 not work. The subset written here — headings, bold, italic, bullets, numbers,
-tables, page breaks — is the subset a school document actually uses.
+tables, page breaks — is the subset a rental contract, checklist, or invoice actually uses.
 
 The input is Markdown, because that is what the model already produces well.
 """
