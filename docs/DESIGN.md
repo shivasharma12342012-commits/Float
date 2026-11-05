@@ -20,3 +20,4 @@ Float is a **zero-dependency, local-first AI operations workspace** engineered f
 
 - `server.py`: Standard library `ThreadingHTTPServer` (default port `8766`) with a bounded 24-worker `ThreadPoolExecutor`, O(1) static route table, in-memory `ETag` cache, SSE chat streaming, and cookie/session auth.
 - `db.py`: SQLite storage layer (`data/float.sqlite3` in WAL mode) with automatic schema migration, user accounts, fixed-desk IP session binding (`desk_ip`), fleet groups, shift tasks, chat history, and token usage metering.
+- `tools.py` & `artifacts.py`: Deterministic Indian GST (`5%` / `18%` CGST + SGST), extra km/hour tariff engine, deposit settlement math, and zero-dependency `.docx`, `.xlsx`, and `.pdf` document builders.
