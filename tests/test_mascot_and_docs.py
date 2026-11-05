@@ -71,3 +71,10 @@ class TestMascotAndBrandingMarkup(unittest.TestCase):
         self.assertIn('data-mascot-ready="true"', html)
         self.assertIn('id="mascot-eyes-normal"', html)
         self.assertIn('role="status"', html)
+
+    def test_login_html_has_logo_and_pixel_mascot(self) -> None:
+        html = (ROOT / "float" / "web" / "login.html").read_text(encoding="utf-8")
+        self.assertIn('src="/float.ico"', html)
+        self.assertIn('id="float-mascot"', html)
+        self.assertIn('id="mascot-bubble"', html)
+        self.assertIn('class="mascot-svg"', html)
