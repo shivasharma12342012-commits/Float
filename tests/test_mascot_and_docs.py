@@ -16,3 +16,10 @@ class TestDocumentationIntegrity(unittest.TestCase):
         self.assertIn("# Float — Architecture & Design", text)
         self.assertNotIn("# Float ? Architecture & Design", text)
         self.assertIn("8766", text)
+
+    def test_design_md_documents_modules_and_security(self) -> None:
+        text = (ROOT / "docs" / "DESIGN.md").read_text(encoding="utf-8")
+        self.assertIn("## Module Breakdown", text)
+        self.assertIn("## Security & Fixed-Desk Session Architecture", text)
+        self.assertIn("desk_ip", text)
+        self.assertIn("data/float.sqlite3", text)
