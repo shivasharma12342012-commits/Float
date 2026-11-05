@@ -7,7 +7,10 @@
     python main.py --port 9000     use a different port
     python main.py set-password agent@agency.in     reset an operator's password from the terminal
     python main.py make-admin manager@agency.in     promote an existing account to fleet admin
+    python main.py --lan           start as a Branch LAN Agency Server (0.0.0.0:8766)
+    python main.py status          check if Float is running and show its URL/PID
     python main.py stop            stop the running Float server
+    python main.py doctor          run environment and SQLite health diagnostics
     python main.py --version
 
 Everything Float needs lives next to this file once it has run once:
