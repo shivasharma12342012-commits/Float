@@ -62,5 +62,14 @@
     return reply(data, res.status);
   }
 
-  window.FloatSecure = { fetch: secureFetch };
+  function hardenInput(node) {
+    if (!node || typeof node.setAttribute !== "function") return node;
+    node.setAttribute("autocomplete", "off");
+    node.setAttribute("data-lpignore", "true");
+    node.setAttribute("data-1p-ignore", "true");
+    node.setAttribute("data-form-type", "other");
+    return node;
+  }
+
+  window.FloatSecure = { fetch: secureFetch, hardenInput };
 })();
