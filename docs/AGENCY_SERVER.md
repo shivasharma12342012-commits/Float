@@ -43,4 +43,6 @@ python main.py set-password agent@agency.local NewPass123!
 ## 4. Security & Backups
 
 - All credentials and API keys are encrypted at rest with machine-bound encryption in `data/float.sqlite3`.
-- Download a complete SQLite backup or CSV audit log at any time from `/admin`.
+- **Fixed-Desk IP Session Binding (`desk_ip`)**: Every desk operator's login session is locked to their physical counter workstation IP (`desk_ip`), preventing session hijacking across desks.
+- **Least-Privilege Controls**: Regular desk operators cannot stop the branch server, view raw agency API keys, unlock host-side computer automation, or alter MCP server configurations.
+- Download a complete SQLite backup (`data/float.sqlite3`) or CSV audit log at any time from `/admin`.
