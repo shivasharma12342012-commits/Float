@@ -132,3 +132,9 @@ class TestMascotInteractivityAndStyles(unittest.TestCase):
         self.assertIn('const eyesNormal = $("mascot-eyes-normal")', js)
         self.assertIn("Fresh counter sheet ready!", js)
         self.assertIn("is-cheering", js)
+
+    def test_app_js_escape_and_visibilitychange_handlers(self) -> None:
+        js = (ROOT / "float" / "web" / "app.js").read_text(encoding="utf-8")
+        self.assertIn('e.key === "Escape"', js)
+        self.assertIn("visibilitychange", js)
+        self.assertIn("prefers-reduced-motion: reduce", js)
