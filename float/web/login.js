@@ -215,3 +215,23 @@ dark.addEventListener("change", paint);
 paint();
 
 boot();
+
+/* ------------------------------------------------------------------ mascot */
+
+(function initLoginMascot() {
+  const mascot = el("float-mascot");
+  const bubble = el("mascot-bubble");
+  if (!mascot || !bubble) return;
+  const quips = ["Ready for shift?", "Welcome to the desk!", "Keys & quotes ready!", "Have a smooth shift!"];
+  let idx = 0;
+  let timer = null;
+  const react = () => {
+    bubble.textContent = quips[idx % quips.length];
+    idx += 1;
+    mascot.classList.add("is-talking");
+    clearTimeout(timer);
+    timer = setTimeout(() => mascot.classList.remove("is-talking"), 2200);
+  };
+  mascot.addEventListener("mouseenter", react);
+  mascot.addEventListener("click", react);
+})();
