@@ -23,3 +23,12 @@ class TestDocumentationIntegrity(unittest.TestCase):
         self.assertIn("## Security & Fixed-Desk Session Architecture", text)
         self.assertIn("desk_ip", text)
         self.assertIn("data/float.sqlite3", text)
+
+    def test_agency_server_md_uses_port_8766_and_sqlite3(self) -> None:
+        text = (ROOT / "docs" / "AGENCY_SERVER.md").read_text(encoding="utf-8")
+        self.assertIn("0.0.0.0:8766", text)
+        self.assertNotIn("0.0.0.0:8000", text)
+        self.assertIn("data/float.sqlite3", text)
+        self.assertNotIn("data/float.db", text)
+        self.assertIn("Apex Car Rentals — Airport Desk", text)
+        self.assertNotIn("Apex Car Rentals ? Airport Desk", text)
