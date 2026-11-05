@@ -5,8 +5,8 @@
     python main.py --no-browser    start without opening a window
     python main.py --tab           open in a normal browser tab instead of an app window
     python main.py --port 9000     use a different port
-    python main.py set-password you@school.edu.in   reset someone's password from the terminal
-    python main.py make-admin you@school.edu.in     promote an existing account
+    python main.py set-password agent@agency.in     reset an operator's password from the terminal
+    python main.py make-admin manager@agency.in     promote an existing account to fleet admin
     python main.py stop            stop the running Float server
     python main.py --version
 
