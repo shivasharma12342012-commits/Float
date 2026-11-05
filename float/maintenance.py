@@ -155,7 +155,7 @@ def _months_ago(months: int) -> float:
 
 def prune(connect=None, audit_months: int = AUDIT_MONTHS, usage_months: int = USAGE_MONTHS,
           batch: int = BATCH, pause: float = 0.0) -> dict[str, int]:
-    """Delete old audit and usage rows. Chats, classes, marks and accounts are never touched.
+    """Delete old audit and usage rows. Chats, fleet groups, trip logs and accounts are never touched.
 
     Before usage rows go, their totals are folded into ``usage_monthly`` in the same
     transaction, so cost history stays correct.
