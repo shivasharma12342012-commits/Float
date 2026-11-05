@@ -38,3 +38,11 @@ class TestDocumentationIntegrity(unittest.TestCase):
         self.assertIn("Start Float Agency Server.command", text)
         self.assertIn("desk_ip", text)
         self.assertIn("## 5. CLI Administration & Troubleshooting", text)
+
+    def test_root_agency_server_md_integrity(self) -> None:
+        text = (ROOT / "Agency Server.md").read_text(encoding="utf-8")
+        self.assertIn("http://192.168.1.25:8766", text)
+        self.assertNotIn("http://192.168.1.25:8000", text)
+        self.assertIn("Start Float Agency Server.command", text)
+        self.assertIn("Stop Float.command", text)
+        self.assertIn("desk_ip", text)
