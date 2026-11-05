@@ -2,10 +2,10 @@
 
 The operator pastes figures like::
 
-    Name, Q1(5), Q2(5), Q3(10), Q4(10)
-    Aarav, 4, 2, 7, 3
-    Diya, 5, 5, 9, 8
-    Kabir, AB, AB, AB, AB
+    Vehicle, Week1(10), Week2(10), Week3(10), Week4(10)
+    Innova-KA01, 8, 9, 7, 9
+    Creta-KA02, 5, 6, 8, 7
+    Swift-KA03, AB, AB, AB, AB
 
 ``analyse`` parses that, computes with the ``statistics`` module, and returns
 a block of text of exact numbers to put in the prompt. If the marks cannot be
