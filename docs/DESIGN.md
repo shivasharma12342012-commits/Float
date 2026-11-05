@@ -23,3 +23,10 @@ Float is a **zero-dependency, local-first AI operations workspace** engineered f
 - `tools.py` & `artifacts.py`: Deterministic Indian GST (`5%` / `18%` CGST + SGST), extra km/hour tariff engine, deposit settlement math, and zero-dependency `.docx`, `.xlsx`, and `.pdf` document builders.
 - `computer.py` & `desktop.py`: Optional operator-confirmed local desktop automation and window discovery on Windows (`ctypes` Win32/UIA) and macOS (`screencapture`, `osascript`, Quartz).
 - `web/`: Single-page vanilla HTML/CSS/JS frontend (`index.html`, `login.html`, `admin.html`, `app.js`, `app.css`, `secure.js`) with zero build step, autofill suppression, and interactive pixel mascot.
+
+## Security & Fixed-Desk Session Architecture
+
+- **Password Hashing**: Operator and administrator passwords are hashed using standard-library `hashlib.scrypt` (`N=16384, r=8, p=1`) with per-user cryptographic salts.
+- **Encrypted Secrets at Rest**: Shared AI provider API keys stored in SQLite are encrypted using a machine-bound key derived in `security.py`.
+- **Fixed-Desk IP Session Binding (`desk_ip`)**: Every authenticated session records the client workstation IP at login and verifies it on subsequent requests, preventing session token replay from other desks on the branch LAN.
+- **Least-Privilege Operator Controls**: Destructive server lifecycle actions (`/api/server/stop`), local desktop automation, raw API key inspection, and MCP configuration changes require an authenticated `admin` role.
