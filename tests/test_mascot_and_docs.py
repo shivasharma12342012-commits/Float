@@ -111,3 +111,11 @@ class TestMascotAndBrandingMarkup(unittest.TestCase):
         self.assertIn("function hardenInput", js)
         self.assertIn("function hardenAll", js)
         self.assertIn("hardenInput, hardenAll", js)
+
+
+class TestMascotInteractivityAndStyles(unittest.TestCase):
+    def test_app_css_pupil_transition_and_dark_mode_bubble(self) -> None:
+        css = (ROOT / "float" / "web" / "app.css").read_text(encoding="utf-8")
+        self.assertIn(".mascot-eyes-normal", css)
+        self.assertIn('[data-theme="dark"] .mascot-bubble', css)
+        self.assertIn(".float-mascot.is-talking .mascot-bubble", css)
