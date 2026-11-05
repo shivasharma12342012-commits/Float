@@ -1913,3 +1913,8 @@ button, a, .tag, .kit-item, .thread, .rail-link { touch-action: manipulation; -w
   align-items: center;
   gap: 8px;
 }
+
+/* Smooth pupil tracking transition */
+.mascot-eyes-normal {
+  transition: transform 0.12s ease-out;
+}
