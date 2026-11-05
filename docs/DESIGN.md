@@ -15,3 +15,7 @@ Float is a **zero-dependency, local-first AI operations workspace** engineered f
    - Deterministic tools (`calculate_quote`, `create_file`, `look_up_class`, `save_task`, `read_my_day`, `use_computer`) plus Model Context Protocol (`stdio` and `http`/`sse`) tool discovery.
 4. **Single-Operator or Multi-Operator Branch LAN Server**:
    - Works out of the box for a single rental desk (`127.0.0.1:8766`) or scales to a full branch (`0.0.0.0:8766`) with fixed-desk IP session binding (`desk_ip`), role-based access control, audit logging, and encrypted shared API keys.
+
+## Module Breakdown
+
+- `server.py`: Standard library `ThreadingHTTPServer` (default port `8766`) with a bounded 24-worker `ThreadPoolExecutor`, O(1) static route table, in-memory `ETag` cache, SSE chat streaming, and cookie/session auth.
