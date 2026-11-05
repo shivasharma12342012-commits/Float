@@ -1905,3 +1905,11 @@ button, a, .tag, .kit-item, .thread, .rail-link { touch-action: manipulation; -w
 .shell.rail-mini .float-mascot.is-speaking .mascot-bubble {
   transform: translateY(-50%) translateX(0) scale(1);
 }
+
+/* Unified wordmark + mascot alignment on Login Gate and Admin Topbar */
+.gate-art .wordmark,
+.topbar .wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
