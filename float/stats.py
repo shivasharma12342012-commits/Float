@@ -8,7 +8,7 @@ The operator pastes figures like::
     Swift-KA03, AB, AB, AB, AB
 
 ``analyse`` parses that, computes with the ``statistics`` module, and returns
-a block of text of exact numbers to put in the prompt. If the marks cannot be
+a block of text of exact numbers to put in the prompt. If the sheet figures cannot be
 understood it raises ``MarksError`` with a plain-language message instead of
 guessing.
 """
