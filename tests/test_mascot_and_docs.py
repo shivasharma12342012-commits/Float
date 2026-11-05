@@ -78,3 +78,10 @@ class TestMascotAndBrandingMarkup(unittest.TestCase):
         self.assertIn('id="float-mascot"', html)
         self.assertIn('id="mascot-bubble"', html)
         self.assertIn('class="mascot-svg"', html)
+
+    def test_login_html_autofill_suppression_attributes(self) -> None:
+        html = (ROOT / "float" / "web" / "login.html").read_text(encoding="utf-8")
+        self.assertIn('id="quick-pin"', html)
+        self.assertIn('data-lpignore="true"', html)
+        self.assertIn('data-1p-ignore="true"', html)
+        self.assertIn('spellcheck="false"', html)
