@@ -3,7 +3,7 @@
  * Three ways in, in the order a real operator meets them:
  *   quick   a PIN, because this is the same laptop as yesterday
  *   signin  email and password, or Google
- *   signup  the first account on the machine, or a school that allows self sign-up
+ *   signup  the first account on the machine, or a rental agency that allows self sign-up
  *
  * The session token lives in sessionStorage and nowhere else. Close the window,
  * close the app, and the token is gone — which is the whole of the
