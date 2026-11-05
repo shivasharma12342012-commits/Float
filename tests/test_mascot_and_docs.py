@@ -46,3 +46,10 @@ class TestDocumentationIntegrity(unittest.TestCase):
         self.assertIn("Start Float Agency Server.command", text)
         self.assertIn("Stop Float.command", text)
         self.assertIn("desk_ip", text)
+
+    def test_readme_references_float_ico_and_docs(self) -> None:
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn('<img src="float.ico"', text)
+        self.assertIn("Agency Server.md", text)
+        self.assertIn("docs/DESIGN.md", text)
+        self.assertIn("docs/AGENCY_SERVER.md", text)
