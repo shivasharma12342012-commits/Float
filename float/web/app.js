@@ -2332,6 +2332,22 @@ function initMascot() {
   }
   scheduleBlink();
 
+  // Subtle pupil tracking when cursor moves inside the top rail
+  const railTop = document.querySelector(".rail-top");
+  const eyesNormal = $("mascot-eyes-normal");
+  const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
+  if (railTop && eyesNormal) {
+    railTop.addEventListener("mousemove", (e) => {
+      if (reducedMotion && reducedMotion.matches) return;
+      const rect = mascot.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = Math.max(-1, Math.min(1, (e.clientX - cx) / 48));
+      const dy = Math.max(-1, Math.min(1, (e.clientY - cy) / 48));
+      eyesNormal.style.transform = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px)`;
+    });
+  }
+
   // Also perk up mascot when hovering over the wordmark logo/title
   const wm = document.querySelector(".wordmark");
   if (wm) {
