@@ -2370,6 +2370,14 @@ function initMascot() {
       speak("Fresh counter sheet ready! 🧾", 2400);
     });
   }
+
+  // Contextual reaction when opening fleet tools or schedule drawers
+  document.querySelectorAll("[data-open]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      mascot.classList.add("is-cheering");
+      setTimeout(() => mascot.classList.remove("is-cheering"), 850);
+    });
+  });
 }
 
 
