@@ -32,3 +32,9 @@ class TestDocumentationIntegrity(unittest.TestCase):
         self.assertNotIn("data/float.db", text)
         self.assertIn("Apex Car Rentals — Airport Desk", text)
         self.assertNotIn("Apex Car Rentals ? Airport Desk", text)
+
+    def test_agency_server_md_documents_desk_ip_and_macos(self) -> None:
+        text = (ROOT / "docs" / "AGENCY_SERVER.md").read_text(encoding="utf-8")
+        self.assertIn("Start Float Agency Server.command", text)
+        self.assertIn("desk_ip", text)
+        self.assertIn("## 5. CLI Administration & Troubleshooting", text)
