@@ -12,7 +12,7 @@ Run from PowerShell or Command Prompt:
 python main.py --lan
 ```
 
-Or double-click **`Start Float Agency Server.bat`**.
+Or double-click **`Start Float Agency Server.bat`** on Windows, or **`Start Float Agency Server.command`** on macOS.
 
 Float will bind to `0.0.0.0:8766` and display the local network URL (for example `http://192.168.1.40:8766`).
 
