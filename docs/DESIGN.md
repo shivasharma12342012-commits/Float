@@ -22,3 +22,4 @@ Float is a **zero-dependency, local-first AI operations workspace** engineered f
 - `db.py`: SQLite storage layer (`data/float.sqlite3` in WAL mode) with automatic schema migration, user accounts, fixed-desk IP session binding (`desk_ip`), fleet groups, shift tasks, chat history, and token usage metering.
 - `tools.py` & `artifacts.py`: Deterministic Indian GST (`5%` / `18%` CGST + SGST), extra km/hour tariff engine, deposit settlement math, and zero-dependency `.docx`, `.xlsx`, and `.pdf` document builders.
 - `computer.py` & `desktop.py`: Optional operator-confirmed local desktop automation and window discovery on Windows (`ctypes` Win32/UIA) and macOS (`screencapture`, `osascript`, Quartz).
+- `web/`: Single-page vanilla HTML/CSS/JS frontend (`index.html`, `login.html`, `admin.html`, `app.js`, `app.css`, `secure.js`) with zero build step, autofill suppression, and interactive pixel mascot.
