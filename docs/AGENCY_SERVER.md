@@ -42,5 +42,5 @@ python main.py set-password agent@agency.local NewPass123!
 
 ## 4. Security & Backups
 
-- All credentials and API keys are encrypted at rest with AES-GCM / Fernet in `data/float.db`.
+- All credentials and API keys are encrypted at rest with machine-bound encryption in `data/float.sqlite3`.
 - Download a complete SQLite backup or CSV audit log at any time from `/admin`.
