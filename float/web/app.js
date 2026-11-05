@@ -2315,6 +2315,8 @@ function initMascot() {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       mascot.click();
+    } else if (e.key === "Escape") {
+      mascot.classList.remove("is-speaking", "is-active");
     }
   });
 
