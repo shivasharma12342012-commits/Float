@@ -835,7 +835,7 @@ def unlock(ctx: Route) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Classes, students, marks, attendance, tasks, timetable
+# Fleet groups, vehicles, revenue logs, availability, ops tasks, shift schedule
 # ---------------------------------------------------------------------------
 @route("GET", "/api/classes")
 def classes_list(ctx: Route) -> dict[str, Any]:
