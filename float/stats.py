@@ -1,4 +1,4 @@
-"""Float — class statistics, calculated in Python (never by the AI).
+"""Float — fleet & revenue sheet statistics, calculated in Python (never by the AI).
 
 The operator pastes figures like::
 
