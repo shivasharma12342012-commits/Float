@@ -2303,7 +2303,7 @@ function initMascot() {
   // Click celebration spin
   mascot.addEventListener("click", (e) => {
     e.stopPropagation();
-    mascot.classList.add("is-spinning");
+    if (!(reducedMotion && reducedMotion.matches)) mascot.classList.add("is-spinning");
     const pick = excitedPhrases[Math.floor(Math.random() * excitedPhrases.length)];
     speak(pick, 3500);
     setTimeout(() => {
