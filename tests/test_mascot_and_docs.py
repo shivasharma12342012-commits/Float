@@ -85,3 +85,10 @@ class TestMascotAndBrandingMarkup(unittest.TestCase):
         self.assertIn('data-lpignore="true"', html)
         self.assertIn('data-1p-ignore="true"', html)
         self.assertIn('spellcheck="false"', html)
+
+    def test_admin_html_has_logo_mascot_and_tablist(self) -> None:
+        html = (ROOT / "float" / "web" / "admin.html").read_text(encoding="utf-8")
+        self.assertIn('src="/float.ico"', html)
+        self.assertIn('id="float-mascot"', html)
+        self.assertIn('id="mascot-bubble"', html)
+        self.assertIn('role="tablist"', html)
