@@ -46,3 +46,20 @@ python main.py set-password agent@agency.local NewPass123!
 - **Fixed-Desk IP Session Binding (`desk_ip`)**: Every desk operator's login session is locked to their physical counter workstation IP (`desk_ip`), preventing session hijacking across desks.
 - **Least-Privilege Controls**: Regular desk operators cannot stop the branch server, view raw agency API keys, unlock host-side computer automation, or alter MCP server configurations.
 - Download a complete SQLite backup (`data/float.sqlite3`) or CSV audit log at any time from `/admin`.
+
+---
+
+## 5. CLI Administration & Troubleshooting
+
+Run these commands from the host computer terminal at any time:
+
+```powershell
+# Check server health, active PID, and listening address
+python main.py status
+
+# Gracefully stop the running Float server
+python main.py stop
+
+# Run environment and SQLite diagnostics
+python main.py doctor
+```
