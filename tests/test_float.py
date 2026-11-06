@@ -3218,5 +3218,9 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(security.decrypt_secret(c1), "sk-same-secret")
         self.assertEqual(security.decrypt_secret(c2), "sk-same-secret")
 
+    def test_bugcheck_104_config_providers_default_models_exist(self):
+        for pid, p in config.PROVIDERS.items():
+            self.assertIsNotNone(p.model(p.default_model), f"{pid} default_model missing")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
