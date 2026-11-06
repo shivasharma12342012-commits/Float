@@ -2504,5 +2504,8 @@ class HardeningTests(unittest.TestCase):
     def test_bugcheck_015_toolkit_alias_service_planner(self):
         self.assertEqual(tools.toolkit_entry("service-planner")["id"], "pacing")
 
+    def test_bugcheck_016_toolkit_alias_dispute(self):
+        self.assertEqual(tools.toolkit_entry("dispute")["id"], "doubt")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
