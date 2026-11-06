@@ -2691,5 +2691,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹5,100.00", res["text"])
 
+    def test_bugcheck_041_quote_tata_harrier(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Tata Harrier", "days": 3, "daily_rate": 3700,
+            "included_km_per_day": 250, "actual_km": 850, "extra_km_rate": 18,
+            "extra_hours": 2, "extra_hour_rate": 300, "driver_allowance_per_day": 650,
+            "toll_parking": 400, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 500, "gst_percent": 5, "security_deposit": 7500
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹11,100.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
