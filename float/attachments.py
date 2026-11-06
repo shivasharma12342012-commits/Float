@@ -147,7 +147,7 @@ def to_text(att: dict[str, Any]) -> str:
     """Return the text of one attachment, or raise AttachmentError with a plain message."""
     name = str(att.get("name") or "file").strip() or "file"
     if att.get("text"):
-        return str(att["text"])[:MAX_CHARS]
+        return str(att["text"]).lstrip("\ufeff")[:MAX_CHARS]
     try:
         data = base64.b64decode(att.get("data", ""), validate=False)
     except (binascii.Error, ValueError):
