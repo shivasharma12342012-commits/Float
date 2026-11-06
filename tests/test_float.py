@@ -2576,5 +2576,10 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(res["card"]["kind"], "pdf")
         self.assertGreater(res["card"]["size"], 100)
 
+    def test_bugcheck_028_create_file_xlsx_creates_valid_artifact_card(self):
+        res = tools.execute("create_file", {"kind": "xlsx", "name": "FleetSheet", "content": "| Vehicle | Rate |\n|---|---|\n| Creta | 2800 |"}, {"id": 1, "name": "Op"}, None)
+        self.assertIn("FleetSheet.xlsx", res["text"])
+        self.assertEqual(res["card"]["kind"], "xlsx")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
