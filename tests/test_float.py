@@ -2701,5 +2701,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹11,100.00", res["text"])
 
+    def test_bugcheck_042_quote_tata_safari(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Tata Safari", "days": 5, "daily_rate": 4100,
+            "included_km_per_day": 250, "actual_km": 1400, "extra_km_rate": 19,
+            "extra_hours": 0, "extra_hour_rate": 340, "driver_allowance_per_day": 700,
+            "toll_parking": 600, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 5, "security_deposit": 8500
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹20,500.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
