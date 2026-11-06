@@ -2511,5 +2511,9 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(tools.toolkit_entry("  RENTAL-AGREEMENT ")["id"], "lesson-plan")
         self.assertEqual(tools.toolkit_entry("  WORKSHEET ")["id"], "worksheet")
 
+    def test_bugcheck_018_safe_name_strips_leading_dot_from_ext(self):
+        self.assertEqual(artifacts.safe_name("Invoice", ".pdf"), "Invoice.pdf")
+        self.assertEqual(artifacts.safe_name("Invoice.pdf", ".pdf"), "Invoice.pdf")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
