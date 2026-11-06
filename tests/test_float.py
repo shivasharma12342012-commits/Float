@@ -2741,5 +2741,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹5,700.00", res["text"])
 
+    def test_bugcheck_046_quote_toyota_rumion(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Toyota Rumion", "days": 4, "daily_rate": 2750,
+            "included_km_per_day": 250, "actual_km": 1080, "extra_km_rate": 14,
+            "extra_hours": 0, "extra_hour_rate": 220, "driver_allowance_per_day": 550,
+            "toll_parking": 250, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 5, "security_deposit": 5000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹11,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
