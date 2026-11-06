@@ -956,12 +956,14 @@ def class_marks(class_id: int) -> list[dict[str, Any]]:
 
 
 def save_attendance(class_id: int, on_date: str, present: list[int], absent: list[int]) -> None:
+    clean_p = list(dict.fromkeys(int(x) for x in (present or [])))
+    clean_a = [int(x) for x in dict.fromkeys(int(x) for x in (absent or [])) if int(x) not in set(clean_p)]
     with cursor() as db:
         db.execute(
             """INSERT INTO attendance(class_id,on_date,present,absent) VALUES(?,?,?,?)
                ON CONFLICT(class_id,on_date) DO UPDATE SET
                  present=excluded.present, absent=excluded.absent""",
-            (class_id, on_date, json.dumps(present), json.dumps(absent)),
+            (class_id, on_date, json.dumps(clean_p), json.dumps(clean_a)),
         )
 
 
