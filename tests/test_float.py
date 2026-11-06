@@ -3407,5 +3407,11 @@ class HardeningTests(unittest.TestCase):
         days = db.usage_by_day(days=7)
         self.assertGreaterEqual(len(days), 1)
 
+    def test_bugcheck_128_db_audit_tail_filters_by_level_and_user(self):
+        db.audit("test.warn.128", user_id=777128, actor="Tester", detail="warn detail", level="warn")
+        rows = db.audit_tail(limit=10, level="warn", user_id=777128)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["action"], "test.warn.128")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
