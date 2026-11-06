@@ -2495,5 +2495,8 @@ class HardeningTests(unittest.TestCase):
     def test_bugcheck_012_toolkit_alias_claim_notice(self):
         self.assertEqual(tools.toolkit_entry("claim-notice")["id"], "marking")
 
+    def test_bugcheck_013_toolkit_alias_shift_briefing(self):
+        self.assertEqual(tools.toolkit_entry("shift-briefing")["id"], "assembly")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
