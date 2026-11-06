@@ -2991,5 +2991,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹8,850.00", res["text"])
 
+    def test_bugcheck_071_quote_maruti_jimny_4x4(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Maruti Jimny 4x4", "days": 4, "daily_rate": 3100,
+            "included_km_per_day": 250, "actual_km": 1090, "extra_km_rate": 16,
+            "extra_hours": 2, "extra_hour_rate": 250, "driver_allowance_per_day": 0,
+            "toll_parking": 300, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 200, "gst_percent": 5, "security_deposit": 6500
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹12,400.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
