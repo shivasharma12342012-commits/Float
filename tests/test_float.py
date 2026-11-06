@@ -2661,5 +2661,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹7,950.00", res["text"])
 
+    def test_bugcheck_038_quote_toyota_urban_cruiser_hyryder(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Toyota Urban Cruiser Hyryder", "days": 4, "daily_rate": 2850,
+            "included_km_per_day": 250, "actual_km": 1100, "extra_km_rate": 15,
+            "extra_hours": 1, "extra_hour_rate": 240, "driver_allowance_per_day": 600,
+            "toll_parking": 350, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 400, "gst_percent": 5, "security_deposit": 5000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹11,400.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
