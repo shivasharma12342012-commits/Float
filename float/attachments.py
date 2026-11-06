@@ -145,6 +145,8 @@ def xlsx_text(data: bytes) -> str:
 
 def to_text(att: dict[str, Any]) -> str:
     """Return the text of one attachment, or raise AttachmentError with a plain message."""
+    if not isinstance(att, dict):
+        raise AttachmentError("Invalid attachment payload.")
     name = str(att.get("name") or "file").strip() or "file"
     if att.get("text"):
         return str(att["text"]).lstrip("\ufeff")[:MAX_CHARS]
