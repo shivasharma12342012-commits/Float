@@ -1148,5 +1148,5 @@ def set_cap_override(user_id: int, paise: int | None) -> None:
     if paise is None:
         custom.pop(str(user_id), None)
     else:
-        custom[str(user_id)] = int(paise)
+        custom[str(user_id)] = max(0, int(paise))
     org_set("cap_overrides", json.dumps(custom))
