@@ -2791,5 +2791,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹28,500.00", res["text"])
 
+    def test_bugcheck_051_quote_toyota_camry_hybrid(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Toyota Camry Hybrid", "days": 2, "daily_rate": 7800,
+            "included_km_per_day": 250, "actual_km": 550, "extra_km_rate": 28,
+            "extra_hours": 1, "extra_hour_rate": 600, "driver_allowance_per_day": 750,
+            "toll_parking": 350, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 500, "gst_percent": 5, "security_deposit": 18000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹15,600.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
