@@ -2831,5 +2831,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹30,600.00", res["text"])
 
+    def test_bugcheck_055_quote_audi_a4(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Audi A4", "days": 2, "daily_rate": 9400,
+            "included_km_per_day": 250, "actual_km": 530, "extra_km_rate": 36,
+            "extra_hours": 0, "extra_hour_rate": 720, "driver_allowance_per_day": 800,
+            "toll_parking": 300, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 18, "security_deposit": 20000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹18,800.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
