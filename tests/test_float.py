@@ -2801,5 +2801,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹15,600.00", res["text"])
 
+    def test_bugcheck_052_quote_skoda_superb(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Skoda Superb", "days": 3, "daily_rate": 6800,
+            "included_km_per_day": 250, "actual_km": 820, "extra_km_rate": 25,
+            "extra_hours": 2, "extra_hour_rate": 520, "driver_allowance_per_day": 700,
+            "toll_parking": 300, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 400, "gst_percent": 5, "security_deposit": 15000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹20,400.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
