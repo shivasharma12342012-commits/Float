@@ -2721,5 +2721,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹15,400.00", res["text"])
 
+    def test_bugcheck_044_quote_hyundai_alcazar(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Hyundai Alcazar", "days": 3, "daily_rate": 3400,
+            "included_km_per_day": 250, "actual_km": 800, "extra_km_rate": 16,
+            "extra_hours": 1, "extra_hour_rate": 280, "driver_allowance_per_day": 600,
+            "toll_parking": 200, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 5, "security_deposit": 7000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹10,200.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
