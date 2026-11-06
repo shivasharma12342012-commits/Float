@@ -251,6 +251,7 @@ class RateLimiter:
 
     def check(self, key: str) -> tuple[bool, float]:
         """(allowed, seconds_to_wait)."""
+        key = str(key or "anon")
         now = time.time()
         with self._lock:
             state = self._keys.get(key)
