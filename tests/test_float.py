@@ -3198,5 +3198,10 @@ class HardeningTests(unittest.TestCase):
             sheet = zf.read("xl/worksheets/sheet1.xml").decode("utf-8")
         self.assertIn("2800.50", sheet)
 
+    def test_bugcheck_100_security_password_problems_rejects_overlong(self):
+        problems = security.password_problems("short")
+        self.assertTrue(any("10" in p for p in problems))
+        self.assertEqual(security.password_problems("StrongPass#2026"), [])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
