@@ -2821,5 +2821,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹19,600.00", res["text"])
 
+    def test_bugcheck_054_quote_bmw_3_series_gran_limousine(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "BMW 3 Series Gran Limousine", "days": 3, "daily_rate": 10200,
+            "included_km_per_day": 250, "actual_km": 810, "extra_km_rate": 40,
+            "extra_hours": 2, "extra_hour_rate": 800, "driver_allowance_per_day": 850,
+            "toll_parking": 500, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 600, "gst_percent": 18, "security_deposit": 24000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹30,600.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
