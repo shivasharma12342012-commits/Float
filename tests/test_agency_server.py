@@ -24,6 +24,7 @@ REMOTE = {"X-Forwarded-For": "10.0.0.23"}
 class AgencyServerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls._prev_data_dir = os.environ.get("FLOAT_DATA_DIR")
         cls.data_dir = Path(tempfile.mkdtemp(prefix="float-lan-"))
         os.environ["FLOAT_DATA_DIR"] = str(cls.data_dir)
         os.environ["FLOAT_ALLOW_PLAINTEXT"] = "1"
@@ -43,6 +44,8 @@ class AgencyServerTests(unittest.TestCase):
         cls.config.settings.lan = False
         cls.srv.shutdown()
         cls.srv.server_close()
+        if cls._prev_data_dir is not None:
+            os.environ["FLOAT_DATA_DIR"] = cls._prev_data_dir
         shutil.rmtree(cls.data_dir, ignore_errors=True)
 
     def call(self, path, body=None, token=None, method=None, headers=None):
