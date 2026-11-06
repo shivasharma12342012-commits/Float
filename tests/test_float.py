@@ -2731,5 +2731,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹10,200.00", res["text"])
 
+    def test_bugcheck_045_quote_maruti_xl6(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Maruti XL6", "days": 2, "daily_rate": 2850,
+            "included_km_per_day": 250, "actual_km": 550, "extra_km_rate": 15,
+            "extra_hours": 2, "extra_hour_rate": 230, "driver_allowance_per_day": 550,
+            "toll_parking": 150, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 200, "gst_percent": 5, "security_deposit": 5000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹5,700.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
