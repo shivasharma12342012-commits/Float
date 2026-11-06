@@ -1010,7 +1010,9 @@ def timetable_get(ctx: Route) -> dict[str, Any]:
 @route("POST", "/api/timetable")
 def timetable_set(ctx: Route) -> dict[str, Any]:
     user = ctx.require_user()
-    db.set_periods(int(user["id"]), ctx.body.get("periods") or [])
+    raw_periods = ctx.body.get("periods")
+    periods = raw_periods if isinstance(raw_periods, list) else []
+    db.set_periods(int(user["id"]), periods)
     return {"ok": True, "periods": db.list_periods(int(user["id"])),
             "greeting": greeting.build(db.get_user(int(user["id"])) or user)}
 
