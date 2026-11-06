@@ -3135,5 +3135,13 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(parsed.students), 1)
         self.assertIn("outside", parsed.problems[0])
 
+    def test_bugcheck_089_stats_compute_quartiles_and_bands(self):
+        raw = "Car, Trip(100)\nC1, 95\nC2, 82\nC3, 68\nC4, 55\nC5, 42\nC6, 25"
+        res = stats.compute(stats.parse(raw))
+        self.assertEqual(res["n"], 6)
+        self.assertGreater(res["sd"], 0.0)
+        self.assertIsNotNone(res["threshold"])
+        self.assertIsInstance(res["below"], list)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
