@@ -3119,5 +3119,11 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(parsed.students[0].status, "incomplete")
         self.assertEqual(parsed.students[1].status, "ok")
 
+    def test_bugcheck_086_stats_parse_mismatched_column_count(self):
+        parsed = stats.parse("Vehicle, W1(10), W2(10)\nCreta, 8, 9\nInnova, 7")
+        self.assertEqual(len(parsed.students), 1)
+        self.assertEqual(len(parsed.problems), 1)
+        self.assertIn("Innova", parsed.problems[0])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
