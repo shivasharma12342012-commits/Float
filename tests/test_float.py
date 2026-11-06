@@ -3341,5 +3341,27 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_conversation(cid, 1)
 
+    def test_bugcheck_122_agent_run_multi_round_tool_stores_clean_history(self):
+        import unittest.mock as mock, float.agent as agent
+        cid = db.new_conversation(1, "New conversation")
+        fake_turns = [
+            [{"type": "text", "text": "Calculating now. "},
+             {"type": "tool", "id": "call_1", "name": "calculate_quote", "input": {"days": 2, "daily_rate": 2000}},
+             {"type": "usage", "tokens_in": 50, "tokens_out": 20},
+             {"type": "done", "stop": "tool_use"}],
+            [{"type": "text", "text": "The bill is ready."},
+             {"type": "usage", "tokens_in": 80, "tokens_out": 15},
+             {"type": "done", "stop": "end_turn"}],
+        ]
+        try:
+            with mock.patch("float.providers.stream", side_effect=fake_turns):
+                events = list(agent.run({"id": 1, "name": "Op"}, cid, "Quote for 2 days at 2000"))
+            self.assertTrue(any(e["type"] == "done" for e in events))
+            hist = agent._history(cid)
+            self.assertEqual([m["role"] for m in hist], ["user", "assistant", "user", "assistant"])
+            self.assertEqual(hist[2]["content"][0]["type"], "tool_result")
+        finally:
+            db.delete_conversation(cid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
