@@ -2601,5 +2601,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹1,200.00", res["text"])
 
+    def test_bugcheck_032_quote_hyundai_grand_i10(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Hyundai Grand i10", "days": 2, "daily_rate": 1300,
+            "included_km_per_day": 200, "actual_km": 450, "extra_km_rate": 10,
+            "extra_hours": 1, "extra_hour_rate": 120, "driver_allowance_per_day": 0,
+            "toll_parking": 150, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 5, "security_deposit": 2500
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹2,600.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
