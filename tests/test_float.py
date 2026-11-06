@@ -2547,5 +2547,19 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_class(cid, 1)
 
+    def test_bugcheck_024_look_up_class_includes_students_marks_attendance(self):
+        cid = db.add_class(1, "Prime Sedans", "2", "B", "Executive Sedan")
+        try:
+            db.add_students(cid, [{"roll": "MH01", "name": "Honda City ZX"}])
+            st = db.list_students(cid)[0]
+            db.record_marks([{"class_id": cid, "student_id": st["id"], "assessment": "Trip1", "score": 90, "max_score": 100}])
+            db.save_attendance(cid, "2026-11-06", [st["id"]], [])
+            res = tools.execute("look_up_class", {"class_name": "Prime Sedans", "include": ["students", "marks", "attendance"]}, {"id": 1}, None)
+            self.assertIn("Honda City ZX", res["text"])
+            self.assertIn("Trip1 90.0/100.0", res["text"])
+            self.assertIn("1 on-lot/active", res["text"])
+        finally:
+            db.delete_class(cid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
