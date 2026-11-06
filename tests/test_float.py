@@ -2413,5 +2413,14 @@ class HardeningTests(unittest.TestCase):
             with db.cursor() as cur:
                 cur.execute("DELETE FROM usage_monthly WHERE user_id=?", (777001,))
 
+    def test_bugcheck_002_set_cap_override_clamps_negative_paise(self):
+        db.set_cap_override(777002, -500)
+        try:
+            cap, is_custom = db.cap_for(777002)
+            self.assertEqual(cap, 0)
+            self.assertTrue(is_custom)
+        finally:
+            db.set_cap_override(777002, None)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
