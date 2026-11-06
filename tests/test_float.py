@@ -3392,5 +3392,12 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_conversation(cid, 1)
 
+    def test_bugcheck_126_db_own_work_summary_share_calculation(self):
+        db.log_own_work(1, "Contract126.docx", 200, 200)
+        summary = db.own_work_summary(1)
+        self.assertGreaterEqual(summary["own"], 200)
+        self.assertGreaterEqual(summary["n"], 1)
+        self.assertIsNotNone(summary["own_share"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
