@@ -2515,5 +2515,12 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(artifacts.safe_name("Invoice", ".pdf"), "Invoice.pdf")
         self.assertEqual(artifacts.safe_name("Invoice.pdf", ".pdf"), "Invoice.pdf")
 
+    def test_bugcheck_019_attachments_to_text_strips_utf8_bom(self):
+        import base64, float.attachments as attachments
+        b64 = base64.b64encode("\ufeffVehicle,Revenue\nCreta,2800".encode("utf-8")).decode("ascii")
+        txt = attachments.to_text({"name": "sheet.csv", "data": b64})
+        self.assertFalse(txt.startswith("\ufeff"))
+        self.assertTrue(txt.startswith("Vehicle,Revenue"))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
