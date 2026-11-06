@@ -2971,5 +2971,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹4,600.00", res["text"])
 
+    def test_bugcheck_069_quote_mahindra_bolero_neo(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Mahindra Bolero Neo", "days": 5, "daily_rate": 2500,
+            "included_km_per_day": 250, "actual_km": 1350, "extra_km_rate": 14,
+            "extra_hours": 2, "extra_hour_rate": 200, "driver_allowance_per_day": 550,
+            "toll_parking": 350, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 250, "gst_percent": 5, "security_deposit": 5000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹12,500.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
