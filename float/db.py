@@ -996,7 +996,7 @@ def set_periods(user_id: int, rows: list[dict[str, Any]]) -> None:
         db.executemany(
             "INSERT INTO periods(user_id,weekday,slot,starts,ends,label,room) VALUES(?,?,?,?,?,?,?)",
             [
-                (user_id, _safe_int(r.get("weekday", 0), 0), _safe_int(r.get("slot", 1), 1), str(r.get("starts", ""))[:10],
+                (user_id, max(0, min(6, _safe_int(r.get("weekday", 0), 0))), max(1, _safe_int(r.get("slot", 1), 1)), str(r.get("starts", ""))[:10],
                  str(r.get("ends", ""))[:10], str(r.get("label", ""))[:80], str(r.get("room", ""))[:40])
                 for r in list(rows)[:80] if isinstance(r, dict)
             ],
