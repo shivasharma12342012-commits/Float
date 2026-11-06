@@ -2891,5 +2891,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹56,000.00", res["text"])
 
+    def test_bugcheck_061_quote_force_traveller_17_seater(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Force Traveller 17-Seater", "days": 4, "daily_rate": 6800,
+            "included_km_per_day": 250, "actual_km": 1150, "extra_km_rate": 24,
+            "extra_hours": 3, "extra_hour_rate": 500, "driver_allowance_per_day": 800,
+            "toll_parking": 900, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 500, "gst_percent": 5, "security_deposit": 12000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹27,200.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
