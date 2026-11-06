@@ -3203,5 +3203,9 @@ class HardeningTests(unittest.TestCase):
         self.assertTrue(any("10" in p for p in problems))
         self.assertEqual(security.password_problems("StrongPass#2026"), [])
 
+    def test_bugcheck_101_security_pin_problems_rejects_over_six_digits(self):
+        self.assertTrue(security.pin_problems("135792468"))
+        self.assertEqual(security.pin_problems("135792"), [])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
