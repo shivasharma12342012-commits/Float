@@ -1122,6 +1122,7 @@ _TOOLKIT_ALIASES = {
     "question_paper": "question-paper",
     "rate-card": "worksheet",
     "instant-quote": "worksheet",
+    "quote": "worksheet",
     "damage-assessment": "marking",
     "inspection-standard": "rubric",
     "booking-notes": "remarks",
