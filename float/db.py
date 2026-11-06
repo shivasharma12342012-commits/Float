@@ -1099,10 +1099,13 @@ def _month_start() -> float:
 
 
 def month_paise(user_id: int) -> float:
+    ym = time.strftime("%Y-%m", time.localtime())
     with cursor() as db:
         row = db.execute("SELECT COALESCE(SUM(paise),0) p FROM usage WHERE user_id=? AND created_at>=?",
                          (user_id, _month_start())).fetchone()
-    return float(row["p"])
+        archived = db.execute("SELECT COALESCE(SUM(paise),0) p FROM usage_monthly WHERE user_id=? AND month=?",
+                              (user_id, ym)).fetchone()
+    return float(row["p"]) + float(archived["p"])
 
 
 def pool_paise() -> float:
