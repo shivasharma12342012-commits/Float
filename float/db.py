@@ -693,10 +693,11 @@ def get_conversation(conv_id: int, user_id: int) -> dict[str, Any] | None:
 
 
 def rename_conversation(conv_id: int, user_id: int, title: str) -> None:
+    clean_title = (title or "").strip()[:120] or "New conversation"
     with cursor() as db:
         db.execute(
             "UPDATE conversations SET title=? WHERE id=? AND user_id=?",
-            (title[:120], conv_id, user_id),
+            (clean_title, conv_id, user_id),
         )
 
 
