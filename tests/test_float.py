@@ -3097,5 +3097,11 @@ class HardeningTests(unittest.TestCase):
         self.assertIsNone(stats._num("-inf"))
         self.assertEqual(stats._num("42.5"), 42.5)
 
+    def test_bugcheck_082_stats_fmt_strips_trailing_zeros(self):
+        self.assertEqual(stats._fmt(10.0), "10")
+        self.assertEqual(stats._fmt(10.50), "10.5")
+        self.assertEqual(stats._fmt(10.25), "10.25")
+        self.assertEqual(stats._fmt(float("nan")), "n/a")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
