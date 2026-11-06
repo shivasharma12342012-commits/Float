@@ -3311,5 +3311,11 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.drop_key("anthropic", scope="org")
 
+    def test_bugcheck_119_agent_run_missing_conversation_yields_error(self):
+        import float.agent as agent
+        events = list(agent.run({"id": 1, "name": "Op"}, 99999999, "Hello"))
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["type"], "error")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
