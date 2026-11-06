@@ -3148,5 +3148,10 @@ class HardeningTests(unittest.TestCase):
         with self.assertRaises(stats.MarksError):
             stats.compute(parsed)
 
+    def test_bugcheck_091_artifacts_column_multi_letter(self):
+        self.assertEqual(artifacts._column(27), "AB")
+        self.assertEqual(artifacts._column(51), "AZ")
+        self.assertEqual(artifacts._column(52), "BA")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
