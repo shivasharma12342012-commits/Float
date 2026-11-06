@@ -3157,5 +3157,11 @@ class HardeningTests(unittest.TestCase):
         blocks = artifacts.parse_markdown("# Title\r\n\r\n- Item 1\r\n- Item 2\r\n")
         self.assertEqual([b.kind for b in blocks], ["h1", "bullet", "bullet"])
 
+    def test_bugcheck_093_artifacts_parse_markdown_unclosed_code_fence(self):
+        blocks = artifacts.parse_markdown("```\nline 1\nline 2")
+        self.assertEqual(len(blocks), 1)
+        self.assertEqual(blocks[0].kind, "code")
+        self.assertIn("line 2", blocks[0].text)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
