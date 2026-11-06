@@ -2851,5 +2851,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹54,000.00", res["text"])
 
+    def test_bugcheck_057_quote_bmw_x3(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "BMW X3", "days": 3, "daily_rate": 13200,
+            "included_km_per_day": 250, "actual_km": 820, "extra_km_rate": 48,
+            "extra_hours": 1, "extra_hour_rate": 980, "driver_allowance_per_day": 900,
+            "toll_parking": 550, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 500, "gst_percent": 18, "security_deposit": 28000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹39,600.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
