@@ -2581,5 +2581,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("FleetSheet.xlsx", res["text"])
         self.assertEqual(res["card"]["kind"], "xlsx")
 
+    def test_bugcheck_029_create_file_csv_creates_valid_artifact_card(self):
+        res = tools.execute("create_file", {"kind": "csv", "name": "BookingsExport", "content": "| Plate | Days |\n|---|---|\n| KA01 | 4 |"}, {"id": 1, "name": "Op"}, None)
+        self.assertIn("BookingsExport.csv", res["text"])
+        self.assertEqual(res["card"]["kind"], "csv")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
