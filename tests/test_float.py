@@ -3163,5 +3163,10 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(blocks[0].kind, "code")
         self.assertIn("line 2", blocks[0].text)
 
+    def test_bugcheck_094_artifacts_parse_markdown_multiline_paragraph(self):
+        blocks = artifacts.parse_markdown("First line\nSecond line\n\nSecond para")
+        self.assertEqual(len(blocks), 2)
+        self.assertEqual(blocks[0].text, "First line Second line")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
