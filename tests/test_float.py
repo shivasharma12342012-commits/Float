@@ -3021,5 +3021,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹6,200.00", res["text"])
 
+    def test_bugcheck_074_quote_maruti_fronx(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Maruti Fronx", "days": 3, "daily_rate": 1850,
+            "included_km_per_day": 250, "actual_km": 800, "extra_km_rate": 12,
+            "extra_hours": 2, "extra_hour_rate": 160, "driver_allowance_per_day": 0,
+            "toll_parking": 180, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 100, "gst_percent": 5, "security_deposit": 4000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹5,550.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
