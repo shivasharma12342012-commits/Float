@@ -3300,5 +3300,16 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(mod, "gpt-4.1-mini")
         self.assertEqual(key, "")
 
+    def test_bugcheck_118_agent_pick_model_uses_stored_org_key(self):
+        import float.agent as agent
+        db.put_key("anthropic", "sk-ant-org-test-118", scope="org")
+        try:
+            prov, mod, key = agent.pick_model({"id": 1}, "anthropic:claude-haiku-4-5")
+            self.assertEqual(prov, "anthropic")
+            self.assertEqual(mod, "claude-haiku-4-5")
+            self.assertEqual(key, "sk-ant-org-test-118")
+        finally:
+            db.drop_key("anthropic", scope="org")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
