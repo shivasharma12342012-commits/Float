@@ -8,7 +8,7 @@
 
 *Forty cars on the lot. Eight handovers a shift. One of you.*
 
-[![Release 1.0.3](https://img.shields.io/badge/Release-v1.0.3-e11d48?style=for-the-badge&logo=github&logoColor=white)](https://github.com/shivasharma12342012-commits/Float/releases/tag/1.0.3)
+[![Release 1.0.4](https://img.shields.io/badge/Release-v1.0.4-e11d48?style=for-the-badge&logo=github&logoColor=white)](https://github.com/shivasharma12342012-commits/Float/releases/tag/1.0.4)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%E2%80%A2%20macOS%20%E2%80%A2%20Linux-0f172a?style=for-the-badge&logo=apple&logoColor=white)](#-download--60-second-quick-start)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-2563eb?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Stdlib%20Only)-059669?style=for-the-badge)](#-download--60-second-quick-start)
@@ -49,12 +49,12 @@ Stop juggling calculators, messy Word templates, WhatsApp rate cards, and scatte
 
 ## 📦 Download & 60-Second Quick Start
 
-Float requires **only Python 3.10 or newer** and opens in **under 0.3 seconds**. Download the latest pre-packaged release (**[v1.0.3](https://github.com/shivasharma12342012-commits/Float/releases/tag/1.0.3)**) for your operating system:
+Float requires **only Python 3.10 or newer** and opens in **under 0.3 seconds**. Download the latest pre-packaged release (**[v1.0.4](https://github.com/shivasharma12342012-commits/Float/releases/tag/1.0.4)**) for your operating system:
 
 | Platform | Direct Download | How to Launch |
 | :--- | :--- | :--- |
-| 🪟 **Windows (x64)** | [**`Float-Windows-x64.zip`**](https://github.com/shivasharma12342012-commits/Float/releases/download/1.0.3/Float-Windows-x64.zip) | Unzip and double-click **`Start Float.bat`** (or **`Start Float.vbs`**). |
-| 🍎 **macOS Universal** *(Apple Silicon & Intel)* | [**`Float-macOS-Universal.zip`**](https://github.com/shivasharma12342012-commits/Float/releases/download/1.0.3/Float-macOS-Universal.zip) · [**`.tar.gz`**](https://github.com/shivasharma12342012-commits/Float/releases/download/1.0.3/Float-macOS-Universal.tar.gz) | Unzip and double-click **`Float.app`** (or **`Start Float.command`**). |
+| 🪟 **Windows (x64)** | [**`Float-Windows-x64.zip`**](https://github.com/shivasharma12342012-commits/Float/releases/download/1.0.4/Float-Windows-x64.zip) | Unzip and double-click **`Start Float.bat`** (or **`Start Float.vbs`**). |
+| 🍎 **macOS Universal** *(Apple Silicon & Intel)* | [**`Float-macOS-Universal.zip`**](https://github.com/shivasharma12342012-commits/Float/releases/download/1.0.4/Float-macOS-Universal.zip) · [**`.tar.gz`**](https://github.com/shivasharma12342012-commits/Float/releases/download/1.0.4/Float-macOS-Universal.tar.gz) | Unzip and double-click **`Float.app`** (or **`Start Float.command`**). |
 
 ### 🪟 Windows One-Click Launchers
 
