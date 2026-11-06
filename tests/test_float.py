@@ -3001,5 +3001,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹12,400.00", res["text"])
 
+    def test_bugcheck_072_quote_mahindra_thar_roxx(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Mahindra Thar Roxx", "days": 3, "daily_rate": 4100,
+            "included_km_per_day": 250, "actual_km": 830, "extra_km_rate": 19,
+            "extra_hours": 2, "extra_hour_rate": 330, "driver_allowance_per_day": 0,
+            "toll_parking": 350, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 300, "gst_percent": 5, "security_deposit": 8500
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹12,300.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
