@@ -3168,5 +3168,10 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(blocks), 2)
         self.assertEqual(blocks[0].text, "First line Second line")
 
+    def test_bugcheck_095_artifacts_build_html_escapes_title_and_subtitle(self):
+        html = artifacts.build_html("Body", "<title>&test", "<b>sub</b>").decode("utf-8")
+        self.assertIn("&lt;title&gt;&amp;test", html)
+        self.assertIn("&lt;b&gt;sub&lt;/b&gt;", html)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
