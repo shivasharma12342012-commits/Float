@@ -2811,5 +2811,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹20,400.00", res["text"])
 
+    def test_bugcheck_053_quote_mercedes_benz_c_class(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Mercedes-Benz C-Class", "days": 2, "daily_rate": 9800,
+            "included_km_per_day": 250, "actual_km": 540, "extra_km_rate": 38,
+            "extra_hours": 1, "extra_hour_rate": 750, "driver_allowance_per_day": 800,
+            "toll_parking": 450, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 18, "security_deposit": 22000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹19,600.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
