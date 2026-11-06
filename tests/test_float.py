@@ -3438,5 +3438,11 @@ class HardeningTests(unittest.TestCase):
         self.assertTrue(kept.exists())
         self.assertEqual(kept.name, "float-before-restore.sqlite3")
 
+    def test_bugcheck_131_toolkit_and_quote_consistency(self):
+        entry = tools.TOOLKIT[0]
+        self.assertEqual(tools.toolkit_entry(entry["id"])["id"], entry["id"])
+        res = tools.execute("calculate_quote", {"days": 1, "daily_rate": 1500, "gst_percent": 5}, {"id": 1}, None)
+        self.assertIn("₹1,500.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
