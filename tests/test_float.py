@@ -3186,5 +3186,11 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Airport Hub", xml)
         self.assertIn("w:br w:type=\"page\"", xml)
 
+    def test_bugcheck_098_artifacts_build_pdf_multipage_and_table(self):
+        md = "# Fleet Report\n\n| Car | Rate |\n|---|---|\n| Innova | 3800 |\n\\pagebreak\n## Page Two\n\n> Note"
+        pdf = artifacts.build_pdf(md, "Fleet Report", "Branch 1")
+        self.assertTrue(pdf.startswith(b"%PDF-1.4"))
+        self.assertIn(b"/Count 2", pdf)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
