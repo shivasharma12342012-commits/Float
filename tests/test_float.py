@@ -2486,5 +2486,8 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("GST (100%): ₹1,000.00", res["text"])
         self.assertIn("GRAND TOTAL BILL: ₹2,000.00", res["text"])
 
+    def test_bugcheck_010_toolkit_alias_quote(self):
+        self.assertEqual(tools.toolkit_entry("quote")["id"], "worksheet")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
