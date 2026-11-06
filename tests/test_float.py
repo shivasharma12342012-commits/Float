@@ -3071,5 +3071,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹6,750.00", res["text"])
 
+    def test_bugcheck_079_quote_skoda_kushaq(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Skoda Kushaq", "days": 4, "daily_rate": 2850,
+            "included_km_per_day": 250, "actual_km": 1100, "extra_km_rate": 15,
+            "extra_hours": 2, "extra_hour_rate": 230, "driver_allowance_per_day": 600,
+            "toll_parking": 300, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 200, "gst_percent": 5, "security_deposit": 5500
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹11,400.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
