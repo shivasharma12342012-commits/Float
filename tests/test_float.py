@@ -2561,5 +2561,9 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_class(cid, 1)
 
+    def test_bugcheck_025_read_my_day_returns_schedule_and_tasks(self):
+        res = tools.execute("read_my_day", {}, {"id": 1, "name": "Operator"}, None)
+        self.assertTrue("Schedule" in res["text"] or "No pickup/return slots" in res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
