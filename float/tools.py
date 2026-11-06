@@ -1133,6 +1133,7 @@ _TOOLKIT_ALIASES = {
     "driver-briefing": "bilingual",
     "promo-campaign": "activity",
     "fleet-recovery": "remedial",
+    "turnaround-plan": "remedial",
     "fleet-schedule": "pacing",
     "fleet-analytics": "analysis",
     "ops-circular": "notice",
