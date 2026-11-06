@@ -25,6 +25,7 @@ import float.server as server
 class ServerStopTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls._prev_data_dir = os.environ.get("FLOAT_DATA_DIR")
         cls.data_dir = Path(tempfile.mkdtemp(prefix="float-stop-test-"))
         os.environ["FLOAT_DATA_DIR"] = str(cls.data_dir)
         os.environ["FLOAT_ALLOW_PLAINTEXT"] = "1"
