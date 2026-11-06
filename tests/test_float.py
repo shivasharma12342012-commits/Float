@@ -3399,5 +3399,13 @@ class HardeningTests(unittest.TestCase):
         self.assertGreaterEqual(summary["n"], 1)
         self.assertIsNotNone(summary["own_share"])
 
+    def test_bugcheck_127_db_usage_for_user_and_by_day(self):
+        before = db.usage_for_user(1, days=7)["calls"]
+        db.record_usage(1, "anthropic", "claude-sonnet-4-5", 120, 80, 25.5, 110, ok=True)
+        u = db.usage_for_user(1, days=7)
+        self.assertEqual(u["calls"], before + 1)
+        days = db.usage_by_day(days=7)
+        self.assertGreaterEqual(len(days), 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
