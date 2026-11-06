@@ -1135,6 +1135,7 @@ _TOOLKIT_ALIASES = {
     "fleet-recovery": "remedial",
     "turnaround-plan": "remedial",
     "fleet-schedule": "pacing",
+    "service-planner": "pacing",
     "fleet-analytics": "analysis",
     "ops-circular": "notice",
     "official-letter": "letter",
