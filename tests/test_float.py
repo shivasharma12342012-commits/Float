@@ -3173,5 +3173,11 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("&lt;title&gt;&amp;test", html)
         self.assertIn("&lt;b&gt;sub&lt;/b&gt;", html)
 
+    def test_bugcheck_096_artifacts_build_csv_from_markdown_table(self):
+        csv_bytes = artifacts.build_csv([["Vehicle", "Rate"], ["Creta", "2800"]])
+        text = csv_bytes.decode("utf-8-sig")
+        self.assertIn("Vehicle,Rate", text.replace("\r\n", "\n"))
+        self.assertIn("Creta,2800", text.replace("\r\n", "\n"))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
