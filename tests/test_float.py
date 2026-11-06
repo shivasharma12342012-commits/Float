@@ -2586,5 +2586,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("BookingsExport.csv", res["text"])
         self.assertEqual(res["card"]["kind"], "csv")
 
+    def test_bugcheck_030_create_file_html_creates_valid_artifact_card(self):
+        res = tools.execute("create_file", {"kind": "html", "name": "RateCardView", "content": "# Tariff\n\nSelf-drive rates."}, {"id": 1, "name": "Op"}, None)
+        self.assertIn("RateCardView.html", res["text"])
+        self.assertEqual(res["card"]["kind"], "html")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
