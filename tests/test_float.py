@@ -2463,5 +2463,14 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_conversation(cid, 1)
 
+    def test_bugcheck_007_add_task_strips_title_and_due_whitespace(self):
+        tid = db.add_task(1, "  Check FASTag balance  ", "  2026-11-10  ")
+        try:
+            tasks = [t for t in db.list_tasks(1) if t["id"] == tid]
+            self.assertEqual(tasks[0]["title"], "Check FASTag balance")
+            self.assertEqual(tasks[0]["due"], "2026-11-10")
+        finally:
+            db.delete_task(tid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
