@@ -2570,5 +2570,11 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("FallbackTest.docx", res["text"])
         self.assertEqual(res["card"]["kind"], "docx")
 
+    def test_bugcheck_027_create_file_pdf_creates_valid_artifact_card(self):
+        res = tools.execute("create_file", {"kind": "pdf", "name": "RentalContract", "content": "# Rental Agreement\n\nTerms apply."}, {"id": 1, "name": "Op"}, None)
+        self.assertIn("RentalContract.pdf", res["text"])
+        self.assertEqual(res["card"]["kind"], "pdf")
+        self.assertGreater(res["card"]["size"], 100)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
