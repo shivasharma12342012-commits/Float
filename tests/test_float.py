@@ -3273,5 +3273,15 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(providers._as_text("plain"), "plain")
         self.assertEqual(providers._as_text([{"type": "text", "text": "A"}, {"type": "text", "text": "B"}]), "A\nB")
 
+    def test_bugcheck_114_providers_price_override_roundtrip(self):
+        import float.providers as providers
+        providers.set_price_override("anthropic", "claude-sonnet-4-5", 300.0, 1500.0)
+        try:
+            st = providers.price_status()
+            self.assertIn("rows", st)
+            providers.set_price_override("anthropic", "claude-sonnet-4-5", "", "")
+        finally:
+            providers.set_price_override("anthropic", "claude-sonnet-4-5", "", "")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
