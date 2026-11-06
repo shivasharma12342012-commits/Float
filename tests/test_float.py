@@ -3431,5 +3431,12 @@ class HardeningTests(unittest.TestCase):
             self.assertAlmostEqual(row["paise"], 120.0)
             cur.execute("DELETE FROM usage_monthly WHERE user_id=1 AND model='gpt-4o-129'")
 
+    def test_bugcheck_130_maintenance_restore_creates_safety_copy(self):
+        import float.maintenance as maintenance
+        bpath = maintenance.backup_now("restoretest")
+        kept = maintenance.restore(bpath)
+        self.assertTrue(kept.exists())
+        self.assertEqual(kept.name, "float-before-restore.sqlite3")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
