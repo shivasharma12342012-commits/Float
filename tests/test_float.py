@@ -3384,5 +3384,13 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_conversation(cid, 1)
 
+    def test_bugcheck_125_db_set_conversation_flag_ignores_invalid_field(self):
+        cid = db.new_conversation(1, "Safe Flag Test")
+        try:
+            db.set_conversation_flag(cid, 1, "title; DROP TABLE users;--", 1)
+            self.assertEqual(db.get_conversation(cid, 1)["title"], "Safe Flag Test")
+        finally:
+            db.delete_conversation(cid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
