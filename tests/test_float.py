@@ -3211,5 +3211,12 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(security.encrypt_secret(""), "")
         self.assertEqual(security.decrypt_secret(""), "")
 
+    def test_bugcheck_103_security_encrypt_secret_distinct_ciphertexts(self):
+        c1 = security.encrypt_secret("sk-same-secret")
+        c2 = security.encrypt_secret("sk-same-secret")
+        self.assertNotEqual(c1, c2)
+        self.assertEqual(security.decrypt_secret(c1), "sk-same-secret")
+        self.assertEqual(security.decrypt_secret(c2), "sk-same-secret")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
