@@ -725,6 +725,7 @@ boot();
   const mascot = $("float-mascot");
   const bubble = $("mascot-bubble");
   if (!mascot || !bubble) return;
+  const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   const quips = ["Fleet admin mode!", "All desks secure!", "Budgets on track!", "Need a backup?"];
   let idx = 0;
   let timer = null;
