@@ -3288,5 +3288,10 @@ class HardeningTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             providers.set_price_override("anthropic", "claude-sonnet-4-5", -10, 100)
 
+    def test_bugcheck_116_providers_set_price_override_rejects_unknown_model(self):
+        import float.providers as providers
+        with self.assertRaises(ValueError):
+            providers.set_price_override("anthropic", "unknown-model-id", 10, 100)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
