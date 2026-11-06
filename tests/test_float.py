@@ -3061,5 +3061,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹8,800.00", res["text"])
 
+    def test_bugcheck_078_quote_mahindra_xuv_3xo(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Mahindra XUV 3XO", "days": 3, "daily_rate": 2250,
+            "included_km_per_day": 250, "actual_km": 820, "extra_km_rate": 14,
+            "extra_hours": 2, "extra_hour_rate": 190, "driver_allowance_per_day": 0,
+            "toll_parking": 210, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 100, "gst_percent": 5, "security_deposit": 4500
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹6,750.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
