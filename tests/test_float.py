@@ -2522,5 +2522,10 @@ class HardeningTests(unittest.TestCase):
         self.assertFalse(txt.startswith("\ufeff"))
         self.assertTrue(txt.startswith("Vehicle,Revenue"))
 
+    def test_bugcheck_020_attachments_to_text_rejects_non_dict(self):
+        import float.attachments as attachments
+        with self.assertRaises(attachments.AttachmentError):
+            attachments.to_text(None)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
