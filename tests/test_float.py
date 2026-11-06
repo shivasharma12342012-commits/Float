@@ -2481,5 +2481,10 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.retire_notice(nid)
 
+    def test_bugcheck_009_calculate_quote_clamps_excessive_gst_percent(self):
+        res = tools.execute("calculate_quote", {"days": 1, "daily_rate": 1000, "gst_percent": 500, "security_deposit": 0}, {"id": 1}, None)
+        self.assertIn("GST (100%): ₹1,000.00", res["text"])
+        self.assertIn("GRAND TOTAL BILL: ₹2,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
