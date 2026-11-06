@@ -2621,5 +2621,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹4,650.00", res["text"])
 
+    def test_bugcheck_034_quote_renault_kiger(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Renault Kiger", "days": 4, "daily_rate": 1600,
+            "included_km_per_day": 250, "actual_km": 1000, "extra_km_rate": 11,
+            "extra_hours": 0, "extra_hour_rate": 150, "driver_allowance_per_day": 500,
+            "toll_parking": 0, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 5, "security_deposit": 3500
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹6,400.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
