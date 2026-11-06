@@ -3268,5 +3268,10 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(providers._loads("{bad"), {})
         self.assertEqual(providers._loads('{"days": 3}'), {"days": 3})
 
+    def test_bugcheck_113_providers_as_text_flattens_blocks(self):
+        import float.providers as providers
+        self.assertEqual(providers._as_text("plain"), "plain")
+        self.assertEqual(providers._as_text([{"type": "text", "text": "A"}, {"type": "text", "text": "B"}]), "A\nB")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
