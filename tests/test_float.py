@@ -2398,5 +2398,20 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(gg[0]["parts"][1]["inlineData"]["mimeType"], "image/png")
         self.assertEqual(gg[0]["parts"][1]["inlineData"]["data"], "iVBORw0KGgo=")
 
+    def test_bugcheck_001_month_and_pool_paise_include_usage_monthly(self):
+        ym = time.strftime("%Y-%m", time.localtime())
+        with db.cursor() as cur:
+            cur.execute(
+                "INSERT INTO usage_monthly(month,user_id,provider,model,calls,tokens_in,tokens_out,paise) "
+                "VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(month,user_id,provider,model) DO UPDATE SET paise=excluded.paise",
+                (ym, 777001, "anthropic", "claude-sonnet-4-5", 2, 100, 100, 345.0),
+            )
+        try:
+            self.assertGreaterEqual(db.month_paise(777001), 345.0)
+            self.assertGreaterEqual(db.pool_paise(), 345.0)
+        finally:
+            with db.cursor() as cur:
+                cur.execute("DELETE FROM usage_monthly WHERE user_id=?", (777001,))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
