@@ -2433,5 +2433,15 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.set_periods(1, prev)
 
+    def test_bugcheck_004_set_periods_clamps_weekday_and_slot_bounds(self):
+        prev = db.list_periods(1)
+        try:
+            db.set_periods(1, [{"weekday": 99, "slot": -5, "starts": "11:00", "ends": "12:00", "label": "Return", "room": "Bay 2"}])
+            periods = db.list_periods(1)
+            self.assertEqual(periods[0]["weekday"], 6)
+            self.assertEqual(periods[0]["slot"], 1)
+        finally:
+            db.set_periods(1, prev)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
