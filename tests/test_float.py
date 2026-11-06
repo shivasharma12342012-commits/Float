@@ -2781,5 +2781,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹17,000.00", res["text"])
 
+    def test_bugcheck_050_quote_kia_ev6(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Kia EV6", "days": 3, "daily_rate": 9500,
+            "included_km_per_day": 250, "actual_km": 800, "extra_km_rate": 35,
+            "extra_hours": 2, "extra_hour_rate": 750, "driver_allowance_per_day": 800,
+            "toll_parking": 500, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 5, "security_deposit": 22000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹28,500.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
