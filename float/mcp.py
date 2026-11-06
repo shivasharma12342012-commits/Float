@@ -426,11 +426,11 @@ class McpHttpClient:
         return tool_list
 
     def call_tool(
-        self, tool_name: str, arguments: dict[str, Any], timeout: float | None = None
+        self, tool_name: str, arguments: dict[str, Any] | None = None, timeout: float | None = None
     ) -> dict[str, Any]:
         t = timeout or self.timeout
         try:
-            res = self._request("tools/call", {"name": tool_name, "arguments": arguments}, timeout=t)
+            res = self._request("tools/call", {"name": tool_name, "arguments": arguments or {}}, timeout=t)
         except Exception as exc:
             return {"text": f"HTTP MCP tool call failed on '{self.name}': {exc}", "card": None}
 
