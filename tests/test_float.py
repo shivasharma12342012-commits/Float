@@ -3153,5 +3153,9 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(artifacts._column(51), "AZ")
         self.assertEqual(artifacts._column(52), "BA")
 
+    def test_bugcheck_092_artifacts_parse_markdown_crlf(self):
+        blocks = artifacts.parse_markdown("# Title\r\n\r\n- Item 1\r\n- Item 2\r\n")
+        self.assertEqual([b.kind for b in blocks], ["h1", "bullet", "bullet"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
