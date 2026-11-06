@@ -2671,5 +2671,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹11,400.00", res["text"])
 
+    def test_bugcheck_039_quote_maruti_grand_vitara(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Maruti Grand Vitara", "days": 6, "daily_rate": 2800,
+            "included_km_per_day": 250, "actual_km": 1600, "extra_km_rate": 15,
+            "extra_hours": 0, "extra_hour_rate": 230, "driver_allowance_per_day": 0,
+            "toll_parking": 500, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 5, "security_deposit": 5000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹16,800.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
