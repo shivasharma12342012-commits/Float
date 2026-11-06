@@ -3253,5 +3253,14 @@ class HardeningTests(unittest.TestCase):
         p = providers.estimate_paise("anthropic", "claude-sonnet-4-5", 1000, 500)
         self.assertGreater(p, 0.0)
 
+    def test_bugcheck_111_providers_clean_schema_strips_unsupported_keys(self):
+        import float.providers as providers
+        raw = {"type": "object", "additionalProperties": False, "$schema": "x", "properties": {"a": {"type": "string", "default": "y", "title": "A"}}}
+        cleaned = providers._clean_schema(raw)
+        self.assertNotIn("additionalProperties", cleaned)
+        self.assertNotIn("$schema", cleaned)
+        self.assertNotIn("default", cleaned["properties"]["a"])
+        self.assertNotIn("title", cleaned["properties"]["a"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
