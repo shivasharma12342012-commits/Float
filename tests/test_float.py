@@ -2761,5 +2761,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹13,500.00", res["text"])
 
+    def test_bugcheck_048_quote_mg_zs_ev(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "MG ZS EV", "days": 2, "daily_rate": 3200,
+            "included_km_per_day": 250, "actual_km": 540, "extra_km_rate": 14,
+            "extra_hours": 1, "extra_hour_rate": 260, "driver_allowance_per_day": 0,
+            "toll_parking": 200, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 5, "security_deposit": 6000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹6,400.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
