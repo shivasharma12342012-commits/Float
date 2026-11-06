@@ -3248,5 +3248,10 @@ class HardeningTests(unittest.TestCase):
         self.assertTrue(g["detail"])
         self.assertTrue(g["opener"])
 
+    def test_bugcheck_110_providers_estimate_paise_known_models(self):
+        import float.providers as providers
+        p = providers.estimate_paise("anthropic", "claude-sonnet-4-5", 1000, 500)
+        self.assertGreater(p, 0.0)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
