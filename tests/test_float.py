@@ -3130,5 +3130,10 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(parsed.students), 1)
         self.assertIn("not a number", parsed.problems[0])
 
+    def test_bugcheck_088_stats_parse_negative_cell(self):
+        parsed = stats.parse("Vehicle, W1(10)\nCreta, 8\nInnova, -3")
+        self.assertEqual(len(parsed.students), 1)
+        self.assertIn("outside", parsed.problems[0])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
