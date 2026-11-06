@@ -2533,5 +2533,10 @@ class HardeningTests(unittest.TestCase):
         self.assertTrue(rl.check("")[0])
         self.assertFalse(rl.check("")[0])
 
+    def test_bugcheck_022_save_task_rejects_whitespace_only_title(self):
+        res = tools.execute("save_task", {"title": "   "}, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("needs a title", res["text"])
+        self.assertIsNone(res["card"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
