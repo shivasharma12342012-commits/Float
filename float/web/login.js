@@ -226,6 +226,7 @@ boot();
   const mascot = el("float-mascot");
   const bubble = el("mascot-bubble");
   if (!mascot || !bubble) return;
+  const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   const quips = ["Ready for shift?", "Welcome to the desk!", "Keys & quotes ready!", "Have a smooth shift!"];
   let idx = 0;
   let timer = null;
