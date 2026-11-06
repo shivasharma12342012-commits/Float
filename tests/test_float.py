@@ -2911,5 +2911,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹24,600.00", res["text"])
 
+    def test_bugcheck_063_quote_force_urbania_17_seater(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Force Urbania 17-Seater", "days": 5, "daily_rate": 8400,
+            "included_km_per_day": 250, "actual_km": 1400, "extra_km_rate": 28,
+            "extra_hours": 2, "extra_hour_rate": 600, "driver_allowance_per_day": 850,
+            "toll_parking": 1000, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 800, "gst_percent": 5, "security_deposit": 15000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹42,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
