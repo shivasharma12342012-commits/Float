@@ -339,6 +339,7 @@ def _to_openai_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         tool_calls: list[dict[str, Any]] = []
         results: list[dict[str, Any]] = []
         screens: list[dict[str, Any]] = []
+        user_images: list[dict[str, Any]] = []
         for block in content:
             btype = block.get("type")
             if btype == "text":
@@ -363,7 +364,11 @@ def _to_openai_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
                             "url": f"data:{src.get('media_type', 'image/jpeg')};base64,{src.get('data', '')}"}})
             elif btype == "image":
                 source = block.get("source", {})
-                text_parts.append(f"[image: {source.get('media_type', 'attached')}]")
+                if source.get("data") and role == "user":
+                    user_images.append({"type": "image_url", "image_url": {
+                        "url": f"data:{source.get('media_type', 'image/png')};base64,{source.get('data', '')}"}})
+                else:
+                    text_parts.append(f"[image: {source.get('media_type', 'attached')}]")
 
         if role == "assistant":
             entry: dict[str, Any] = {"role": "assistant", "content": "\n".join(text_parts) or None}
@@ -375,8 +380,21 @@ def _to_openai_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
             if screens:                                     # tool messages can't carry pictures
                 out.append({"role": "user", "content": [
                     {"type": "text", "text": "The screen as it is now (from the tool above):"}] + screens})
+            if any(p.strip() for p in text_parts) or user_images:
+                if user_images:
+                    parts_oa: list[dict[str, Any]] = []
+                    if any(p.strip() for p in text_parts):
+                        parts_oa.append({"type": "text", "text": "\n".join(text_parts)})
+                    parts_oa.extend(user_images)
+                    out.append({"role": "user", "content": parts_oa})
+                else:
+                    out.append({"role": "user", "content": "\n".join(text_parts)})
+        elif user_images:
+            parts_oa = []
             if any(p.strip() for p in text_parts):
-                out.append({"role": "user", "content": "\n".join(text_parts)})
+                parts_oa.append({"type": "text", "text": "\n".join(text_parts)})
+            parts_oa.extend(user_images)
+            out.append({"role": role, "content": parts_oa})
         else:
             out.append({"role": role, "content": "\n".join(text_parts)})
     return out
@@ -444,6 +462,11 @@ def _to_google_contents(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
             btype = block.get("type")
             if btype == "text" and block.get("text"):
                 parts.append({"text": block["text"]})
+            elif btype == "image":
+                src = block.get("source", {})
+                if src.get("data"):
+                    parts.append({"inlineData": {"mimeType": src.get("media_type", "image/png"),
+                                                 "data": src.get("data", "")}})
             elif btype == "tool_use":
                 parts.append({"functionCall": {"name": block.get("name"),
                                                "args": block.get("input", {})}})

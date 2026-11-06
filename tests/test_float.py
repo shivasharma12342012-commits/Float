@@ -2340,5 +2340,63 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("= ₹3,380.00", res["text"])
         self.assertIn("= ₹4,200.00", res["text"])
 
+    def test_agent_history_reconstructs_tool_results_and_guards_orphans(self):
+        import float.agent as agent
+        conv_id = db.new_conversation(1, "Tool History Test")
+        try:
+            db.add_message(conv_id, "user", "Quote for Creta 3 days")
+            db.add_message(conv_id, "assistant", "", {
+                "blocks": [
+                    {"type": "text", "text": "Checking quote."},
+                    {"type": "tool_use", "id": "tu_1", "name": "calculate_quote", "input": {"days": 3}},
+                ]
+            })
+            db.add_message(conv_id, "tool", '["calculate_quote"]', {
+                "blocks": [
+                    {"type": "tool_result", "tool_use_id": "tu_1", "name": "calculate_quote", "content": "Total: 9000"}
+                ]
+            })
+            db.add_message(conv_id, "assistant", "Checking quote. Total is 9000.", {
+                "blocks": [{"type": "text", "text": "Total is 9000."}]
+            })
+            # Also test an orphaned tool_use (e.g. interrupted turn) gets stripped to text-only
+            db.add_message(conv_id, "user", "Second turn")
+            db.add_message(conv_id, "assistant", "Partial text", {
+                "blocks": [
+                    {"type": "text", "text": "Partial text"},
+                    {"type": "tool_use", "id": "tu_orphan", "name": "save_task", "input": {}},
+                ]
+            })
+            hist = agent._history(conv_id)
+            self.assertEqual([m["role"] for m in hist], ["user", "assistant", "user", "assistant", "user", "assistant"])
+            self.assertEqual(hist[2]["content"][0]["type"], "tool_result")
+            self.assertEqual(hist[2]["content"][0]["tool_use_id"], "tu_1")
+            # Orphaned tool_use was stripped from the last assistant message
+            self.assertEqual(hist[5]["content"], [{"type": "text", "text": "Partial text"}])
+        finally:
+            db.delete_conversation(conv_id, 1)
+
+    def test_providers_user_attached_images_openai_and_google(self):
+        import float.providers as providers
+        messages = [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Inspect this odometer photo"},
+                {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "iVBORw0KGgo="}},
+            ],
+        }]
+        oa = providers._to_openai_messages(messages)
+        self.assertEqual(len(oa), 1)
+        self.assertIsInstance(oa[0]["content"], list)
+        self.assertEqual(oa[0]["content"][0], {"type": "text", "text": "Inspect this odometer photo"})
+        self.assertEqual(oa[0]["content"][1]["type"], "image_url")
+        self.assertIn("data:image/png;base64,iVBORw0KGgo=", oa[0]["content"][1]["image_url"]["url"])
+
+        gg = providers._to_google_contents(messages)
+        self.assertEqual(len(gg), 1)
+        self.assertEqual(len(gg[0]["parts"]), 2)
+        self.assertEqual(gg[0]["parts"][1]["inlineData"]["mimeType"], "image/png")
+        self.assertEqual(gg[0]["parts"][1]["inlineData"]["data"], "iVBORw0KGgo=")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

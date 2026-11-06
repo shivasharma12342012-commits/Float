@@ -802,7 +802,7 @@ def usage_summary(days: int = 30) -> list[dict[str, Any]]:
     since = time.time() - days * 86400
     with cursor() as db:
         rows = db.execute(
-            """SELECT u.id, u.name, u.email, u.role, u.active, u.last_seen, u.sign_ins,
+            """SELECT u.id, u.name, u.email, u.role, u.school, u.active, u.last_seen, u.sign_ins,
                       COALESCE(SUM(g.tokens_in),0)  AS tin,
                       COALESCE(SUM(g.tokens_out),0) AS tout,
                       COALESCE(SUM(g.paise),0)      AS paise,

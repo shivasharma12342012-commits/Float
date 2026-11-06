@@ -2336,13 +2336,13 @@ function initMascot() {
       setTimeout(() => {
         mascot.classList.remove("is-blinking");
         scheduleBlink();
+      }, 160);
+    }, delay);
+  }
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) clearTimeout(blinkTimer);
     else scheduleBlink();
   });
-      }, 160);
-    }, delay);
-  }
   scheduleBlink();
 
   // Subtle pupil tracking when cursor moves inside the top rail
@@ -2385,7 +2385,7 @@ function initMascot() {
   }
 
   // Contextual reaction when opening fleet tools or schedule drawers
-  document.querySelectorAll("[data-open]").forEach((btn) => {
+  document.querySelectorAll("[data-panel], [data-open]").forEach((btn) => {
     btn.addEventListener("click", () => {
       mascot.classList.add("is-cheering");
       setTimeout(() => mascot.classList.remove("is-cheering"), 850);

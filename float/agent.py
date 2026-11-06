@@ -42,11 +42,33 @@ def _history(conv_id: int, limit: int = 30) -> list[dict[str, Any]]:
     """Rebuild the model-facing history from stored messages."""
     rows = db.get_messages(conv_id)[-limit:]
     out: list[dict[str, Any]] = []
-    for row in rows:
-        if row["role"] not in {"user", "assistant"}:
-            continue
+    for idx, row in enumerate(rows):
+        role = row["role"]
         blocks = row["meta"].get("blocks")
-        out.append({"role": row["role"], "content": blocks if blocks else row["content"]})
+        if role == "tool":
+            if blocks and out and out[-1]["role"] == "assistant" and isinstance(out[-1]["content"], list):
+                if any(isinstance(b, dict) and b.get("type") == "tool_use" for b in out[-1]["content"]):
+                    out.append({"role": "user", "content": blocks})
+            continue
+        if role not in {"user", "assistant"}:
+            continue
+        if role == "assistant" and isinstance(blocks, list):
+            has_tool_use = any(isinstance(b, dict) and b.get("type") == "tool_use" for b in blocks)
+            next_is_tool = (idx + 1 < len(rows) and rows[idx + 1]["role"] == "tool"
+                            and bool(rows[idx + 1]["meta"].get("blocks")))
+            if has_tool_use and not next_is_tool:
+                text_only = [b for b in blocks if isinstance(b, dict) and b.get("type") == "text" and b.get("text")]
+                if text_only:
+                    out.append({"role": "assistant", "content": text_only})
+                elif (row["content"] or "").strip():
+                    out.append({"role": "assistant", "content": row["content"]})
+                continue
+        content = blocks if blocks else row["content"]
+        if role == "assistant" and not content:
+            continue
+        out.append({"role": role, "content": content})
+    while out and out[0]["role"] != "user":
+        out.pop(0)
     return out
 
 
@@ -141,7 +163,10 @@ def run(user: dict[str, Any], conv_id: int, message: str, model_choice: str = ""
             "text": f"\n\n--- {attachment.get('name', 'attached file')} ---\n{body_text}",
         })
 
-    db.add_message(conv_id, "user", message, {"blocks": user_blocks if len(user_blocks) > 1 else None})
+    keep_user_blocks = len(user_blocks) > 1 or (
+        len(user_blocks) == 1 and (user_blocks[0].get("type") != "text" or user_blocks[0].get("text") != message)
+    )
+    db.add_message(conv_id, "user", message, {"blocks": user_blocks if keep_user_blocks else None})
 
     if conversation["title"] in {"New conversation", ""} and message.strip():
         new_title = title_for(message)
@@ -200,13 +225,13 @@ def run(user: dict[str, Any], conv_id: int, message: str, model_choice: str = ""
 
         if not pending or stop != "tool_use":
             db.add_message(conv_id, "assistant", "".join(reply_text),
-                           {"blocks": assistant_blocks if len(assistant_blocks) > 1 else None,
+                           {"blocks": assistant_blocks if (len(assistant_blocks) > 1 or round_index > 0) else None,
                             "provider": provider, "model": model})
             break
 
         history.append({"role": "assistant", "content": assistant_blocks})
-        db.add_message(conv_id, "assistant", "".join(buffer), {"blocks": assistant_blocks,
-                                                               "provider": provider, "model": model})
+        db.add_message(conv_id, "assistant", "", {"blocks": assistant_blocks,
+                                                  "provider": provider, "model": model})
 
         results: list[dict[str, Any]] = []
         shown: list[dict[str, Any]] = []

@@ -731,10 +731,23 @@ boot();
   const react = () => {
     bubble.textContent = quips[idx % quips.length];
     idx += 1;
-    mascot.classList.add("is-talking");
+    mascot.classList.add("is-talking", "is-active");
     clearTimeout(timer);
-    timer = setTimeout(() => mascot.classList.remove("is-talking"), 2200);
+    timer = setTimeout(() => mascot.classList.remove("is-talking", "is-active"), 2200);
   };
   mascot.addEventListener("mouseenter", react);
   mascot.addEventListener("click", react);
+  mascot.addEventListener("focus", react);
+  mascot.addEventListener("blur", () => {
+    if (!mascot.matches(":hover")) mascot.classList.remove("is-active");
+  });
+  mascot.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      react();
+    } else if (e.key === "Escape") {
+      clearTimeout(timer);
+      mascot.classList.remove("is-talking", "is-active");
+    }
+  });
 })();

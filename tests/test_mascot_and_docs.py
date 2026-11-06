@@ -138,6 +138,25 @@ class TestMascotInteractivityAndStyles(unittest.TestCase):
         self.assertIn('e.key === "Escape"', js)
         self.assertIn("visibilitychange", js)
         self.assertIn("prefers-reduced-motion: reduce", js)
+        # Ensure visibilitychange is registered outside scheduleBlink(), not inside the blink timer loop
+        fn_start = js.index("function scheduleBlink()")
+        fn_end = js.index("scheduleBlink();\n", fn_start + 30)
+        blink_body = js[fn_start:fn_end]
+        self.assertNotIn("visibilitychange", blink_body)
+
+    def test_mascot_hop_keyframes_and_panel_selector_and_keyboard_support(self) -> None:
+        css = (ROOT / "float" / "web" / "app.css").read_text(encoding="utf-8")
+        self.assertIn("@keyframes mascot-hop", css)
+        app_js = (ROOT / "float" / "web" / "app.js").read_text(encoding="utf-8")
+        self.assertIn("[data-panel]", app_js)
+        for page in ("login.html", "admin.html"):
+            html = (ROOT / "float" / "web" / page).read_text(encoding="utf-8")
+            self.assertIn('aria-describedby="mascot-bubble"', html)
+            self.assertIn('role="status"', html)
+        for script in ("login.js", "admin.js"):
+            js = (ROOT / "float" / "web" / script).read_text(encoding="utf-8")
+            self.assertIn('e.key === "Enter"', js)
+            self.assertIn('e.key === "Escape"', js)
 
 
 class TestBackendDocstringsClean(unittest.TestCase):

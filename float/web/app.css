@@ -1903,7 +1903,8 @@ button, a, .tag, .kit-item, .thread, .rail-link { touch-action: manipulation; -w
   transform: rotate(45deg);
 }
 .shell.rail-mini .float-mascot:hover .mascot-bubble,
-.shell.rail-mini .float-mascot.is-speaking .mascot-bubble {
+.shell.rail-mini .float-mascot.is-speaking .mascot-bubble,
+.shell.rail-mini .float-mascot.is-talking .mascot-bubble {
   transform: translateY(-50%) translateX(0) scale(1);
 }
 
@@ -1940,6 +1941,11 @@ button, a, .tag, .kit-item, .thread, .rail-link { touch-action: manipulation; -w
 
 .float-mascot.is-cheering .mascot-sprite {
   animation: mascot-hop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) 2;
+}
+
+@keyframes mascot-hop {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  45% { transform: translateY(-6px) scale(0.94, 1.08); }
 }
 
 @media (prefers-reduced-motion: reduce) {

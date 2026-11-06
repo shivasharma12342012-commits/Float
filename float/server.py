@@ -1181,8 +1181,9 @@ def admin_add_user(ctx: Route) -> dict[str, Any]:
             raise HttpError(400, " ".join(problems))
     if db.get_user_by_email(email):
         raise HttpError(409, "There is already an account with that email.")
+    school = str(body.get("school", "")).strip() or db.org_get("school_name")
     db.create_user(email, name, password, role=role,
-                          must_change=True, school=db.org_get("school_name"))
+                          must_change=True, school=school)
     db.audit("admin.user.add", user_id=int(admin["id"]), actor=admin["name"],
              detail=f"added {email}", level="warn", ip=ctx.ip)
     return {"ok": True, "temp_password": password, "users": _admin_users()}

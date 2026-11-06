@@ -209,6 +209,7 @@ class AgencyServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         added = [u for u in data["users"] if u["email"] == "desk1@agency.in"]
         self.assertEqual(len(added), 1)
+        self.assertEqual(added[0]["school"], "Hitech Hub")
         uid = added[0]["id"]
 
         status, _ = self.call(f"/api/admin/users/{uid}", {
