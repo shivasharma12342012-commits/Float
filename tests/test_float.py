@@ -2507,5 +2507,9 @@ class HardeningTests(unittest.TestCase):
     def test_bugcheck_016_toolkit_alias_dispute(self):
         self.assertEqual(tools.toolkit_entry("dispute")["id"], "doubt")
 
+    def test_bugcheck_017_toolkit_entry_case_and_whitespace_insensitive(self):
+        self.assertEqual(tools.toolkit_entry("  RENTAL-AGREEMENT ")["id"], "lesson-plan")
+        self.assertEqual(tools.toolkit_entry("  WORKSHEET ")["id"], "worksheet")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
