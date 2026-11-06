@@ -2565,5 +2565,10 @@ class HardeningTests(unittest.TestCase):
         res = tools.execute("read_my_day", {}, {"id": 1, "name": "Operator"}, None)
         self.assertTrue("Schedule" in res["text"] or "No pickup/return slots" in res["text"])
 
+    def test_bugcheck_026_create_file_unknown_kind_falls_back_to_docx(self):
+        res = tools.execute("create_file", {"kind": "unknown_fmt", "name": "FallbackTest", "content": "# Hello"}, {"id": 1, "name": "Op"}, None)
+        self.assertIn("FallbackTest.docx", res["text"])
+        self.assertEqual(res["card"]["kind"], "docx")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
