@@ -3262,5 +3262,11 @@ class HardeningTests(unittest.TestCase):
         self.assertNotIn("default", cleaned["properties"]["a"])
         self.assertNotIn("title", cleaned["properties"]["a"])
 
+    def test_bugcheck_112_providers_loads_handles_invalid_json(self):
+        import float.providers as providers
+        self.assertEqual(providers._loads(""), {})
+        self.assertEqual(providers._loads("{bad"), {})
+        self.assertEqual(providers._loads('{"days": 3}'), {"days": 3})
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
