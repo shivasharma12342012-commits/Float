@@ -3114,5 +3114,10 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(parsed.maxes, [50.0, 50.0])
         self.assertEqual(parsed.questions, ["Week1", "Week2"])
 
+    def test_bugcheck_085_stats_parse_incomplete_status(self):
+        parsed = stats.parse("Vehicle, W1(10), W2(10)\nCreta, 8, AB\nInnova, 9, 9")
+        self.assertEqual(parsed.students[0].status, "incomplete")
+        self.assertEqual(parsed.students[1].status, "ok")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
