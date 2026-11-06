@@ -2453,5 +2453,15 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_class(cid, 1)
 
+    def test_bugcheck_006_rename_conversation_strips_whitespace_and_blank_fallback(self):
+        cid = db.new_conversation(1, "Initial")
+        try:
+            db.rename_conversation(cid, 1, "   Airport Innova Quote   ")
+            self.assertEqual(db.get_conversation(cid, 1)["title"], "Airport Innova Quote")
+            db.rename_conversation(cid, 1, "   ")
+            self.assertEqual(db.get_conversation(cid, 1)["title"], "New conversation")
+        finally:
+            db.delete_conversation(cid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
