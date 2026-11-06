@@ -2591,5 +2591,15 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("RateCardView.html", res["text"])
         self.assertEqual(res["card"]["kind"], "html")
 
+    def test_bugcheck_031_quote_maruti_wagonr(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Maruti WagonR", "days": 1, "daily_rate": 1200,
+            "included_km_per_day": 200, "actual_km": 200, "extra_km_rate": 9,
+            "extra_hours": 0, "extra_hour_rate": 100, "driver_allowance_per_day": 0,
+            "toll_parking": 0, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 5, "security_deposit": 2000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹1,200.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
