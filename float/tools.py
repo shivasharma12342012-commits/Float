@@ -1141,6 +1141,7 @@ _TOOLKIT_ALIASES = {
     "dispatch-roster": "seating",
     "policy-advisor": "doubt",
     "shift-huddle": "assembly",
+    "shift-briefing": "assembly",
     "vehicle-health": "hpc",
 }
 
