@@ -1018,10 +1018,12 @@ def list_periods(user_id: int, weekday: int | None = None) -> list[dict[str, Any
 
 
 def add_task(user_id: int, title: str, due: str = "", kind: str = "todo") -> int:
+    clean_title = (title or "").strip()[:300]
+    clean_due = (due or "").strip()[:40]
     with cursor() as db:
         cur = db.execute(
             "INSERT INTO tasks(user_id,title,due,kind,created_at) VALUES(?,?,?,?,?)",
-            (user_id, title[:300], due[:40], kind, time.time()),
+            (user_id, clean_title, clean_due, kind, time.time()),
         )
         return int(cur.lastrowid)
 
