@@ -2931,5 +2931,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹17,600.00", res["text"])
 
+    def test_bugcheck_065_quote_toyota_hilux_4x4(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Toyota Hilux 4x4", "days": 3, "daily_rate": 5800,
+            "included_km_per_day": 250, "actual_km": 840, "extra_km_rate": 24,
+            "extra_hours": 2, "extra_hour_rate": 450, "driver_allowance_per_day": 700,
+            "toll_parking": 500, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 0, "gst_percent": 5, "security_deposit": 12000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹17,400.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
