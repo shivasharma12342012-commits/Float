@@ -1142,6 +1142,7 @@ _TOOLKIT_ALIASES = {
     "corporate-pitch": "slides",
     "dispatch-roster": "seating",
     "policy-advisor": "doubt",
+    "dispute": "doubt",
     "shift-huddle": "assembly",
     "shift-briefing": "assembly",
     "vehicle-health": "hpc",
