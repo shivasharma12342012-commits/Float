@@ -3091,5 +3091,11 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹8,700.00", res["text"])
 
+    def test_bugcheck_081_stats_num_rejects_nan_and_inf(self):
+        self.assertIsNone(stats._num("nan"))
+        self.assertIsNone(stats._num("inf"))
+        self.assertIsNone(stats._num("-inf"))
+        self.assertEqual(stats._num("42.5"), 42.5)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
