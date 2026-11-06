@@ -3109,5 +3109,10 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(stats._split("A\t1\t2"), ["A", "1", "2"])
         self.assertEqual(stats._split("A, 1, 2"), ["A", "1", "2"])
 
+    def test_bugcheck_084_stats_parse_square_bracket_max(self):
+        parsed = stats.parse("Vehicle, Week1 [50], Week2 [50]\nCreta, 40, 45\nInnova, 48, 42")
+        self.assertEqual(parsed.maxes, [50.0, 50.0])
+        self.assertEqual(parsed.questions, ["Week1", "Week2"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
