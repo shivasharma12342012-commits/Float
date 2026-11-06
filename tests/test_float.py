@@ -2841,5 +2841,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹18,800.00", res["text"])
 
+    def test_bugcheck_056_quote_mercedes_benz_glc(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Mercedes-Benz GLC", "days": 4, "daily_rate": 13500,
+            "included_km_per_day": 250, "actual_km": 1100, "extra_km_rate": 50,
+            "extra_hours": 2, "extra_hour_rate": 1000, "driver_allowance_per_day": 900,
+            "toll_parking": 600, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 1000, "gst_percent": 18, "security_deposit": 30000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹54,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
