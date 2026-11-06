@@ -206,14 +206,14 @@ Float/
 ├── docs/
 │   ├── DESIGN.md                         # Architecture & zero-dependency engineering notes
 │   └── AGENCY_SERVER.md                  # Branch LAN deployment & administration guide
-└── tests/                                # 500 unit & integration tests
+└── tests/                                # 671 unit & integration tests
 ```
 
 ---
 
 ## 🧪 Testing & Verification
 
-Run the complete **500-test suite** (covering quote arithmetic, GST/deposit edge cases, document generation, XLSX parsing, MCP clients, fixed-desk LAN session binding, least-privilege controls, macOS bundle integrity, and server stop lifecycle) with warnings treated as errors:
+Run the complete **671-test suite** (covering quote arithmetic, GST/deposit edge cases, document generation, XLSX parsing, MCP clients, fixed-desk LAN session binding, least-privilege controls, macOS bundle integrity, and server stop lifecycle) with warnings treated as errors:
 
 ```bash
 python -W error -m unittest discover -s tests -p "*.py"
