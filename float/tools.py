@@ -1150,7 +1150,8 @@ _TOOLKIT_ALIASES = {
 
 
 def toolkit_entry(entry_id: str) -> dict[str, Any] | None:
-    norm = _TOOLKIT_ALIASES.get(entry_id, entry_id)
+    cleaned = str(entry_id or "").strip().lower()
+    norm = _TOOLKIT_ALIASES.get(cleaned, cleaned)
     for entry in TOOLKIT:
         if entry["id"] == norm:
             return entry
