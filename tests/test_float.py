@@ -2527,5 +2527,11 @@ class HardeningTests(unittest.TestCase):
         with self.assertRaises(attachments.AttachmentError):
             attachments.to_text(None)
 
+    def test_bugcheck_021_rate_limiter_handles_empty_key(self):
+        rl = security.RateLimiter(limit=2, window=30.0)
+        self.assertTrue(rl.check("")[0])
+        self.assertTrue(rl.check("")[0])
+        self.assertFalse(rl.check("")[0])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
