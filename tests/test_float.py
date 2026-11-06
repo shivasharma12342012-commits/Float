@@ -2651,5 +2651,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹5,400.00", res["text"])
 
+    def test_bugcheck_037_quote_honda_elevate(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Honda Elevate", "days": 3, "daily_rate": 2650,
+            "included_km_per_day": 250, "actual_km": 900, "extra_km_rate": 14,
+            "extra_hours": 0, "extra_hour_rate": 200, "driver_allowance_per_day": 0,
+            "toll_parking": 0, "fuel_charge": 0, "damage_charge": 500,
+            "discount_amount": 0, "gst_percent": 5, "security_deposit": 5000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹7,950.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
