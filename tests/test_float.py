@@ -2422,5 +2422,16 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.set_cap_override(777002, None)
 
+    def test_bugcheck_003_set_periods_sanitizes_non_int_weekday_and_slot(self):
+        prev = db.list_periods(1)
+        try:
+            db.set_periods(1, [{"weekday": "bad", "slot": "bad", "starts": "09:00", "ends": "10:00", "label": "Pickup", "room": "Bay 1"}])
+            periods = db.list_periods(1)
+            self.assertEqual(len(periods), 1)
+            self.assertEqual(periods[0]["weekday"], 0)
+            self.assertEqual(periods[0]["slot"], 1)
+        finally:
+            db.set_periods(1, prev)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
