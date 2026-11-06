@@ -3486,5 +3486,11 @@ class HardeningTests(unittest.TestCase):
         res = tools.execute("calculate_quote", {"days": 1, "daily_rate": 2200, "gst_percent": 5}, {"id": 1}, None)
         self.assertIn("₹2,200.00", res["text"])
 
+    def test_bugcheck_139_toolkit_and_quote_consistency(self):
+        entry = tools.TOOLKIT[8]
+        self.assertEqual(tools.toolkit_entry(entry["id"])["id"], entry["id"])
+        res = tools.execute("calculate_quote", {"days": 2, "daily_rate": 2300, "gst_percent": 5}, {"id": 1}, None)
+        self.assertIn("₹4,600.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
