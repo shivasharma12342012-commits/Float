@@ -983,15 +983,22 @@ def attendance_range(class_id: int, limit: int = 60) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Shift dispatch schedule (periods) and operational tasks
 # ---------------------------------------------------------------------------
+def _safe_int(val: Any, default: int = 0) -> int:
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return default
+
+
 def set_periods(user_id: int, rows: list[dict[str, Any]]) -> None:
     with cursor() as db:
         db.execute("DELETE FROM periods WHERE user_id=?", (user_id,))
         db.executemany(
             "INSERT INTO periods(user_id,weekday,slot,starts,ends,label,room) VALUES(?,?,?,?,?,?,?)",
             [
-                (user_id, int(r.get("weekday", 0)), int(r.get("slot", 1)), str(r.get("starts", ""))[:10],
+                (user_id, _safe_int(r.get("weekday", 0), 0), _safe_int(r.get("slot", 1), 1), str(r.get("starts", ""))[:10],
                  str(r.get("ends", ""))[:10], str(r.get("label", ""))[:80], str(r.get("room", ""))[:40])
-                for r in list(rows)[:80]
+                for r in list(rows)[:80] if isinstance(r, dict)
             ],
         )
 
