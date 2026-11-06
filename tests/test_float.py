@@ -3227,5 +3227,8 @@ class HardeningTests(unittest.TestCase):
         for code in ("en", "hi", "bn", "mr", "ta", "te", "gu", "kn", "ml", "pa", "or", "as", "ur"):
             self.assertIn(code, config.LANGUAGES)
 
+    def test_bugcheck_106_config_assist_levels_keys(self):
+        self.assertEqual(set(config.ASSIST_LEVELS.keys()), {"full", "draft", "coach"})
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
