@@ -3363,5 +3363,16 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_conversation(cid, 1)
 
+    def test_bugcheck_123_db_user_key_precedence_over_org_key(self):
+        db.put_key("openai", "sk-org-key-123", scope="org")
+        db.put_key("openai", "sk-user-key-123", scope="user", user_id=1)
+        try:
+            self.assertTrue(db.has_own_key(1))
+            self.assertEqual(db.get_key("openai", user_id=1), "sk-user-key-123")
+            self.assertEqual(db.get_key("openai", user_id=99999), "sk-org-key-123")
+        finally:
+            db.drop_key("openai", scope="user", user_id=1)
+            db.drop_key("openai", scope="org")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
