@@ -2538,5 +2538,14 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("needs a title", res["text"])
         self.assertIsNone(res["card"])
 
+    def test_bugcheck_023_look_up_class_unmatched_group_lists_existing(self):
+        cid = db.add_class(1, "Airport SUVs", "1", "A", "Compact SUV")
+        try:
+            res = tools.execute("look_up_class", {"class_name": "Nonexistent Group"}, {"id": 1}, None)
+            self.assertIn("No fleet group matched", res["text"])
+            self.assertIn("Airport SUVs", res["text"])
+        finally:
+            db.delete_class(cid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
