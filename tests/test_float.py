@@ -2443,5 +2443,15 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.set_periods(1, prev)
 
+    def test_bugcheck_005_save_attendance_deduplicates_present_and_absent(self):
+        cid = db.add_class(1, "Dedup Fleet", "1", "A")
+        try:
+            db.save_attendance(cid, "2026-11-06", [10, 10, 20], [20, 30, 30])
+            rows = db.attendance_range(cid)
+            self.assertEqual(rows[0]["present"], [10, 20])
+            self.assertEqual(rows[0]["absent"], [30])
+        finally:
+            db.delete_class(cid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
