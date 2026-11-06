@@ -2871,5 +2871,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹25,600.00", res["text"])
 
+    def test_bugcheck_059_quote_volvo_xc60(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Volvo XC60", "days": 3, "daily_rate": 12200,
+            "included_km_per_day": 250, "actual_km": 800, "extra_km_rate": 44,
+            "extra_hours": 0, "extra_hour_rate": 900, "driver_allowance_per_day": 850,
+            "toll_parking": 450, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 600, "gst_percent": 18, "security_deposit": 25000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹36,600.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
