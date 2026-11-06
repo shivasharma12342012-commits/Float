@@ -3241,5 +3241,12 @@ class HardeningTests(unittest.TestCase):
         self.assertIsNone(greeting._parse_clock("25:00"))
         self.assertIsNone(greeting._parse_clock("10:75"))
 
+    def test_bugcheck_109_greeting_build_first_signin(self):
+        import float.greeting as greeting
+        g = greeting.build({"id": 1, "name": "Dr. Vikram Rao", "language": "hi", "sign_ins": 1})
+        self.assertIn("Vikram", g["headline"])
+        self.assertTrue(g["detail"])
+        self.assertTrue(g["opener"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
