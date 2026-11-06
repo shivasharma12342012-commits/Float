@@ -3179,5 +3179,12 @@ class HardeningTests(unittest.TestCase):
         self.assertIn("Vehicle,Rate", text.replace("\r\n", "\n"))
         self.assertIn("Creta,2800", text.replace("\r\n", "\n"))
 
+    def test_bugcheck_097_artifacts_build_docx_with_subtitle_and_pagebreak(self):
+        data = artifacts.build_docx("Page 1\n\\pagebreak\nPage 2", "Contract", "Airport Hub")
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            xml = zf.read("word/document.xml").decode("utf-8")
+        self.assertIn("Airport Hub", xml)
+        self.assertIn("w:br w:type=\"page\"", xml)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
