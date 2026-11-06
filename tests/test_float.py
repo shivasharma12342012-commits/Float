@@ -3374,5 +3374,15 @@ class HardeningTests(unittest.TestCase):
             db.drop_key("openai", scope="user", user_id=1)
             db.drop_key("openai", scope="org")
 
+    def test_bugcheck_124_db_set_conversation_flag_pinned_and_archived(self):
+        cid = db.new_conversation(1, "Pin Test")
+        try:
+            db.set_conversation_flag(cid, 1, "pinned", 1)
+            self.assertEqual(db.get_conversation(cid, 1)["pinned"], 1)
+            db.set_conversation_flag(cid, 1, "archived", 1)
+            self.assertFalse(any(c["id"] == cid for c in db.list_conversations(1)))
+        finally:
+            db.delete_conversation(cid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
