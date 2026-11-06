@@ -3143,5 +3143,10 @@ class HardeningTests(unittest.TestCase):
         self.assertIsNotNone(res["threshold"])
         self.assertIsInstance(res["below"], list)
 
+    def test_bugcheck_090_stats_compute_all_absent_raises(self):
+        parsed = stats.parse("Car, Trip(10)\nC1, AB\nC2, -")
+        with self.assertRaises(stats.MarksError):
+            stats.compute(parsed)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
