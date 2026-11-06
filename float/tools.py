@@ -1125,6 +1125,7 @@ _TOOLKIT_ALIASES = {
     "quote": "worksheet",
     "damage-assessment": "marking",
     "damage-report": "marking",
+    "claim-notice": "marking",
     "inspection-standard": "rubric",
     "booking-notes": "remarks",
     "customer-message": "parent-message",
