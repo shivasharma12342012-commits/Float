@@ -3317,5 +3317,14 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0]["type"], "error")
 
+    def test_bugcheck_120_agent_run_invalid_attachment_yields_error(self):
+        import float.agent as agent
+        cid = db.new_conversation(1, "Att Error Conv")
+        try:
+            events = list(agent.run({"id": 1, "name": "Op"}, cid, "Check file", attachments=[{"name": "bad.ppt", "data": "eA=="}]))
+            self.assertTrue(any(e["type"] == "error" for e in events))
+        finally:
+            db.delete_conversation(cid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
