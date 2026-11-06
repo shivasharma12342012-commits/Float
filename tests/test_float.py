@@ -2472,5 +2472,14 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_task(tid, 1)
 
+    def test_bugcheck_008_add_notice_strips_title_and_body_whitespace(self):
+        nid = db.add_notice("  Weekend Surge  ", "  Apply 15% peak tariff  ", "info", 1)
+        try:
+            notices = [n for n in db.active_notices() if n["id"] == nid]
+            self.assertEqual(notices[0]["title"], "Weekend Surge")
+            self.assertEqual(notices[0]["body"], "Apply 15% peak tariff")
+        finally:
+            db.retire_notice(nid)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
