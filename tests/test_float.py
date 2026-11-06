@@ -2771,5 +2771,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹6,400.00", res["text"])
 
+    def test_bugcheck_049_quote_hyundai_ioniq_5(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Hyundai Ioniq 5", "days": 2, "daily_rate": 8500,
+            "included_km_per_day": 250, "actual_km": 560, "extra_km_rate": 30,
+            "extra_hours": 0, "extra_hour_rate": 650, "driver_allowance_per_day": 800,
+            "toll_parking": 400, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 1000, "gst_percent": 5, "security_deposit": 20000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹17,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
