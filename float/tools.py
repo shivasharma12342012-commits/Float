@@ -407,7 +407,7 @@ def _tool_calculate_quote(payload: dict[str, Any], user: dict[str, Any],
     fuel_charge = max(0.0, _num(payload.get("fuel_charge"), 0.0))
     damage_charge = max(0.0, _num(payload.get("damage_charge"), 0.0))
     discount = max(0.0, _num(payload.get("discount_amount"), 0.0))
-    gst_pct = max(0.0, _num(payload.get("gst_percent"), 5.0))
+    gst_pct = min(100.0, max(0.0, _num(payload.get("gst_percent"), 5.0)))
     deposit = max(0.0, _num(payload.get("security_deposit"), 5000.0))
 
     base_rent = round(days * daily_rate, 2)
