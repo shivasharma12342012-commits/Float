@@ -3326,5 +3326,20 @@ class HardeningTests(unittest.TestCase):
         finally:
             db.delete_conversation(cid, 1)
 
+    def test_bugcheck_121_agent_run_single_attachment_empty_message_preserves_blocks(self):
+        import base64, unittest.mock as mock, float.agent as agent
+        cid = db.new_conversation(1, "New conversation")
+        b64 = base64.b64encode(b"Innova KA01 rate 3800").decode("ascii")
+        fake_stream = [[{"type": "text", "text": "Got the file."}, {"type": "done", "stop": "end_turn"}]]
+        try:
+            with mock.patch("float.providers.stream", side_effect=fake_stream):
+                list(agent.run({"id": 1, "name": "Op"}, cid, "", attachments=[{"name": "rate.txt", "data": b64}]))
+            hist = agent._history(cid)
+            self.assertEqual(hist[0]["role"], "user")
+            self.assertIsInstance(hist[0]["content"], list)
+            self.assertIn("Innova KA01 rate 3800", hist[0]["content"][0]["text"])
+        finally:
+            db.delete_conversation(cid, 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
