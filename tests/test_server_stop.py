@@ -42,6 +42,8 @@ class ServerStopTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        if getattr(cls, "_prev_data_dir", None) is not None:
+            os.environ["FLOAT_DATA_DIR"] = cls._prev_data_dir
         shutil.rmtree(cls.data_dir, ignore_errors=True)
 
     def test_pid_file_helpers(self):
