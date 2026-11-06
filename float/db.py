@@ -1059,10 +1059,12 @@ def delete_task(task_id: int, user_id: int) -> None:
 # Notices and the own-work ledger
 # ---------------------------------------------------------------------------
 def add_notice(title: str, body: str, level: str, created_by: int) -> int:
+    clean_title = (title or "").strip()[:160]
+    clean_body = (body or "").strip()[:2000]
     with cursor() as db:
         cur = db.execute(
             "INSERT INTO notices(title,body,level,created_by,created_at) VALUES(?,?,?,?,?)",
-            (title[:160], body[:2000], level, created_by, time.time()),
+            (clean_title, clean_body, level, created_by, time.time()),
         )
         return int(cur.lastrowid)
 
