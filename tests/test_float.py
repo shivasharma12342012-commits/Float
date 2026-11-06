@@ -2631,5 +2631,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹6,400.00", res["text"])
 
+    def test_bugcheck_035_quote_nissan_magnite(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Nissan Magnite", "days": 5, "daily_rate": 1650,
+            "included_km_per_day": 250, "actual_km": 1350, "extra_km_rate": 12,
+            "extra_hours": 3, "extra_hour_rate": 160, "driver_allowance_per_day": 0,
+            "toll_parking": 300, "fuel_charge": 400, "damage_charge": 0,
+            "discount_amount": 250, "gst_percent": 5, "security_deposit": 4000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹8,250.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
