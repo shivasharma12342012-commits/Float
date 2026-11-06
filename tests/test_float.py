@@ -3293,5 +3293,12 @@ class HardeningTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             providers.set_price_override("anthropic", "unknown-model-id", 10, 100)
 
+    def test_bugcheck_117_agent_pick_model_fallback(self):
+        import float.agent as agent
+        prov, mod, key = agent.pick_model({"id": 999999}, "openai:gpt-4.1-mini")
+        self.assertEqual(prov, "openai")
+        self.assertEqual(mod, "gpt-4.1-mini")
+        self.assertEqual(key, "")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
