@@ -3413,5 +3413,23 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["action"], "test.warn.128")
 
+    def test_bugcheck_129_maintenance_prune_folds_old_usage_into_monthly(self):
+        import float.maintenance as maintenance
+        old_ts = 1600000000.0  # Sep 2020
+        with db.cursor() as cur:
+            cur.execute(
+                "INSERT INTO usage(user_id,provider,model,tokens_in,tokens_out,paise,latency_ms,ok,created_at) "
+                "VALUES(?,?,?,?,?,?,?,?,?)",
+                (1, "openai", "gpt-4o-129", 500, 200, 120.0, 90, 1, old_ts),
+            )
+        removed = maintenance.prune(usage_months=12)
+        self.assertGreaterEqual(removed["usage"], 1)
+        with db.cursor() as cur:
+            row = cur.execute("SELECT calls, paise FROM usage_monthly WHERE user_id=1 AND model='gpt-4o-129'").fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(row["calls"], 1)
+            self.assertAlmostEqual(row["paise"], 120.0)
+            cur.execute("DELETE FROM usage_monthly WHERE user_id=1 AND model='gpt-4o-129'")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
