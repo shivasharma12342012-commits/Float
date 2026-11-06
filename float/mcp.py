@@ -197,7 +197,7 @@ class McpStdioClient:
         return tool_list
 
     def call_tool(
-        self, tool_name: str, arguments: dict[str, Any], timeout: float | None = None
+        self, tool_name: str, arguments: dict[str, Any] | None = None, timeout: float | None = None
     ) -> dict[str, Any]:
         """Call a tool on this server and return standard Float tool result."""
         if not self.proc or self.proc.poll() is not None:
@@ -211,7 +211,7 @@ class McpStdioClient:
         try:
             res = self._request(
                 "tools/call",
-                {"name": tool_name, "arguments": arguments},
+                {"name": tool_name, "arguments": arguments or {}},
                 timeout=t,
             )
         except Exception as exc:
