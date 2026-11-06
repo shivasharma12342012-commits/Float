@@ -3192,5 +3192,11 @@ class HardeningTests(unittest.TestCase):
         self.assertTrue(pdf.startswith(b"%PDF-1.4"))
         self.assertIn(b"/Count 2", pdf)
 
+    def test_bugcheck_099_artifacts_build_xlsx_numeric_cells(self):
+        data = artifacts.build_xlsx([["Car", "Rate"], ["Creta", "2800.50"]], "Rates")
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            sheet = zf.read("xl/worksheets/sheet1.xml").decode("utf-8")
+        self.assertIn("2800.50", sheet)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
