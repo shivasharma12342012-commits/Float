@@ -3103,5 +3103,11 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(stats._fmt(10.25), "10.25")
         self.assertEqual(stats._fmt(float("nan")), "n/a")
 
+    def test_bugcheck_083_stats_split_delimiters(self):
+        self.assertEqual(stats._split("A | 1 | 2"), ["A", "1", "2"])
+        self.assertEqual(stats._split("A; 1; 2"), ["A", "1", "2"])
+        self.assertEqual(stats._split("A\t1\t2"), ["A", "1", "2"])
+        self.assertEqual(stats._split("A, 1, 2"), ["A", "1", "2"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
