@@ -3207,5 +3207,9 @@ class HardeningTests(unittest.TestCase):
         self.assertTrue(security.pin_problems("135792468"))
         self.assertEqual(security.pin_problems("135792"), [])
 
+    def test_bugcheck_102_security_encrypt_decrypt_empty_string(self):
+        self.assertEqual(security.encrypt_secret(""), "")
+        self.assertEqual(security.decrypt_secret(""), "")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
