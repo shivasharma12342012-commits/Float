@@ -3222,5 +3222,10 @@ class HardeningTests(unittest.TestCase):
         for pid, p in config.PROVIDERS.items():
             self.assertIsNotNone(p.model(p.default_model), f"{pid} default_model missing")
 
+    def test_bugcheck_105_config_languages_count_and_keys(self):
+        self.assertEqual(len(config.LANGUAGES), 13)
+        for code in ("en", "hi", "bn", "mr", "ta", "te", "gu", "kn", "ml", "pa", "or", "as", "ur"):
+            self.assertIn(code, config.LANGUAGES)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
