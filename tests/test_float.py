@@ -3236,5 +3236,10 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(greeting._parse_clock("12:00 PM").hour, 12)
         self.assertEqual(greeting._parse_clock("12:30 pm").minute, 30)
 
+    def test_bugcheck_108_greeting_parse_clock_out_of_range(self):
+        import float.greeting as greeting
+        self.assertIsNone(greeting._parse_clock("25:00"))
+        self.assertIsNone(greeting._parse_clock("10:75"))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
