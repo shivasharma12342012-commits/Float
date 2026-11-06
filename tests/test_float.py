@@ -2498,5 +2498,8 @@ class HardeningTests(unittest.TestCase):
     def test_bugcheck_013_toolkit_alias_shift_briefing(self):
         self.assertEqual(tools.toolkit_entry("shift-briefing")["id"], "assembly")
 
+    def test_bugcheck_014_toolkit_alias_turnaround_plan(self):
+        self.assertEqual(tools.toolkit_entry("turnaround-plan")["id"], "remedial")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
