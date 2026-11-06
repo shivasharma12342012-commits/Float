@@ -2881,5 +2881,15 @@ class HardeningTests(unittest.TestCase):
         }, {"id": 1, "name": "Operator"}, None)
         self.assertIn("= ₹36,600.00", res["text"])
 
+    def test_bugcheck_060_quote_toyota_vellfire_vip(self):
+        res = tools.execute("calculate_quote", {
+            "vehicle": "Toyota Vellfire VIP", "days": 2, "daily_rate": 28000,
+            "included_km_per_day": 200, "actual_km": 460, "extra_km_rate": 90,
+            "extra_hours": 2, "extra_hour_rate": 2000, "driver_allowance_per_day": 1500,
+            "toll_parking": 800, "fuel_charge": 0, "damage_charge": 0,
+            "discount_amount": 2000, "gst_percent": 18, "security_deposit": 50000
+        }, {"id": 1, "name": "Operator"}, None)
+        self.assertIn("= ₹56,000.00", res["text"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
