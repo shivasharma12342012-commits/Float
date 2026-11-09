@@ -19,8 +19,26 @@ from xml.etree import ElementTree
 MAX_CHARS = 120_000
 
 
-class AttachmentError(Exception):
+class AttachmentError(ValueError):
     pass
+
+
+def validate_upload_signature(filename: str, data: bytes) -> None:
+    """Verify file magic bytes match extension and block executable payloads."""
+    name = (filename or "file").strip()
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    if data[:2] == b"MZ" or data[:4] == b"\x7fELF":
+        raise AttachmentError(f"{name}: Executable files are not permitted.")
+    if ext == "pdf" and not data.startswith(b"%PDF-"):
+        raise AttachmentError(f"{name} does not have a valid PDF file header.")
+    if ext in {"docx", "xlsx"} and not data.startswith(b"PK\x03\x04"):
+        raise AttachmentError(f"{name} looks damaged or is not a real .{ext} file.")
+    if ext == "png" and not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise AttachmentError(f"{name} is not a valid PNG image.")
+    if ext in {"jpg", "jpeg"} and not data.startswith(b"\xff\xd8\xff"):
+        raise AttachmentError(f"{name} is not a valid JPEG image.")
+    if ext == "webp" and not (data.startswith(b"RIFF") and data[8:12] == b"WEBP"):
+        raise AttachmentError(f"{name} is not a valid WebP image.")
 
 
 def _pdf_pypdf(data: bytes) -> str | None:
@@ -155,6 +173,7 @@ def to_text(att: dict[str, Any]) -> str:
     except (binascii.Error, ValueError):
         raise AttachmentError(f"{name} did not upload properly. Try attaching it again.") from None
     ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    validate_upload_signature(name, data)
     try:
         if ext == "pdf" or data[:5] == b"%PDF-":
             text = pdf_text(data)

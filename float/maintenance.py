@@ -99,12 +99,39 @@ def safe_backup(tag: str = "") -> Path | None:
         return None
 
 
+def backup_list_info() -> list[dict[str, Any]]:
+    """Return metadata dicts for all backups (newest first)."""
+    out: list[dict[str, Any]] = []
+    for p in list_backups():
+        try:
+            st = p.stat()
+            stamp = dt.datetime.fromtimestamp(st.st_mtime)
+            out.append({
+                "name": p.name,
+                "filename": p.name,
+                "size": st.st_size,
+                "size_bytes": st.st_size,
+                "modified": f"{stamp:%d %b %Y, %H:%M}",
+                "timestamp": st.st_mtime,
+            })
+        except OSError:
+            continue
+    return out
+
+
 def last_backup() -> dict[str, Any]:
     files = list_backups()
+    info = backup_list_info()
     if not files:
-        return {"last": "", "count": 0}
+        return {"last": "", "count": 0, "files": [], "backups": []}
     stamp = dt.datetime.fromtimestamp(files[0].stat().st_mtime)
-    return {"last": f"{stamp:%d %b %Y, %H:%M}", "count": len(files), "file": files[0].name}
+    return {
+        "last": f"{stamp:%d %b %Y, %H:%M}",
+        "count": len(files),
+        "file": files[0].name,
+        "files": info,
+        "backups": info,
+    }
 
 
 def start_daily_backups(check_every: int = 3600) -> None:
@@ -122,25 +149,48 @@ def start_daily_backups(check_every: int = 3600) -> None:
 
 
 def restore(source: Path) -> Path:
-    """Replace the live database with a backup. Float must be closed.
+    """Replace the live database with a backup.
 
     The current database is kept as ``float-before-restore.sqlite3`` first.
+    Uses SQLite's online backup API so it works safely even while Float is running on Windows.
     """
-    source = Path(source)
-    check = sqlite3.connect(source)
-    try:
-        if check.execute("PRAGMA quick_check").fetchone()[0] != "ok":
-            raise sqlite3.DatabaseError("That backup file is damaged, so it was not used.")
-    finally:
-        check.close()
-    live = Path(config.DB_PATH)
-    kept = live.with_name("float-before-restore.sqlite3")
-    if live.exists():
-        shutil.copy2(live, kept)
-    for ext in ("-wal", "-shm"):
-        Path(str(live) + ext).unlink(missing_ok=True)
-    shutil.copy2(source, live)
-    return kept
+    with _backup_lock:
+        source = Path(source)
+        if not source.is_file() and (backup_dir() / source.name).is_file():
+            source = backup_dir() / source.name
+        if not source.is_file():
+            raise FileNotFoundError("Backup file not found.")
+        check = sqlite3.connect(source)
+        try:
+            if check.execute("PRAGMA quick_check").fetchone()[0] != "ok":
+                raise sqlite3.DatabaseError("That backup file is damaged, so it was not used.")
+        finally:
+            check.close()
+        live = Path(config.DB_PATH)
+        kept = live.with_name("float-before-restore.sqlite3")
+        if live.exists():
+            src_live = sqlite3.connect(live, timeout=15)
+            dst_kept = sqlite3.connect(kept)
+            try:
+                src_live.backup(dst_kept)
+            finally:
+                dst_kept.close()
+                src_live.close()
+        src_bkp = sqlite3.connect(source)
+        dst_live = sqlite3.connect(live, timeout=15)
+        try:
+            src_bkp.backup(dst_live)
+        finally:
+            dst_live.close()
+            src_bkp.close()
+        try:
+            from . import db
+
+            db._initialised = False
+            db.init()
+        except Exception:
+            pass
+        return kept
 
 
 # ---------------------------------------------------------------------------

@@ -103,7 +103,7 @@ def env_bool(name: str, default: bool) -> bool:
 # ----------------------------------------------------------------------------
 # MODEL PRICES — the one place to update them.
 # ----------------------------------------------------------------------------
-PRICES_LAST_CHECKED = "2025-01-01"
+PRICES_LAST_CHECKED = "2026-11-01"
 PRICE_STALE_AFTER_DAYS = 90
 MODEL_PRICES: dict[str, tuple[float, float]] = {
     "claude-sonnet-4-5": (250, 1250),
@@ -113,8 +113,8 @@ MODEL_PRICES: dict[str, tuple[float, float]] = {
     "gpt-4.1-mini": (33, 132),
     "gpt-4o": (210, 840),
     "gpt-4o-mini": (12, 50),
-    "openrouter/auto": (0, 0),
-    "openai/gpt-4o-mini": (0, 0),
+    "openrouter/auto": (35, 140),
+    "openai/gpt-4o-mini": (12, 50),
     "gemini-2.0-flash": (8, 33),
     "gemini-2.5-pro": (105, 840),
     "gemini-2.5-flash": (25, 210),

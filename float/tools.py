@@ -394,50 +394,63 @@ def _num(val: Any, default: float = 0.0) -> float:
 
 def _tool_calculate_quote(payload: dict[str, Any], user: dict[str, Any],
                           conv_id: int | None, emit: Any) -> dict[str, Any]:
-    vehicle = str(payload.get("vehicle") or "Vehicle").strip()
-    days = max(0.0, _num(payload.get("days"), 1.0))
-    daily_rate = max(0.0, _num(payload.get("daily_rate"), 0.0))
-    inc_km_day = max(0.0, _num(payload.get("included_km_per_day"), 250.0))
-    actual_km = max(0.0, _num(payload.get("actual_km"), 0.0))
-    extra_km_rate = max(0.0, _num(payload.get("extra_km_rate"), 12.0))
-    extra_hours = max(0.0, _num(payload.get("extra_hours"), 0.0))
-    extra_hour_rate = max(0.0, _num(payload.get("extra_hour_rate"), 200.0))
-    driver_day = max(0.0, _num(payload.get("driver_allowance_per_day"), 0.0))
-    toll_parking = max(0.0, _num(payload.get("toll_parking"), 0.0))
-    fuel_charge = max(0.0, _num(payload.get("fuel_charge"), 0.0))
-    damage_charge = max(0.0, _num(payload.get("damage_charge"), 0.0))
-    discount = max(0.0, _num(payload.get("discount_amount"), 0.0))
-    gst_pct = min(100.0, max(0.0, _num(payload.get("gst_percent"), 5.0)))
-    deposit = max(0.0, _num(payload.get("security_deposit"), 5000.0))
+    from . import rental_ops
 
-    base_rent = round(days * daily_rate, 2)
-    included_km = round(days * inc_km_day, 1)
-    extra_km = max(0.0, round(actual_km - included_km, 1)) if actual_km > 0 else 0.0
-    extra_km_cost = round(extra_km * extra_km_rate, 2)
-    extra_hr_cost = round(extra_hours * extra_hour_rate, 2)
-    driver_cost = round(days * driver_day, 2)
+    q = rental_ops.calculate_tariff_exact(payload)
+    vehicle = q["vehicle"]
+    days = q["days"]
+    daily_rate = q["effective_daily_rate"]
+    inc_km_day = q["included_km_per_day"]
+    actual_km = q["actual_km"]
+    extra_km_rate = q["extra_km_rate"]
+    extra_hours = q["extra_hours"]
+    extra_hour_rate = q["extra_hour_rate"]
+    driver_day = q["driver_allowance_per_day"]
+    toll_parking = q["toll_parking"]
+    fuel_charge = q["fuel_charge"]
+    damage_charge = q["damage_charge"]
+    discount = q["discount_amount"]
+    gst_pct = q["gst_percent"]
+    deposit = q["security_deposit"]
 
-    taxable_sub = max(0.0, round(base_rent + extra_km_cost + extra_hr_cost + driver_cost - discount, 2))
-    gst_amount = round(taxable_sub * (gst_pct / 100.0), 2)
-    non_tax_reimb = round(toll_parking + fuel_charge + damage_charge, 2)
-    grand_total = round(taxable_sub + gst_amount + non_tax_reimb, 2)
-    net_after_deposit = round(grand_total - deposit, 2)
+    base_rent = q["base_rent"]
+    included_km = q["included_km"]
+    extra_km = q["extra_km"]
+    extra_km_cost = q["extra_km_cost"]
+    extra_hr_cost = q["extra_hour_cost"]
+    driver_cost = q["driver_cost"]
+    taxable_sub = q["taxable_subtotal"]
+    gst_amount = q["gst_amount"]
+    cgst = q["cgst_amount"]
+    sgst = q["sgst_amount"]
+    igst = q["igst_amount"]
+    grand_total = q["grand_total"]
+    net_after_deposit = q["net_after_deposit"]
 
     lines = [
         f"EXACT QUOTE / SETTLEMENT CALCULATION — {vehicle}",
         f"- Rental Duration: {days:g} day(s) @ ₹{daily_rate:,.2f}/day = ₹{base_rent:,.2f}",
         f"- Included Distance: {included_km:g} km ({inc_km_day:g} km/day). Extra km rate: ₹{extra_km_rate:,.2f}/km",
     ]
+    if q.get("weekend_surge", 0) > 0:
+        lines.append(f"- Weekend Surge ({q['weekend_days']:g} day(s) @ +{q['weekend_surge_percent']:g}%): ₹{q['weekend_surge']:,.2f}")
+    if q.get("seasonal_surge", 0) > 0:
+        lines.append(f"- Seasonal Surge (+{q['seasonal_surge_percent']:g}%): ₹{q['seasonal_surge']:,.2f}")
     if extra_km > 0:
         lines.append(f"- Extra Distance Driven: {extra_km:g} km (Actual {actual_km:g} km) = ₹{extra_km_cost:,.2f}")
     if extra_hours > 0:
         lines.append(f"- Extra Hours: {extra_hours:g} hr(s) @ ₹{extra_hour_rate:,.2f}/hr = ₹{extra_hr_cost:,.2f}")
     if driver_cost > 0:
         lines.append(f"- Chauffeur Allowance: {days:g} day(s) @ ₹{driver_day:,.2f}/day = ₹{driver_cost:,.2f}")
+    if q.get("long_term_discount", 0) > 0:
+        lines.append(f"- Long-Term Discount (-{q['long_term_discount_percent']:g}%): -₹{q['long_term_discount']:,.2f}")
     if discount > 0:
         lines.append(f"- Discount Applied: -₹{discount:,.2f}")
     lines.append(f"- Taxable Subtotal: ₹{taxable_sub:,.2f}")
-    lines.append(f"- GST ({gst_pct:g}%): ₹{gst_amount:,.2f} (CGST ₹{gst_amount/2:,.2f} + SGST ₹{gst_amount/2:,.2f})")
+    if q.get("inter_state"):
+        lines.append(f"- GST ({gst_pct:g}%): ₹{gst_amount:,.2f} (IGST ₹{igst:,.2f})")
+    else:
+        lines.append(f"- GST ({gst_pct:g}%): ₹{gst_amount:,.2f} (CGST ₹{cgst:,.2f} + SGST ₹{sgst:,.2f})")
     if toll_parking > 0:
         lines.append(f"- FASTag Tolls / Parking / State Tax: ₹{toll_parking:,.2f}")
     if fuel_charge > 0:

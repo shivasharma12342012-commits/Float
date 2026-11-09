@@ -290,3 +290,5 @@ sign_in_limiter = RateLimiter(
 chat_limiter = RateLimiter(limit=60, window=60.0)
 # Separate budget so unlock guesses cannot lock people out of signing in.
 unlock_limiter = RateLimiter(limit=5, window=300.0, penalty=900.0)
+signup_limiter = RateLimiter(limit=10, window=600.0, penalty=300.0)
+admin_limiter = RateLimiter(limit=60, window=60.0, penalty=60.0)

@@ -200,23 +200,72 @@ function viewOverview(wrap) {
 
 function addBackupPanel(wrap) {
   const b = DATA.backup || {};
+  const kh = DATA.key_health || {};
   const panel = make("div", "panel");
   const head = make("div", "panel-head");
-  head.append(make("b", null, "Backup"));
+  head.append(make("b", null, "Backup, Restore & Encryption Key Health"));
   panel.append(head);
   const body = make("div", "panel-body");
+  if (kh.unreadable_keys > 0) {
+    const warn = make("p", "hint", kh.warning || "Warning: One or more encrypted API keys cannot be decrypted with the current data/.device_key.");
+    warn.style.color = "var(--danger, #b3261e)";
+    body.append(warn);
+  } else {
+    body.append(make("p", "hint", "Encryption key (data/.device_key): healthy · AES-256-GCM active."));
+  }
   const line = make("p", "hint", b.last ? `Last backup: ${b.last} (${b.count} kept)` : "Last backup: none yet");
   body.append(line);
-  body.append(button("Back up now", async () => {
+  const btnRow = make("div", "row");
+  btnRow.style.gap = "8px";
+  btnRow.append(button("Back up now", async () => {
     try {
       const r = await api("/api/admin/backup", { body: {} });
       DATA.backup = r.backup;
-      line.textContent = `Last backup: ${r.backup.last} (${r.backup.count} kept)`;
+      render();
       toast("Backup saved.");
     } catch (err) { toast(err.message || "The backup did not work.", true); }
   }));
-  body.append(make("p", "hint", "Float also backs up by itself when it opens, and once a day while open. " +
-    "The newest 14 are kept in the data/backups folder. To restore one, close Float and run: python main.py restore"));
+
+  const backups = b.backups || [];
+  if (backups.length) {
+    const sel = document.createElement("select");
+    sel.style.cssText = "padding:6px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--paper)";
+    backups.forEach((bk) => {
+      const o = document.createElement("option");
+      o.value = bk.filename;
+      o.textContent = `${bk.filename} (${Math.max(1, Math.round((bk.size_bytes || 0) / 1024))} KB)`;
+      sel.append(o);
+    });
+    btnRow.append(sel);
+    btnRow.append(button("Download .sqlite3", async () => {
+      const fname = sel.value;
+      if (!fname) return;
+      const res = await fetch(`/api/admin/backups/${encodeURIComponent(fname)}/download`, {
+        headers: { Authorization: "Bearer " + TOKEN },
+      });
+      if (!res.ok) { toast("Could not download backup.", true); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fname;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }));
+    btnRow.append(button("Restore selected", async () => {
+      const fname = sel.value;
+      if (!fname) return;
+      if (!confirm(`Restore database from ${fname}? Float will automatically save a safety snapshot of current data before restoring.`)) return;
+      try {
+        await api("/api/admin/restore", { body: { filename: fname } });
+        toast(`Database restored from ${fname}. Reloading…`);
+        setTimeout(() => boot(), 900);
+      } catch (err) { toast(err.message || "Restore failed.", true); }
+    }, true));
+  }
+  body.append(btnRow);
+  body.append(make("p", "hint", "Float backs up automatically on startup and once every 24 hours. " +
+    "Keep a copy of data/.device_key alongside off-site backups so encrypted API keys remain readable if you move to a new machine."));
   panel.append(body);
   wrap.append(panel);
 }
@@ -288,14 +337,30 @@ function viewTeachers(wrap) {
   name.setAttribute("data-form-type", "other");
   name.placeholder = "Name";
   name.style.cssText = email.style.cssText.replace("220px", "160px");
+  const roleSelect = document.createElement("select");
+  roleSelect.style.cssText = "padding:8px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--paper)";
+  [
+    ["desk_agent", "Desk Agent"],
+    ["manager", "Branch Manager"],
+    ["accountant", "Accountant"],
+    ["owner", "Owner (Admin)"],
+    ["read_only", "Read-Only Auditor"],
+  ].forEach(([val, lbl]) => {
+    const o = document.createElement("option");
+    o.value = val;
+    o.textContent = lbl;
+    roleSelect.append(o);
+  });
   const add = make("button", "btn primary", "Add");
   add.addEventListener("click", async () => {
     if (!email.value.includes("@")) { toast("That email doesn't look right.", true); return; }
     add.disabled = true;
     try {
-      const result = await api("/api/admin/users", { body: { email: email.value, name: name.value } });
+      const result = await api("/api/admin/users", {
+        body: { email: email.value, name: name.value, ops_role: roleSelect.value },
+      });
       DATA.users = result.users;
-      alert(`Account created for ${email.value}.\n\nTemporary password: ${result.temp_password}\n\nThey'll be asked to set their own on first sign-in.`);
+      alert(`Account created for ${email.value} (${roleSelect.value}).\n\nTemporary password: ${result.temp_password}\n\nThey'll be asked to set their own on first sign-in.`);
       email.value = name.value = "";
       render();
     } catch (err) {
@@ -305,7 +370,7 @@ function viewTeachers(wrap) {
     }
   });
   head.append(headBody);
-  headBody.append(row, name, email, add);
+  headBody.append(row, name, email, roleSelect, add);
   row.style.marginBottom = "0";
   wrap.append(head);
 
@@ -327,7 +392,8 @@ function viewTeachers(wrap) {
     tr.append(nameTd);
 
     const roleTd = document.createElement("td");
-    const pill = make("span", user.role === "admin" ? "pill admin" : "pill", user.role);
+    const opsRole = user.ops_role || (user.role === "admin" ? "owner" : "desk_agent");
+    const pill = make("span", user.role === "admin" ? "pill admin" : "pill", opsRole);
     roleTd.append(pill);
     if (!user.active) roleTd.append(make("span", "pill off", "off"));
     tr.append(roleTd);
@@ -398,6 +464,27 @@ function actionMenu(user) {
       } catch (err) { toast(err.message, true); }
     }));
     wrap.append(button("Sign out", () => act("sign_out")));
+    const roleSel = document.createElement("select");
+    roleSel.className = "btn tiny";
+    roleSel.title = "Change RBAC operational role";
+    ["owner", "manager", "desk_agent", "accountant", "read_only"].forEach((r) => {
+      const o = document.createElement("option");
+      o.value = r;
+      o.textContent = "Role: " + r;
+      o.selected = (user.ops_role || (user.role === "admin" ? "owner" : "desk_agent")) === r;
+      roleSel.append(o);
+    });
+    roleSel.addEventListener("change", async () => {
+      try {
+        const result = await api(`/api/admin/users/${user.id}`, {
+          body: { action: "set_ops_role", ops_role: roleSel.value },
+        });
+        DATA.users = result.users;
+        toast(`Updated ${user.email} role to ${roleSel.value}.`);
+        render();
+      } catch (err) { toast(err.message, true); }
+    });
+    wrap.append(roleSel);
     if (user.role === "teacher") wrap.append(button("Make admin", () => act("make_admin")));
     else wrap.append(button("Make operator", () => act("make_teacher")));
     wrap.append(button("Deactivate", () => act("deactivate"), true));

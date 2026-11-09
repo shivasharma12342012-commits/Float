@@ -274,8 +274,16 @@ def _m2_usage_monthly(conn: sqlite3.Connection) -> None:
     )""")
 
 
+def _m3_enterprise_rental(conn: sqlite3.Connection) -> None:
+    """Enterprise car rental tables: branches, vehicles, compliance, customers, DPDP, bookings, ledger, GST invoices, credit notes, maintenance, damage, signatures."""
+    from . import rental_ops
+
+    rental_ops.migrate_v3(conn)
+
+
 MIGRATIONS: list[tuple[int, str, Any]] = [
     (2, "monthly usage summary table", _m2_usage_monthly),
+    (3, "enterprise car rental fleet, booking, compliance, GST and audit tables", _m3_enterprise_rental),
 ]
 
 
@@ -409,12 +417,15 @@ def create_user(
     google_sub: str | None = None,
     must_change: bool = False,
     school: str = "",
+    ops_role: str = "",
+    branch_id: int = 1,
 ) -> dict[str, Any]:
     now = time.time()
+    resolved_ops_role = ops_role or ("owner" if role == "admin" else "desk_agent")
     with cursor() as db:
         db.execute(
-            """INSERT INTO users(email,name,password_hash,role,google_sub,must_change,school,created_at)
-               VALUES(?,?,?,?,?,?,?,?)""",
+            """INSERT INTO users(email,name,password_hash,role,google_sub,must_change,school,created_at,ops_role,branch_id)
+               VALUES(?,?,?,?,?,?,?,?,?,?)""",
             (
                 email.strip().lower()[:254],
                 (name.strip() or email.split("@")[0].title())[:120],
@@ -424,6 +435,8 @@ def create_user(
                 1 if must_change else 0,
                 (school or config.settings.school_name)[:160],
                 now,
+                resolved_ops_role,
+                max(1, int(branch_id or 1)),
             ),
         )
         row = db.execute("SELECT * FROM users WHERE email=?", (email.strip().lower(),)).fetchone()
@@ -459,7 +472,7 @@ def list_users(include_inactive: bool = True) -> list[dict[str, Any]]:
 _USER_FIELDS = {
     "name", "school", "board", "subjects", "grades", "language",
     "assist_level", "accent", "appearance", "role", "active", "must_change",
-    "google_sub",
+    "google_sub", "ops_role", "branch_id",
 }
 
 
@@ -659,6 +672,31 @@ def key_status(user_id: int | None = None) -> dict[str, dict[str, Any]]:
     return out
 
 
+def key_health_status() -> dict[str, Any]:
+    """Check whether stored API keys can be decrypted with the current data/.device_key."""
+    security._device_key()
+    with cursor() as db:
+        rows = db.execute("SELECT id, scope, provider, secret FROM api_keys").fetchall()
+    total = len(rows)
+    unreadable = []
+    for r in rows:
+        if r["secret"] and not security.decrypt_secret(r["secret"]):
+            unreadable.append({"id": r["id"], "scope": r["scope"], "provider": r["provider"]})
+    return {
+        "device_key_present": Path(config.DEVICE_KEY_PATH).exists(),
+        "total_keys": total,
+        "unreadable_count": len(unreadable),
+        "unreadable_keys": len(unreadable),
+        "unreadable": unreadable,
+        "healthy": len(unreadable) == 0,
+        "warning": (
+            f"{len(unreadable)} stored API key(s) cannot be decrypted with the current data/.device_key. "
+            "If you migrated this database from another computer without copying data/.device_key, re-save your API keys."
+            if unreadable else ""
+        ),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Conversations and messages
 # ---------------------------------------------------------------------------
@@ -803,7 +841,8 @@ def usage_summary(days: int = 30) -> list[dict[str, Any]]:
     since = time.time() - days * 86400
     with cursor() as db:
         rows = db.execute(
-            """SELECT u.id, u.name, u.email, u.role, u.school, u.active, u.last_seen, u.sign_ins,
+            """SELECT u.id, u.name, u.email, u.role, u.ops_role, u.branch_id,
+                      u.school, u.active, u.last_seen, u.sign_ins,
                       COALESCE(SUM(g.tokens_in),0)  AS tin,
                       COALESCE(SUM(g.tokens_out),0) AS tout,
                       COALESCE(SUM(g.paise),0)      AS paise,

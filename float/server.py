@@ -42,7 +42,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Callable
 
-from . import agent, artifacts, computer, config, db, google, greeting, maintenance, mcp, providers, security, stats, tools, transport
+from . import agent, artifacts, computer, config, db, google, greeting, maintenance, mcp, providers, rental_ops, security, stats, tools, transport
 
 Handler = Callable[["Route"], Any]
 _routes: list[tuple[str, re.Pattern[str], Handler, str]] = []
@@ -141,8 +141,14 @@ class Route:
 
     def require_admin(self) -> dict[str, Any]:
         user = self.require_user()
-        if user["role"] != "admin":
+        if user["role"] != "admin" and rental_ops.effective_role(user) not in {"owner", "manager"}:
             raise HttpError(403, "That area is for admins.")
+        return user
+
+    def require_perm(self, perm: str) -> dict[str, Any]:
+        user = self.require_user()
+        if not rental_ops.has_permission(user, perm):
+            raise HttpError(403, f"Your role ({rental_ops.effective_role(user)}) does not have permission for '{perm}'.")
         return user
 
 
@@ -191,6 +197,9 @@ def auth_state(ctx: Route) -> dict[str, Any]:
 
 @route("POST", "/api/auth/signup", auth="none")
 def auth_signup(ctx: Route) -> dict[str, Any]:
+    allowed, wait = security.signup_limiter.check(f"signup:{ctx.ip}")
+    if not allowed:
+        raise HttpError(429, f"Too many sign-up attempts. Try again in {int(wait)} seconds.")
     body = ctx.body
     email = str(body.get("email", "")).strip().lower()
     name = str(body.get("name", "")).strip() or email.split("@")[0]
@@ -339,6 +348,8 @@ def _public_user(user: dict[str, Any]) -> dict[str, Any]:
         "email": user["email"],
         "name": user["name"],
         "role": user["role"],
+        "ops_role": rental_ops.effective_role(user),
+        "branch_id": int(user.get("branch_id") or 1),
         "school": user["school"],
         "board": user["board"],
         "subjects": _as_list(user["subjects"]),
@@ -491,6 +502,8 @@ def bootstrap(ctx: Route) -> dict[str, Any]:
         "usage": {**db.usage_for_user(user_id), "month_paise": db.month_paise(user_id),
                   "cap_paise": db.cap_for(user_id)[0]},
         "own_work": db.own_work_summary(user_id),
+        "branches": rental_ops.list_branches(),
+        "roles": list(rental_ops.ROLES),
     }
 
 
@@ -1126,6 +1139,9 @@ def admin_overview(ctx: Route) -> dict[str, Any]:
         ],
         "notices": db.active_notices(),
         "backup": maintenance.last_backup(),
+        "key_health": db.key_health_status(),
+        "branches": rental_ops.list_branches(),
+        "roles": list(rental_ops.ROLES),
         "prices": providers.price_status(),
     }
 
@@ -1133,14 +1149,57 @@ def admin_overview(ctx: Route) -> dict[str, Any]:
 @route("POST", "/api/admin/backup", auth="admin")
 def admin_backup(ctx: Route) -> dict[str, Any]:
     admin = ctx.require_admin()
+    tag = str(ctx.body.get("tag", "")).strip() if ctx.body else ""
     try:
-        path = maintenance.backup_now()
+        path = maintenance.backup_now(tag)
     except Exception as exc:  # noqa: BLE001
         maintenance.log_error(f"Manual backup failed: {exc!r}")
         raise HttpError(500, "The backup did not work. Check there is free disk space, "
                              "then try again. Details are in data/float_errors.log.") from None
     db.audit("admin.backup", user_id=int(admin["id"]), actor=admin["name"], detail=path.name, ip=ctx.ip)
     return {"ok": True, "backup": maintenance.last_backup()}
+
+
+@route("GET", "/api/admin/backups", auth="admin")
+def admin_backups_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_admin()
+    info = maintenance.backup_list_info()
+    return {"files": info, "backups": info, "backup": maintenance.last_backup()}
+
+
+@route("GET", "/api/admin/backups/{filename}/download", auth="admin")
+def admin_backup_download(ctx: Route) -> Any:
+    admin = ctx.require_admin()
+    filename = os.path.basename(str(ctx.params.get("filename", "")))
+    if not filename.endswith(".sqlite3") or not filename.startswith("float-"):
+        raise HttpError(400, "Invalid backup filename.")
+    target = (maintenance.backup_dir() / filename).resolve()
+    if not target.is_relative_to(maintenance.backup_dir().resolve()) or not target.is_file():
+        raise HttpError(404, "Backup file not found.")
+    db.audit("admin.backup.download", user_id=int(admin["id"]), actor=admin["name"], detail=filename, ip=ctx.ip, level="warn")
+    return ("file", (filename, "application/x-sqlite3", target.read_bytes()))
+
+
+@route("POST", "/api/admin/restore", auth="admin")
+def admin_restore(ctx: Route) -> dict[str, Any]:
+    admin = ctx.require_perm("backup.restore")
+    filename = os.path.basename(str(ctx.body.get("filename", "")).strip())
+    if not filename.endswith(".sqlite3") or not filename.startswith("float-"):
+        raise HttpError(400, "Choose a valid backup file from the list.")
+    target = (maintenance.backup_dir() / filename).resolve()
+    if not target.is_relative_to(maintenance.backup_dir().resolve()) or not target.is_file():
+        raise HttpError(404, "Backup file not found.")
+    try:
+        kept = maintenance.restore(target)
+    except Exception as exc:  # noqa: BLE001
+        maintenance.log_error(f"Restore failed: {exc!r}")
+        raise HttpError(400, f"Restore could not complete: {exc}") from None
+    rental_ops.log_sensitive_action(
+        user=admin, action="admin.restore", entity_type="database", entity_id=filename,
+        old_val={"previous_copy": kept.name}, new_val={"restored_from": filename},
+        reason=str(ctx.body.get("reason", "UI restore")), ip=ctx.ip,
+    )
+    return {"ok": True, "restored": filename, "safety_copy": kept.name, "backup": maintenance.last_backup()}
 
 
 @route("POST", "/api/admin/prices", auth="admin")
@@ -1169,14 +1228,23 @@ def admin_add_user(ctx: Route) -> dict[str, Any]:
     email = str(body.get("email", "")).strip().lower()
     name = str(body.get("name", "")).strip()
     password = str(body.get("password", "")) or security.new_token(9)
-    raw_role = str(body.get("role", "teacher")).strip().lower()
-    if raw_role == "operator":
-        raw_role = "teacher"
-    role = raw_role
+    raw_role = str(body.get("ops_role") or body.get("role") or "teacher").strip().lower()
+    branch_id = max(1, int(body.get("branch_id") or 1))
+    role_map = {
+        "owner": ("admin", "owner"),
+        "admin": ("admin", "owner"),
+        "manager": ("admin", "manager"),
+        "desk_agent": ("teacher", "desk_agent"),
+        "operator": ("teacher", "desk_agent"),
+        "teacher": ("teacher", "desk_agent"),
+        "accountant": ("teacher", "accountant"),
+        "read_only": ("teacher", "read_only"),
+    }
     if "@" not in email:
         raise HttpError(400, "That email address does not look right.")
-    if role not in {"teacher", "admin"}:
-        raise HttpError(400, "Role must be 'operator' ('teacher') or 'admin'.")
+    if raw_role not in role_map:
+        raise HttpError(400, "Role must be 'owner', 'manager', 'desk_agent', 'accountant', or 'read_only'.")
+    role, ops_role = role_map[raw_role]
     if body.get("password"):
         problems = security.password_problems(password)
         if problems:
@@ -1184,10 +1252,13 @@ def admin_add_user(ctx: Route) -> dict[str, Any]:
     if db.get_user_by_email(email):
         raise HttpError(409, "There is already an account with that email.")
     school = str(body.get("school", "")).strip() or db.org_get("school_name")
-    db.create_user(email, name, password, role=role,
-                          must_change=True, school=school)
-    db.audit("admin.user.add", user_id=int(admin["id"]), actor=admin["name"],
-             detail=f"added {email}", level="warn", ip=ctx.ip)
+    created = db.create_user(email, name, password, role=role,
+                             must_change=True, school=school, ops_role=ops_role, branch_id=branch_id)
+    rental_ops.log_sensitive_action(
+        user=admin, action="admin.user.add", entity_type="user", entity_id=created["id"],
+        old_val=None, new_val={"email": email, "role": role, "ops_role": ops_role, "branch_id": branch_id},
+        reason="Added operator account", ip=ctx.ip,
+    )
     return {"ok": True, "temp_password": password, "users": _admin_users()}
 
 
@@ -1228,13 +1299,32 @@ def admin_update_user(ctx: Route) -> dict[str, Any]:
             db.set_cap_override(user_id, paise)
             detail = f"limit set to {paise} paise: {reason[:200]}"
     elif action == "make_admin":
-        db.update_user(user_id, role="admin")
+        db.update_user(user_id, role="admin", ops_role="owner")
         detail = "made admin"
     elif action in ("make_teacher", "make_operator"):
         if _admin_count() <= 1 and target["role"] == "admin":
             raise HttpError(400, "There has to be at least one admin.")
-        db.update_user(user_id, role="teacher")
+        db.update_user(user_id, role="teacher", ops_role="desk_agent")
         detail = "made operator"
+    elif action in ("set_role", "set_ops_role"):
+        new_ops_role = str(body.get("ops_role", "")).strip().lower()
+        if new_ops_role not in rental_ops.ROLES:
+            raise HttpError(400, f"Invalid role '{new_ops_role}'.")
+        new_base_role = "admin" if new_ops_role in {"owner", "manager"} else "teacher"
+        if new_base_role != "admin" and target["role"] == "admin" and _admin_count() <= 1:
+            raise HttpError(400, "There has to be at least one admin/owner.")
+        old_role = target.get("ops_role") or target["role"]
+        db.update_user(user_id, role=new_base_role, ops_role=new_ops_role)
+        rental_ops.log_sensitive_action(
+            user=admin, action="admin.user.role", entity_type="user", entity_id=user_id,
+            old_val={"ops_role": old_role}, new_val={"ops_role": new_ops_role},
+            reason=str(body.get("reason", f"Changed role to {new_ops_role}")), ip=ctx.ip,
+        )
+        detail = f"role set to {new_ops_role}"
+    elif action == "set_branch":
+        branch_id = max(1, int(body.get("branch_id") or 1))
+        db.update_user(user_id, branch_id=branch_id)
+        detail = f"assigned to branch #{branch_id}"
     elif action == "reset_password":
         temporary = security.new_token(9)
         db.set_password(user_id, temporary)
@@ -1252,6 +1342,11 @@ def admin_update_user(ctx: Route) -> dict[str, Any]:
             raise HttpError(400, "You cannot delete your own account.")
         if target["role"] == "admin" and _admin_count() <= 1:
             raise HttpError(400, "There has to be at least one admin.")
+        rental_ops.log_sensitive_action(
+            user=admin, action="admin.user.delete", entity_type="user", entity_id=user_id,
+            old_val={"email": target["email"], "name": target["name"], "role": target["role"]},
+            new_val=None, reason="Deleted operator account", ip=ctx.ip,
+        )
         db.delete_user(user_id)
         detail = "deleted, with all their data"
     else:
@@ -1339,6 +1434,376 @@ def admin_export(ctx: Route) -> Any:
     db.audit("admin.export", user_id=int(admin["id"]), actor=admin["name"],
              detail="usage report downloaded", level="warn", ip=ctx.ip)
     return ("file", ("float-usage.xlsx", artifacts.KINDS["xlsx"][1], artifacts.build_xlsx(rows)))
+
+
+# ---------------------------------------------------------------------------
+# Enterprise Car Rental Operations Hub (/api/ops/*)
+# ---------------------------------------------------------------------------
+def _ops_call(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    try:
+        return fn(*args, **kwargs)
+    except PermissionError as exc:
+        raise HttpError(403, str(exc)) from None
+    except (rental_ops.RentalOpsError, ValueError) as exc:
+        raise HttpError(400, str(exc)) from None
+
+
+@route("GET", "/api/ops/summary")
+def ops_summary(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("fleet.read")
+    branch_q = ctx.query.get("branch_id", "").strip()
+    branch_id = int(branch_q) if branch_q.isdigit() else None
+    return {
+        "branches": rental_ops.list_branches(),
+        "vehicles": rental_ops.list_vehicles(branch_id=branch_id),
+        "alerts": rental_ops.get_compliance_alerts(30),
+        "bookings": rental_ops.list_bookings(branch_id=branch_id),
+        "customers": rental_ops.list_customers(),
+        "drivers": rental_ops.list_drivers(branch_id=branch_id),
+        "invoices": rental_ops.list_invoices(),
+        "credit_notes": rental_ops.list_credit_notes(),
+        "maintenance": rental_ops.list_maintenance_jobs(),
+        "damage": rental_ops.list_damage_records(),
+        "dashboard": rental_ops.get_fleet_dashboard(days=30, branch_id=branch_id),
+        "collections": rental_ops.get_daily_collection_report(),
+    }
+
+
+@route("GET", "/api/ops/branches")
+def ops_branches_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("fleet.read")
+    return {"branches": rental_ops.list_branches()}
+
+
+@route("POST", "/api/ops/branches")
+def ops_branches_create(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("branch.write")
+    branch = _ops_call(rental_ops.create_branch, ctx.body, user, ctx.ip)
+    return {"ok": True, "branch": branch, "branches": rental_ops.list_branches()}
+
+
+@route("GET", "/api/ops/vehicles")
+def ops_vehicles_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("fleet.read")
+    branch_q = ctx.query.get("branch_id", "").strip()
+    branch_id = int(branch_q) if branch_q.isdigit() else None
+    status = ctx.query.get("status", "").strip()
+    category = ctx.query.get("category", "").strip()
+    return {"vehicles": rental_ops.list_vehicles(branch_id=branch_id, status=status, category=category)}
+
+
+@route("POST", "/api/ops/vehicles")
+def ops_vehicles_create(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("fleet.write")
+    veh = _ops_call(rental_ops.create_vehicle, ctx.body, user, ctx.ip)
+    return {"ok": True, "vehicle": veh, "vehicles": rental_ops.list_vehicles()}
+
+
+@route("POST", "/api/ops/vehicles/{vehicle_id}")
+def ops_vehicles_update(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("fleet.write")
+    vid = int(ctx.params["vehicle_id"])
+    veh = _ops_call(rental_ops.update_vehicle, vid, ctx.body, user, ctx.ip)
+    return {"ok": True, "vehicle": veh, "vehicles": rental_ops.list_vehicles()}
+
+
+@route("POST", "/api/ops/vehicles/{vehicle_id}/transfer")
+def ops_vehicles_transfer(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("branch.transfer")
+    vid = int(ctx.params["vehicle_id"])
+    to_branch = int(ctx.body.get("to_branch_id") or 0)
+    odometer = float(ctx.body.get("odometer_km") or 0)
+    reason = str(ctx.body.get("reason") or "")
+    veh = _ops_call(rental_ops.transfer_vehicle, vid, to_branch, odometer, reason, user, ctx.ip)
+    return {"ok": True, "vehicle": veh, "vehicles": rental_ops.list_vehicles()}
+
+
+@route("GET", "/api/ops/vehicles/{vehicle_id}/compliance")
+def ops_vehicle_compliance_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("fleet.read")
+    vid = int(ctx.params["vehicle_id"])
+    return {"compliance": rental_ops.list_vehicle_compliance(vid)}
+
+
+@route("POST", "/api/ops/vehicles/{vehicle_id}/compliance")
+def ops_vehicle_compliance_add(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("compliance.write")
+    vid = int(ctx.params["vehicle_id"])
+    payload = dict(ctx.body)
+    payload["vehicle_id"] = vid
+    rec = _ops_call(rental_ops.add_vehicle_compliance, payload, user, ctx.ip)
+    return {"ok": True, "record": rec, "compliance": rental_ops.list_vehicle_compliance(vid)}
+
+
+@route("GET", "/api/ops/alerts")
+def ops_alerts(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("fleet.read")
+    days_q = ctx.query.get("days", "30").strip()
+    days = int(days_q) if days_q.isdigit() else 30
+    return rental_ops.get_compliance_alerts(days)
+
+
+@route("GET", "/api/ops/customers")
+def ops_customers_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("customer.read")
+    return {"customers": rental_ops.list_customers(include_erased=ctx.query.get("erased") == "1")}
+
+
+@route("POST", "/api/ops/customers")
+def ops_customers_create(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("customer.write")
+    cust = _ops_call(rental_ops.create_customer, ctx.body, user, ctx.ip)
+    return {"ok": True, "customer": cust, "customers": rental_ops.list_customers()}
+
+
+@route("GET", "/api/ops/customers/{customer_id}")
+def ops_customers_get(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("customer.read")
+    cid = int(ctx.params["customer_id"])
+    cust = rental_ops.get_customer(cid, user=user, ip=ctx.ip)
+    if not cust:
+        raise HttpError(404, "Customer not found.")
+    return {"customer": cust}
+
+
+@route("GET", "/api/ops/customers/{customer_id}/export")
+def ops_customers_export(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("customer.export")
+    cid = int(ctx.params["customer_id"])
+    return _ops_call(rental_ops.export_customer_data_dpdp, cid, user, ctx.ip)
+
+
+@route("POST", "/api/ops/customers/{customer_id}/erase")
+def ops_customers_erase(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("customer.erase")
+    cid = int(ctx.params["customer_id"])
+    reason = str(ctx.body.get("reason") or "")
+    res = _ops_call(rental_ops.erase_customer_pii_dpdp, cid, reason, user, ctx.ip)
+    return {**res, "customers": rental_ops.list_customers()}
+
+
+@route("GET", "/api/ops/drivers")
+def ops_drivers_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("fleet.read")
+    branch_q = ctx.query.get("branch_id", "").strip()
+    branch_id = int(branch_q) if branch_q.isdigit() else None
+    return {"drivers": rental_ops.list_drivers(branch_id=branch_id)}
+
+
+@route("POST", "/api/ops/drivers")
+def ops_drivers_create(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("fleet.write")
+    drv = _ops_call(rental_ops.create_driver, ctx.body, user, ctx.ip)
+    return {"ok": True, "driver": drv, "drivers": rental_ops.list_drivers()}
+
+
+@route("GET", "/api/ops/availability")
+def ops_availability(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("booking.read")
+    pickup = ctx.query.get("pickup_at", "").strip()
+    ret = (ctx.query.get("return_at") or ctx.query.get("expected_return_at") or "").strip()
+    cat = ctx.query.get("category", "").strip()
+    branch_q = ctx.query.get("branch_id", "").strip()
+    branch_id = int(branch_q) if branch_q.isdigit() else None
+    vehicles = _ops_call(rental_ops.search_available_vehicles, pickup, ret, category=cat, branch_id=branch_id)
+    return {"available": vehicles}
+
+
+@route("GET", "/api/ops/timeline")
+def ops_timeline(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("booking.read")
+    branch_q = ctx.query.get("branch_id", "").strip()
+    branch_id = int(branch_q) if branch_q.isdigit() else None
+    return {"timeline": rental_ops.get_vehicle_timeline(branch_id=branch_id)}
+
+
+@route("GET", "/api/ops/bookings")
+def ops_bookings_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("booking.read")
+    status = ctx.query.get("status", "").strip()
+    branch_q = ctx.query.get("branch_id", "").strip()
+    branch_id = int(branch_q) if branch_q.isdigit() else None
+    vid_q = ctx.query.get("vehicle_id", "").strip()
+    vid = int(vid_q) if vid_q.isdigit() else None
+    return {"bookings": rental_ops.list_bookings(status=status, branch_id=branch_id, vehicle_id=vid)}
+
+
+@route("POST", "/api/ops/bookings")
+def ops_bookings_create(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("booking.write")
+    booking = _ops_call(rental_ops.create_booking, ctx.body, user, ctx.ip)
+    return {"ok": True, "booking": booking, "bookings": rental_ops.list_bookings()}
+
+
+@route("POST", "/api/ops/bookings/{booking_id}/status")
+def ops_bookings_status(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("booking.write")
+    bid = int(ctx.params["booking_id"])
+    new_status = str(ctx.body.get("status") or "").strip()
+    res = _ops_call(rental_ops.transition_booking, bid, new_status, ctx.body, user, ctx.ip)
+    return {"ok": True, **res, "bookings": rental_ops.list_bookings()}
+
+
+@route("GET", "/api/ops/bookings/{booking_id}/settlement")
+def ops_bookings_settlement(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("payment.read")
+    bid = int(ctx.params["booking_id"])
+    return _ops_call(rental_ops.get_booking_settlement, bid)
+
+
+@route("POST", "/api/ops/quote")
+def ops_quote(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("booking.read")
+    return {"quote": _ops_call(rental_ops.calculate_tariff_exact, ctx.body)}
+
+
+@route("GET", "/api/ops/payments")
+def ops_payments_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("payment.read")
+    bid_q = ctx.query.get("booking_id", "").strip()
+    bid = int(bid_q) if bid_q.isdigit() else None
+    return {"payments": rental_ops.list_payments(booking_id=bid)}
+
+
+@route("POST", "/api/ops/payments")
+def ops_payments_record(ctx: Route) -> dict[str, Any]:
+    body = ctx.body
+    kind = str(body.get("kind") or "advance").strip().lower()
+    perm = "payment.refund" if kind in {"refund", "deposit_refund", "cancellation_refund"} else "payment.write"
+    user = ctx.require_perm(perm)
+    rec = _ops_call(rental_ops.record_payment, body, user, ctx.ip)
+    return {"ok": True, "payment": rec, "collections": rental_ops.get_daily_collection_report()}
+
+
+@route("GET", "/api/ops/invoices")
+def ops_invoices_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("invoice.read")
+    bid_q = ctx.query.get("booking_id", "").strip()
+    bid = int(bid_q) if bid_q.isdigit() else None
+    return {"invoices": rental_ops.list_invoices(booking_id=bid)}
+
+
+@route("POST", "/api/ops/invoices")
+def ops_invoices_issue(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("invoice.issue")
+    bid = int(ctx.body.get("booking_id") or 0)
+    inv = _ops_call(rental_ops.issue_gst_invoice, bid, ctx.body, user, ctx.ip)
+    return {"ok": True, "invoice": inv, "invoices": rental_ops.list_invoices()}
+
+
+@route("GET", "/api/ops/credit-notes")
+def ops_credit_notes_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("invoice.read")
+    inv_q = ctx.query.get("invoice_id", "").strip()
+    inv_id = int(inv_q) if inv_q.isdigit() else None
+    return {"credit_notes": rental_ops.list_credit_notes(invoice_id=inv_id)}
+
+
+@route("POST", "/api/ops/credit-notes")
+def ops_credit_notes_issue(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("credit_note.issue")
+    inv_id = int(ctx.body.get("invoice_id") or 0)
+    cn = _ops_call(rental_ops.issue_credit_note, inv_id, ctx.body, user, ctx.ip)
+    return {"ok": True, "credit_note": cn, "credit_notes": rental_ops.list_credit_notes()}
+
+
+@route("GET", "/api/ops/collections")
+def ops_collections(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("payment.read")
+    on_date = ctx.query.get("date", "").strip()
+    branch_q = ctx.query.get("branch_id", "").strip()
+    branch_id = int(branch_q) if branch_q.isdigit() else None
+    return rental_ops.get_daily_collection_report(on_date=on_date, branch_id=branch_id)
+
+
+@route("POST", "/api/ops/reconcile")
+def ops_reconcile(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("shift.reconcile")
+    rec = _ops_call(rental_ops.reconcile_shift, ctx.body, user, ctx.ip)
+    return {"ok": True, "reconciliation": rec}
+
+
+@route("GET", "/api/ops/maintenance")
+def ops_maintenance_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("maintenance.read")
+    vid_q = ctx.query.get("vehicle_id", "").strip()
+    vid = int(vid_q) if vid_q.isdigit() else None
+    status = ctx.query.get("status", "").strip()
+    return {"jobs": rental_ops.list_maintenance_jobs(vehicle_id=vid, status=status)}
+
+
+@route("POST", "/api/ops/maintenance")
+def ops_maintenance_create(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("maintenance.write")
+    job = _ops_call(rental_ops.create_maintenance_job, ctx.body, user, ctx.ip)
+    return {"ok": True, "job": job, "jobs": rental_ops.list_maintenance_jobs()}
+
+
+@route("POST", "/api/ops/maintenance/{job_id}")
+def ops_maintenance_update(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("maintenance.write")
+    jid = int(ctx.params["job_id"])
+    job = _ops_call(rental_ops.update_maintenance_job, jid, ctx.body, user, ctx.ip)
+    return {"ok": True, "job": job, "jobs": rental_ops.list_maintenance_jobs()}
+
+
+@route("GET", "/api/ops/damage")
+def ops_damage_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("damage.read")
+    vid_q = ctx.query.get("vehicle_id", "").strip()
+    vid = int(vid_q) if vid_q.isdigit() else None
+    return {"damage": rental_ops.list_damage_records(vehicle_id=vid)}
+
+
+@route("POST", "/api/ops/damage")
+def ops_damage_add(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("damage.write")
+    rec = _ops_call(rental_ops.add_damage_record, ctx.body, user, ctx.ip)
+    return {"ok": True, "record": rec, "damage": rental_ops.list_damage_records()}
+
+
+@route("GET", "/api/ops/signatures")
+def ops_signatures_list(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("booking.read")
+    bid_q = ctx.query.get("booking_id", "").strip()
+    bid = int(bid_q) if bid_q.isdigit() else None
+    return {"signatures": rental_ops.list_signatures(booking_id=bid)}
+
+
+@route("POST", "/api/ops/signatures")
+def ops_signatures_capture(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("signature.write")
+    sig = _ops_call(rental_ops.capture_signature, ctx.body, user, ctx.ip)
+    return {"ok": True, "signature": sig}
+
+
+@route("GET", "/api/ops/dashboard")
+def ops_dashboard(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("dashboard.read")
+    days_q = ctx.query.get("days", "30").strip()
+    days = int(days_q) if days_q.isdigit() else 30
+    branch_q = ctx.query.get("branch_id", "").strip()
+    branch_id = int(branch_q) if branch_q.isdigit() else None
+    return rental_ops.get_fleet_dashboard(days=days, branch_id=branch_id)
+
+
+@route("POST", "/api/ops/import/preview")
+def ops_import_preview(ctx: Route) -> dict[str, Any]:
+    ctx.require_perm("import.write")
+    target = str(ctx.body.get("target") or "vehicles")
+    filename = str(ctx.body.get("filename") or "import.csv")
+    content = str(ctx.body.get("content") or "")
+    return _ops_call(rental_ops.preview_bulk_import, target, filename, content)
+
+
+@route("POST", "/api/ops/import/commit")
+def ops_import_commit(ctx: Route) -> dict[str, Any]:
+    user = ctx.require_perm("import.write")
+    target = str(ctx.body.get("target") or "vehicles")
+    rows = ctx.body.get("valid_rows") or []
+    if not isinstance(rows, list):
+        raise HttpError(400, "valid_rows must be a list.")
+    return _ops_call(rental_ops.commit_bulk_import, target, rows, user, ctx.ip)
 
 
 @route("POST", "/api/system/shutdown", auth="none")

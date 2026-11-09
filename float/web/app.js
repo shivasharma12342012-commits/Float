@@ -2091,6 +2091,7 @@ $("open-menu").addEventListener("click", () => {
     { label: "New task or quote", kbd: "Ctrl /", run: newThread },
     "-",
     { label: "Toolkit", kbd: "Ctrl K", run: () => showPanel("toolkit") },
+    { label: "Enterprise Ops Hub", run: () => openOpsHub() },
     { label: "Fleet & Bookings", run: () => showPanel("classes") },
     { label: "Ops to-do", run: () => showPanel("tasks") },
     { label: "Files", run: () => showPanel("files") },
@@ -2211,6 +2212,7 @@ document.addEventListener("keydown", (event) => {
     if (document.getElementById("pop")) { closePop(); return; }
     if ($("rail").classList.contains("open")) { closeRail(); return; }
     if (S.driving) { stopComputer(); return; }
+    if ($("ops-modal-scrim") && !$("ops-modal-scrim").hidden) { closeOpsHub(); return; }
     if (!$("modal-scrim").hidden) { closeModal(); return; }
     if (!$("drawer").hidden) closeDrawer();
   }
@@ -2393,6 +2395,817 @@ function initMascot() {
   });
 }
 
+
+/* ═══════════════════════════ 9. Enterprise Rental Operations Hub ═════════ */
+let OPS_DATA = null;
+let OPS_TAB = "fleet";
+
+const OPS_TABS = [
+  ["fleet", "Fleet & Compliance"],
+  ["bookings", "Bookings & Timeline"],
+  ["customers", "Customers & DPDP"],
+  ["money", "Money, GST & Shift"],
+  ["workshop", "Workshop, Damage & Sign"],
+  ["dashboard", "Dashboard & Import"],
+];
+
+function closeOpsHub() {
+  const s = $("ops-modal-scrim");
+  if (s) s.hidden = true;
+}
+
+async function refreshOpsSummary() {
+  try {
+    OPS_DATA = await api("/api/ops/summary");
+    const badge = $("ops-alert-badge");
+    if (badge && OPS_DATA && OPS_DATA.alerts) {
+      const n = Number(OPS_DATA.alerts.total_alerts || 0);
+      badge.textContent = `${n} alert${n === 1 ? "" : "s"}`;
+      badge.hidden = n === 0;
+    }
+    const rolePill = $("ops-role-pill");
+    if (rolePill && S.user) {
+      rolePill.textContent = S.user.ops_role || (S.user.role === "admin" ? "owner" : "desk_agent");
+    }
+  } catch { /* ignore background summary errors */ }
+}
+
+async function openOpsHub(tab) {
+  if (tab) OPS_TAB = tab;
+  const scrim = $("ops-modal-scrim");
+  if (!scrim) return;
+  scrim.hidden = false;
+  $("ops-modal-body").innerHTML = '<div class="empty"><b>Loading enterprise operations…</b></div>';
+  await refreshOpsSummary();
+  renderOpsHub();
+}
+
+function renderOpsHub() {
+  const bar = $("ops-tabs");
+  const body = $("ops-modal-body");
+  if (!bar || !body) return;
+  bar.innerHTML = "";
+  OPS_TABS.forEach(([id, label]) => {
+    const b = make("button", null, label);
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", String(id === OPS_TAB));
+    b.addEventListener("click", () => { OPS_TAB = id; renderOpsHub(); });
+    bar.append(b);
+  });
+  body.innerHTML = "";
+  if (!OPS_DATA) {
+    body.append(make("div", "empty", "Unable to load operational records."));
+    return;
+  }
+  const views = {
+    fleet: renderOpsFleet,
+    bookings: renderOpsBookings,
+    customers: renderOpsCustomers,
+    money: renderOpsMoney,
+    workshop: renderOpsWorkshop,
+    dashboard: renderOpsDashboard,
+  };
+  (views[OPS_TAB] || renderOpsFleet)(body);
+}
+
+function opsField(parent, label, placeholder = "", type = "text", defaultVal = "") {
+  const f = make("div", "field");
+  f.append(make("label", null, label));
+  const inp = noAutofill(document.createElement("input"));
+  inp.type = type;
+  inp.placeholder = placeholder;
+  if (defaultVal !== "") inp.value = defaultVal;
+  f.append(inp);
+  parent.append(f);
+  return inp;
+}
+
+function opsSelect(parent, label, options) {
+  const f = make("div", "field");
+  f.append(make("label", null, label));
+  const sel = document.createElement("select");
+  options.forEach(([val, text]) => {
+    const o = document.createElement("option");
+    o.value = val;
+    o.textContent = text;
+    sel.append(o);
+  });
+  f.append(sel);
+  parent.append(f);
+  return sel;
+}
+
+function renderOpsFleet(body) {
+  const alerts = OPS_DATA.alerts || {};
+  if (alerts.total_alerts > 0) {
+    const ap = make("div", "panel");
+    const ah = make("div", "panel-head");
+    ah.append(make("b", null, `Compliance & Expiry Alerts (${alerts.total_alerts})`));
+    ap.append(ah);
+    const ab = make("div", "panel-body");
+    (alerts.vehicle_compliance_alerts || []).forEach((a) => {
+      const r = make("div", "row");
+      r.append(make("span", "pill warn", a.severity));
+      r.append(make("span", "grow", `${a.reg_number} · ${a.doc_type.toUpperCase()} (${a.doc_number || "no ref"}) — exp: ${a.expiry_date || "N/A"}`));
+      ab.append(r);
+    });
+    (alerts.customer_dl_alerts || []).forEach((a) => {
+      const r = make("div", "row");
+      r.append(make("span", "pill off", a.severity));
+      r.append(make("span", "grow", `Customer DL: ${a.full_name} (${a.dl_number}) — exp: ${a.dl_expiry}`));
+      ab.append(r);
+    });
+    (alerts.maintenance_alerts || []).forEach((a) => {
+      const r = make("div", "row");
+      r.append(make("span", "pill warn", a.overdue ? "overdue" : "due soon"));
+      r.append(make("span", "grow", `Service: ${a.reg_number} at ${a.odometer_km} km (due ${a.service_due_km} km / ${a.next_service_due_date || "N/A"})`));
+      ab.append(r);
+    });
+    ap.append(ab);
+    body.append(ap);
+  }
+
+  const grid = make("div", "ops-grid-2");
+
+  // Add Vehicle Card
+  const vp = make("div", "panel");
+  const vh = make("div", "panel-head"); vh.append(make("b", null, "Add Vehicle to Master Fleet")); vp.append(vh);
+  const vb = make("div", "panel-body");
+  const r1 = make("div", "ops-grid-3");
+  const reg = opsField(r1, "Registration No.", "MH-01-AB-1234");
+  const makeIn = opsField(r1, "Make", "Toyota");
+  const modelIn = opsField(r1, "Model", "Innova Hycross");
+  vb.append(r1);
+  const r2 = make("div", "ops-grid-3");
+  const catIn = opsSelect(r2, "Category", [["SUV", "SUV"], ["Compact SUV", "Compact SUV"], ["Sedan", "Sedan"], ["Hatchback", "Hatchback"], ["MPV", "MPV"], ["Luxury", "Luxury"]]);
+  const fuelIn = opsSelect(r2, "Fuel", [["Petrol", "Petrol"], ["Diesel", "Diesel"], ["Hybrid", "Hybrid"], ["EV", "EV"], ["CNG", "CNG"]]);
+  const rateIn = opsField(r2, "Daily Rate (₹)", "3500", "number", "3500");
+  vb.append(r2);
+  const r3 = make("div", "ops-grid-3");
+  const odoIn = opsField(r3, "Odometer (km)", "12000", "number", "0");
+  const branchOpts = (OPS_DATA.branches || []).map((b) => [String(b.id), `${b.name} (${b.code})`]);
+  const branchIn = opsSelect(r3, "Branch", branchOpts.length ? branchOpts : [["1", "HQ"]]);
+  const statIn = opsSelect(r3, "Status", [["available", "Available"], ["reserved", "Reserved"], ["in_workshop", "In Workshop"], ["blocked", "Blocked"]]);
+  vb.append(r3);
+  const addVBtn = make("button", "btn primary", "Save Vehicle");
+  addVBtn.addEventListener("click", async () => {
+    try {
+      await api("/api/ops/vehicles", {
+        body: {
+          reg_number: reg.value, make: makeIn.value, model: modelIn.value,
+          category: catIn.value, fuel_type: fuelIn.value, daily_rate: Number(rateIn.value),
+          odometer_km: Number(odoIn.value), branch_id: Number(branchIn.value), status: statIn.value,
+        },
+      });
+      toast("Vehicle added to fleet master.");
+      await refreshOpsSummary();
+      renderOpsHub();
+    } catch (err) { toast(err.message, true); }
+  });
+  vb.append(addVBtn);
+  vp.append(vb);
+  grid.append(vp);
+
+  // Add Compliance & Branch Transfer Card
+  const cp = make("div", "panel");
+  const ch = make("div", "panel-head"); ch.append(make("b", null, "Vehicle Compliance & Branch Transfer")); cp.append(ch);
+  const cb = make("div", "panel-body");
+  const vehOpts = (OPS_DATA.vehicles || []).map((v) => [String(v.id), `${v.reg_number} · ${v.make} ${v.model}`]);
+  const cVeh = opsSelect(cb, "Vehicle", vehOpts.length ? vehOpts : [["", "Add a vehicle first"]]);
+  const cr1 = make("div", "ops-grid-3");
+  const cType = opsSelect(cr1, "Document Type", [["insurance", "Insurance"], ["puc", "PUC"], ["fitness", "Fitness Cert"], ["permit", "Permit"], ["fastag", "FASTag"]]);
+  const cNum = opsField(cr1, "Policy / Tag No.", "POL-998811");
+  const cExp = opsField(cr1, "Expiry Date", "2027-05-01", "date");
+  cb.append(cr1);
+  const saveCompBtn = make("button", "btn", "Save Compliance Doc");
+  saveCompBtn.addEventListener("click", async () => {
+    if (!cVeh.value) { toast("Select a vehicle first.", true); return; }
+    try {
+      await api(`/api/ops/vehicles/${cVeh.value}/compliance`, {
+        body: { doc_type: cType.value, doc_number: cNum.value, expiry_date: cExp.value, wallet_balance: 1000 },
+      });
+      toast("Compliance record saved.");
+      await refreshOpsSummary();
+      renderOpsHub();
+    } catch (err) { toast(err.message, true); }
+  });
+  cb.append(saveCompBtn);
+
+  const hr = document.createElement("hr");
+  hr.style.cssText = "border:0;border-top:1px solid var(--line);margin:12px 0";
+  cb.append(hr);
+  const trRow = make("div", "ops-grid-3");
+  const toBr = opsSelect(trRow, "Transfer To Branch", branchOpts.length ? branchOpts : [["1", "HQ"]]);
+  const trReason = opsField(trRow, "Transfer Reason", "Weekend airport demand");
+  const newBrName = opsField(trRow, "Or New Branch Name", "Pune Airport Desk");
+  cb.append(trRow);
+  const trBtnRow = make("div", "row");
+  const trBtn = make("button", "btn", "Transfer Vehicle");
+  trBtn.addEventListener("click", async () => {
+    if (!cVeh.value) return;
+    try {
+      await api(`/api/ops/vehicles/${cVeh.value}/transfer`, {
+        body: { to_branch_id: Number(toBr.value), reason: trReason.value },
+      });
+      toast("Vehicle transferred.");
+      await refreshOpsSummary();
+      renderOpsHub();
+    } catch (err) { toast(err.message, true); }
+  });
+  const addBrBtn = make("button", "btn", "Create Branch");
+  addBrBtn.addEventListener("click", async () => {
+    if (!newBrName.value.trim()) { toast("Enter a branch name.", true); return; }
+    try {
+      const code = newBrName.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "BR2";
+      await api("/api/ops/branches", { body: { code, name: newBrName.value.trim() } });
+      toast("Branch created.");
+      await refreshOpsSummary();
+      renderOpsHub();
+    } catch (err) { toast(err.message, true); }
+  });
+  trBtnRow.append(trBtn, addBrBtn);
+  cb.append(trBtnRow);
+  cp.append(cb);
+  grid.append(cp);
+  body.append(grid);
+
+  // Fleet Master Table
+  const listP = make("div", "panel");
+  const listH = make("div", "panel-head"); listH.append(make("b", null, `Fleet Master (${(OPS_DATA.vehicles || []).length} vehicles)`)); listP.append(listH);
+  const listB = make("div", "panel-body");
+  listB.style.overflowX = "auto";
+  const tbl = document.createElement("table");
+  tbl.className = "grid";
+  tbl.innerHTML = "<thead><tr><th>Reg No.</th><th>Vehicle</th><th>Category</th><th>Branch</th><th>Odometer</th><th>Daily Rate</th><th>Status</th></tr></thead>";
+  const tb = document.createElement("tbody");
+  (OPS_DATA.vehicles || []).forEach((v) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="mono"><b>${escapeHtml(v.reg_number)}</b></td>` +
+      `<td>${escapeHtml(v.make)} ${escapeHtml(v.model)} <small>(${escapeHtml(v.fuel_type)})</small></td>` +
+      `<td>${escapeHtml(v.category)}</td>` +
+      `<td>${escapeHtml(v.branch_name || "HQ")}</td>` +
+      `<td class="num">${Number(v.odometer_km || 0).toLocaleString("en-IN")} km</td>` +
+      `<td class="num">₹${Number(v.daily_rate || 0).toLocaleString("en-IN")}</td>` +
+      `<td><span class="pill ${v.status === "available" ? "admin" : "warn"}">${escapeHtml(v.status)}</span></td>`;
+    tb.append(tr);
+  });
+  tbl.append(tb);
+  listB.append(tbl);
+  listP.append(listB);
+  body.append(listP);
+}
+
+function renderOpsBookings(body) {
+  const grid = make("div", "ops-grid-2");
+
+  // Create Booking with Overlap Protection
+  const bp = make("div", "panel");
+  const bh = make("div", "panel-head"); bh.append(make("b", null, "New Reservation (Overlap & DL Expiry Checked)")); bp.append(bh);
+  const bb = make("div", "panel-body");
+  const vehOpts = (OPS_DATA.vehicles || []).map((v) => [String(v.id), `${v.reg_number} · ${v.make} ${v.model} (₹${v.daily_rate}/day)`]);
+  const custOpts = (OPS_DATA.customers || []).map((c) => [String(c.id), `${c.full_name} (${c.phone || "no phone"} · DL: ${c.dl_number || "N/A"})`]);
+  const bVeh = opsSelect(bb, "Vehicle", vehOpts.length ? vehOpts : [["", "Add a vehicle in Fleet tab first"]]);
+  const bCust = opsSelect(bb, "Customer", custOpts.length ? custOpts : [["", "Add a customer in Customers tab first"]]);
+  const today = new Date().toISOString().slice(0, 10);
+  const tom = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+  const r1 = make("div", "ops-grid-2");
+  const pAt = opsField(r1, "Pickup (YYYY-MM-DDTHH:MM)", `${today}T09:00`, "text", `${today}T09:00`);
+  const rAt = opsField(r1, "Return (YYYY-MM-DDTHH:MM)", `${tom}T18:00`, "text", `${tom}T18:00`);
+  bb.append(r1);
+  const r2 = make("div", "ops-grid-3");
+  const discIn = opsField(r2, "Discount (₹)", "0", "number", "0");
+  const reasonIn = opsField(r2, "Override Reason (if discounted)", "Corporate repeat client");
+  const appIn = opsField(r2, "Approved By", "Branch Manager");
+  bb.append(r2);
+  const createBtn = make("button", "btn primary", "Confirm Booking");
+  createBtn.addEventListener("click", async () => {
+    if (!bVeh.value || !bCust.value) { toast("Select both vehicle and customer.", true); return; }
+    try {
+      await api("/api/ops/bookings", {
+        body: {
+          vehicle_id: Number(bVeh.value),
+          customer_id: Number(bCust.value),
+          pickup_at: pAt.value,
+          return_at: rAt.value,
+          discount_amount: Number(discIn.value || 0),
+          rate_override_reason: Number(discIn.value || 0) > 0 ? reasonIn.value : "",
+          rate_approved_by: Number(discIn.value || 0) > 0 ? appIn.value : "",
+        },
+      });
+      toast("Booking confirmed.");
+      await refreshOpsSummary();
+      renderOpsHub();
+    } catch (err) { toast(err.message, true); }
+  });
+  bb.append(createBtn);
+  bp.append(bb);
+  grid.append(bp);
+
+  // Availability Search & Vehicle Timeline
+  const tp = make("div", "panel");
+  const th = make("div", "panel-head"); th.append(make("b", null, "Availability Search & Vehicle Timeline")); tp.append(th);
+  const tb = make("div", "panel-body");
+  const sr = make("div", "ops-grid-2");
+  const sPick = opsField(sr, "From", `${today}T09:00`, "text", `${today}T09:00`);
+  const sRet = opsField(sr, "To", `${tom}T18:00`, "text", `${tom}T18:00`);
+  tb.append(sr);
+  const sOut = make("div", "hint", "Click Search to filter conflict-free vehicles.");
+  const sBtn = make("button", "btn", "Search Available Vehicles");
+  sBtn.addEventListener("click", async () => {
+    try {
+      const res = await api(`/api/ops/availability?pickup_at=${encodeURIComponent(sPick.value)}&return_at=${encodeURIComponent(sRet.value)}`);
+      const avail = res.available || [];
+      sOut.textContent = avail.length
+        ? `Available (${avail.length}): ` + avail.map((v) => `${v.reg_number} (${v.make} ${v.model})`).join(", ")
+        : "No vehicles available for that window.";
+    } catch (err) { toast(err.message, true); }
+  });
+  tb.append(sBtn, sOut);
+
+  (OPS_DATA.vehicles || []).forEach((v) => {
+    const slots = (OPS_DATA.bookings || []).filter((b) => b.vehicle_id === v.id && ["confirmed", "picked_up"].includes(b.status));
+    const row = make("div", "row");
+    const g = make("div", "grow");
+    g.append(make("b", null, `${v.reg_number} · ${v.make} ${v.model}`));
+    if (!slots.length) {
+      g.append(make("small", null, "No active bookings — free on timeline"));
+    } else {
+      slots.forEach((s) => {
+        g.append(make("span", "timeline-slot", `${s.booking_ref}: ${s.pickup_at.slice(0, 10)} → ${s.return_at.slice(0, 10)} (${s.status})`));
+      });
+    }
+    row.append(g);
+    tb.append(row);
+  });
+  tp.append(tb);
+  grid.append(tp);
+  body.append(grid);
+
+  // Active & Past Bookings Lifecycle Table
+  const lp = make("div", "panel");
+  const lh = make("div", "panel-head"); lh.append(make("b", null, "Reservation Lifecycle & Handover / Return / Cancellation")); lp.append(lh);
+  const lb = make("div", "panel-body");
+  lb.style.overflowX = "auto";
+  const tbl = document.createElement("table");
+  tbl.className = "grid";
+  tbl.innerHTML = "<thead><tr><th>Ref</th><th>Vehicle</th><th>Customer</th><th>Pickup → Return</th><th>Status</th><th>Actions</th></tr></thead>";
+  const tbody = document.createElement("tbody");
+  (OPS_DATA.bookings || []).forEach((b) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="mono"><b>${escapeHtml(b.booking_ref)}</b></td>` +
+      `<td>${escapeHtml(b.reg_number)}</td>` +
+      `<td>${escapeHtml(b.customer_name)}</td>` +
+      `<td><small>${escapeHtml(b.pickup_at)} → ${escapeHtml(b.return_at)}</small></td>` +
+      `<td><span class="pill">${escapeHtml(b.status)}</span></td>`;
+    const actTd = document.createElement("td");
+    const step = (status, label, extra = {}) => {
+      const btn = make("button", "btn tiny", label);
+      btn.style.marginRight = "4px";
+      btn.addEventListener("click", async () => {
+        try {
+          await api(`/api/ops/bookings/${b.id}/status`, { body: { status, ...extra } });
+          toast(`Booking ${b.booking_ref} → ${status}`);
+          await refreshOpsSummary();
+          renderOpsHub();
+        } catch (err) { toast(err.message, true); }
+      });
+      actTd.append(btn);
+    };
+    if (b.status === "enquiry") step("confirmed", "Confirm");
+    if (b.status === "confirmed") {
+      step("picked_up", "Mark Picked Up");
+      step("cancelled", "Cancel");
+      step("no_show", "No-Show");
+    }
+    if (b.status === "picked_up") {
+      const retBtn = make("button", "btn tiny primary", "Return Vehicle");
+      retBtn.addEventListener("click", async () => {
+        const odo = prompt(`Closing odometer (km) for ${b.reg_number} (out: ${b.odometer_out} km):`, String(Number(b.odometer_out || 0) + 250));
+        if (odo === null) return;
+        try {
+          await api(`/api/ops/bookings/${b.id}/status`, { body: { status: "returned", odometer_in: Number(odo) } });
+          toast(`Booking ${b.booking_ref} returned.`);
+          await refreshOpsSummary();
+          renderOpsHub();
+        } catch (err) { toast(err.message, true); }
+      });
+      actTd.append(retBtn);
+    }
+    if (b.status === "returned") step("closed", "Close File");
+    tr.append(actTd);
+    tbody.append(tr);
+  });
+  tbl.append(tbody);
+  lb.append(tbl);
+  lp.append(lb);
+  body.append(lp);
+}
+
+function renderOpsCustomers(body) {
+  const cp = make("div", "panel");
+  const ch = make("div", "panel-head");
+  ch.append(make("b", null, "Customer Onboarding, KYC & India DPDP Act 2023 Consent"));
+  cp.append(ch);
+  const cb = make("div", "panel-body");
+  const r1 = make("div", "ops-grid-3");
+  const nameIn = opsField(r1, "Full Name", "Aarav Deshmukh");
+  const phoneIn = opsField(r1, "Mobile Phone", "9876543210");
+  const emailIn = opsField(r1, "Email", "aarav@example.in");
+  cb.append(r1);
+  const r2 = make("div", "ops-grid-3");
+  const dlIn = opsField(r2, "Driving Licence No.", "MH0220190012345");
+  const dlExp = opsField(r2, "DL Expiry Date", "2030-06-15", "date", "2030-06-15");
+  const idProof = opsField(r2, "ID Proof (Aadhaar last 4 / Passport)", "Aadhaar XXXX-4821");
+  cb.append(r2);
+  const consentRow = make("div", "row");
+  const consentBox = document.createElement("input");
+  consentBox.type = "checkbox";
+  consentBox.checked = true;
+  consentRow.append(consentBox);
+  const cg = make("div", "grow");
+  cg.append(make("b", null, "Explicit Consent under Section 6, Digital Personal Data Protection Act, 2023 (India)"));
+  cg.append(make("small", null, "Customer consents to collection of Driving Licence & ID proof for rental verification, insurance, FASTag/challan settlement, and statutory GST invoicing."));
+  consentRow.append(cg);
+  cb.append(consentRow);
+
+  const saveCustBtn = make("button", "btn primary", "Save Customer Profile");
+  saveCustBtn.addEventListener("click", async () => {
+    try {
+      await api("/api/ops/customers", {
+        body: {
+          full_name: nameIn.value, phone: phoneIn.value, email: emailIn.value,
+          dl_number: dlIn.value, dl_expiry: dlExp.value,
+          id_proof_type: "Government ID", id_proof_number: idProof.value,
+          dpdp_consent: consentBox.checked,
+        },
+      });
+      toast("Customer profile saved with DPDP consent timestamp.");
+      await refreshOpsSummary();
+      renderOpsHub();
+    } catch (err) { toast(err.message, true); }
+  });
+  cb.append(saveCustBtn);
+  cp.append(cb);
+  body.append(cp);
+
+  // Customer Directory with DPDP Export & Erasure
+  const lp = make("div", "panel");
+  const lh = make("div", "panel-head"); lh.append(make("b", null, "Customer Directory & DPDP Act Rights (Portability Export / Erasure)")); lp.append(lh);
+  const lb = make("div", "panel-body");
+  lb.style.overflowX = "auto";
+  const tbl = document.createElement("table");
+  tbl.className = "grid";
+  tbl.innerHTML = "<thead><tr><th>Customer</th><th>Phone</th><th>Driving Licence</th><th>DL Expiry</th><th>Trips</th><th>DPDP Act Actions</th></tr></thead>";
+  const tb = document.createElement("tbody");
+  (OPS_DATA.customers || []).forEach((c) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><b>${escapeHtml(c.full_name)}</b></td>` +
+      `<td class="mono">${escapeHtml(c.phone || "—")}</td>` +
+      `<td class="mono">${escapeHtml(c.dl_number || "—")}</td>` +
+      `<td>${escapeHtml(c.dl_expiry || "—")}</td>` +
+      `<td class="num">${Number(c.total_bookings || 0)}</td>`;
+    const actTd = document.createElement("td");
+    const expBtn = make("button", "btn tiny", "Export Data (Sec 11)");
+    expBtn.style.marginRight = "4px";
+    expBtn.addEventListener("click", async () => {
+      try {
+        const pkg = await api(`/api/ops/customers/${c.id}/export`);
+        const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `dpdp-customer-${c.id}.json`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+        toast("DPDP data summary exported & access logged.");
+      } catch (err) { toast(err.message, true); }
+    });
+    const eraseBtn = make("button", "btn tiny danger", "Erase PII (Sec 12)");
+    eraseBtn.addEventListener("click", async () => {
+      const reason = prompt(`Erase personal data for ${c.full_name} under DPDP Act 2023 Section 12?\nEnter customer request reference / reason:`, "Customer withdrawal request");
+      if (!reason) return;
+      try {
+        await api(`/api/ops/customers/${c.id}/erase`, { body: { reason } });
+        toast("Customer PII anonymized; statutory GST invoices preserved.");
+        await refreshOpsSummary();
+        renderOpsHub();
+      } catch (err) { toast(err.message, true); }
+    });
+    actTd.append(expBtn, eraseBtn);
+    tr.append(actTd);
+    tb.append(tr);
+  });
+  tbl.append(tb);
+  lb.append(tbl);
+  lp.append(lb);
+  body.append(lp);
+}
+
+function renderOpsMoney(body) {
+  const grid = make("div", "ops-grid-2");
+  const bookOpts = (OPS_DATA.bookings || []).map((b) => [String(b.id), `${b.booking_ref} · ${b.reg_number} (${b.customer_name})`]);
+
+  // Payment Ledger & Immutable GST Invoice
+  const pp = make("div", "panel");
+  const ph = make("div", "panel-head"); ph.append(make("b", null, "Payment Ledger & Sequential GST Invoice")); pp.append(ph);
+  const pb = make("div", "panel-body");
+  const pBook = opsSelect(pb, "Booking", bookOpts.length ? bookOpts : [["", "Create a booking first"]]);
+  const r1 = make("div", "ops-grid-3");
+  const pKind = opsSelect(r1, "Payment Type", [["advance", "Advance"], ["deposit", "Security Deposit"], ["partial", "Partial"], ["settlement", "Final Settlement"], ["deposit_refund", "Deposit Refund"], ["refund", "Refund"]]);
+  const pMode = opsSelect(r1, "Mode", [["UPI", "UPI"], ["Cash", "Cash"], ["Card", "Card"], ["NEFT", "NEFT"], ["RTGS", "RTGS"]]);
+  const pAmt = opsField(r1, "Amount (₹)", "5000", "number", "5000");
+  pb.append(r1);
+  const pRef = opsField(pb, "UTR / Reference Number", "UPI-431298765432");
+  const btnRow = make("div", "row");
+  const recBtn = make("button", "btn primary", "Record Payment");
+  recBtn.addEventListener("click", async () => {
+    if (!pBook.value) return;
+    try {
+      await api("/api/ops/payments", {
+        body: { booking_id: Number(pBook.value), kind: pKind.value, mode: pMode.value, amount: Number(pAmt.value), reference_no: pRef.value },
+      });
+      toast("Payment recorded in ledger.");
+      await refreshOpsSummary();
+      renderOpsHub();
+    } catch (err) { toast(err.message, true); }
+  });
+  const invBtn = make("button", "btn", "Issue Immutable GST Invoice");
+  invBtn.addEventListener("click", async () => {
+    if (!pBook.value) return;
+    try {
+      const res = await api("/api/ops/invoices", { body: { booking_id: Number(pBook.value) } });
+      toast(`Issued GST Invoice ${res.invoice.invoice_number}`);
+      await refreshOpsSummary();
+      renderOpsHub();
+    } catch (err) { toast(err.message, true); }
+  });
+  btnRow.append(recBtn, invBtn);
+  pb.append(btnRow);
+  pp.append(pb);
+  grid.append(pp);
+
+  // Daily Collection & Shift Cash Drawer Reconciliation
+  const col = OPS_DATA.collections || {};
+  const sp = make("div", "panel");
+  const sh = make("div", "panel-head"); sh.append(make("b", null, `Daily Collections & Shift Reconciliation (${col.date || "Today"})`)); sp.append(sh);
+  const sb = make("div", "panel-body");
+  sb.append(make("p", "hint",
+    `Net Cash: ₹${Number(col.net_cash || 0).toLocaleString("en-IN")} · UPI: ₹${Number(col.upi_collected || 0).toLocaleString("en-IN")} · Card: ₹${Number(col.card_collected || 0).toLocaleString("en-IN")} · Net Total: ₹${Number(col.net_collections || 0).toLocaleString("en-IN")}`));
+  const sr = make("div", "ops-grid-2");
+  const openCash = opsField(sr, "Opening Drawer Cash (₹)", "2000", "number", "2000");
+  const closeCash = opsField(sr, "Counted Closing Cash (₹)", String(2000 + Number(col.net_cash || 0)), "number", String(2000 + Number(col.net_cash || 0)));
+  sb.append(sr);
+  const recShiftBtn = make("button", "btn primary", "Close & Reconcile Shift");
+  recShiftBtn.addEventListener("click", async () => {
+    try {
+      const r = await api("/api/ops/reconcile", {
+        body: { opening_cash: Number(openCash.value), actual_closing_cash: Number(closeCash.value), notes: "Counter shift handover" },
+      });
+      toast(`Shift closed. Variance: ₹${r.reconciliation.cash_variance}`);
+    } catch (err) { toast(err.message, true); }
+  });
+  sb.append(recShiftBtn);
+  sp.append(sb);
+  grid.append(sp);
+  body.append(grid);
+
+  // Issued GST Invoices & Credit Notes
+  const ip = make("div", "panel");
+  const ih = make("div", "panel-head"); ih.append(make("b", null, "Sequential GST Invoices (Immutable) & Credit Notes")); ip.append(ih);
+  const ib = make("div", "panel-body");
+  ib.style.overflowX = "auto";
+  const tbl = document.createElement("table");
+  tbl.className = "grid";
+  tbl.innerHTML = "<thead><tr><th>Invoice No.</th><th>Customer</th><th>Vehicle</th><th class=num>Taxable</th><th class=num>CGST+SGST/IGST</th><th class=num>Grand Total</th><th>Credit Note</th></tr></thead>";
+  const tb = document.createElement("tbody");
+  (OPS_DATA.invoices || []).forEach((inv) => {
+    const tr = document.createElement("tr");
+    const gst = Number(inv.cgst_amount || 0) + Number(inv.sgst_amount || 0) + Number(inv.igst_amount || 0);
+    tr.innerHTML = `<td class="mono"><b>${escapeHtml(inv.invoice_number)}</b></td>` +
+      `<td>${escapeHtml(inv.customer_name)}</td>` +
+      `<td class="mono">${escapeHtml(inv.vehicle_reg)}</td>` +
+      `<td class="num">₹${Number(inv.taxable_amount).toFixed(2)}</td>` +
+      `<td class="num">₹${gst.toFixed(2)}</td>` +
+      `<td class="num"><b>₹${Number(inv.grand_total).toFixed(2)}</b></td>`;
+    const cnTd = document.createElement("td");
+    const cnBtn = make("button", "btn tiny", "Issue Credit Note");
+    cnBtn.addEventListener("click", async () => {
+      const amt = prompt(`Issue GST Credit Note against ${inv.invoice_number} (max taxable ₹${inv.taxable_amount}):`, "500");
+      if (!amt) return;
+      const reason = prompt("Reason for Credit Note (required for GST audit):", "Post-return billing adjustment");
+      if (!reason) return;
+      try {
+        const res = await api("/api/ops/credit-notes", {
+          body: { invoice_id: inv.id, taxable_reversal: Number(amt), reason },
+        });
+        toast(`Issued Credit Note ${res.credit_note.credit_note_number}`);
+        await refreshOpsSummary();
+        renderOpsHub();
+      } catch (err) { toast(err.message, true); }
+    });
+    cnTd.append(cnBtn);
+    tr.append(cnTd);
+    tb.append(tr);
+  });
+  tbl.append(tb);
+  ib.append(tbl);
+  ip.append(ib);
+  body.append(ip);
+}
+
+function renderOpsWorkshop(body) {
+  const grid = make("div", "ops-grid-2");
+  const vehOpts = (OPS_DATA.vehicles || []).map((v) => [String(v.id), `${v.reg_number} · ${v.make} ${v.model}`]);
+  const bookOpts = (OPS_DATA.bookings || []).map((b) => [String(b.id), `${b.booking_ref} (${b.reg_number})`]);
+
+  // Maintenance Job Card & Damage Record
+  const mp = make("div", "panel");
+  const mh = make("div", "panel-head"); mh.append(make("b", null, "Workshop Job Cards & Annotated Damage Log")); mp.append(mh);
+  const mb = make("div", "panel-body");
+  const mVeh = opsSelect(mb, "Vehicle", vehOpts.length ? vehOpts : [["", "Add vehicle first"]]);
+  const r1 = make("div", "ops-grid-3");
+  const mType = opsField(r1, "Service / Panel", "10,000 km Periodic Service");
+  const mCost = opsField(r1, "Cost / Est. Damage (₹)", "4500", "number", "4500");
+  const mSev = opsSelect(r1, "Damage Severity (if damage)", [["scratch", "Scratch"], ["dent", "Dent"], ["crack", "Crack"], ["major", "Major"]]);
+  mb.append(r1);
+  const btnRow = make("div", "row");
+  const jcBtn = make("button", "btn primary", "Open Workshop Job Card");
+  jcBtn.addEventListener("click", async () => {
+    if (!mVeh.value) return;
+    try {
+      await api("/api/ops/maintenance", {
+        body: { vehicle_id: Number(mVeh.value), service_type: mType.value, parts_cost: Number(mCost.value), status: "in_progress" },
+      });
+      toast("Workshop job card created; vehicle marked In Workshop.");
+      await refreshOpsSummary();
+      renderOpsHub();
+    } catch (err) { toast(err.message, true); }
+  });
+  const dmgBtn = make("button", "btn danger", "Log Vehicle Damage");
+  dmgBtn.addEventListener("click", async () => {
+    if (!mVeh.value) return;
+    try {
+      await api("/api/ops/damage", {
+        body: {
+          vehicle_id: Number(mVeh.value), panel_location: mType.value || "Front Bumper",
+          severity: mSev.value, estimated_cost: Number(mCost.value),
+          description: `Logged via Ops Hub (${mSev.value})`,
+          annotation_json: [{ x: 120, y: 80, label: mType.value || "Damage" }],
+        },
+      });
+      toast("Damage record saved to vehicle history.");
+      await refreshOpsSummary();
+      renderOpsHub();
+    } catch (err) { toast(err.message, true); }
+  });
+  btnRow.append(jcBtn, dmgBtn);
+  mb.append(btnRow);
+  mp.append(mb);
+  grid.append(mp);
+
+  // Digital Signature Capture Pad
+  const sp = make("div", "panel");
+  const sh = make("div", "panel-head"); sh.append(make("b", null, "Digital Signature Capture (SHA-256 Timestamped)")); sp.append(sh);
+  const sb = make("div", "panel-body");
+  const sBook = opsSelect(sb, "Booking", bookOpts.length ? bookOpts : [["", "Create booking first"]]);
+  const sName = opsField(sb, "Signer Full Name", "Aarav Deshmukh");
+  const canvas = document.createElement("canvas");
+  canvas.width = 360;
+  canvas.height = 110;
+  canvas.className = "sig-canvas";
+  const ctx = canvas.getContext("2d");
+  ctx.strokeStyle = "#14532d";
+  ctx.lineWidth = 2;
+  let drawing = false;
+  let hasStroke = false;
+  canvas.addEventListener("pointerdown", (e) => {
+    drawing = true;
+    hasStroke = true;
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX, e.offsetY);
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!drawing) return;
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+  });
+  window.addEventListener("pointerup", () => { drawing = false; });
+  sb.append(canvas);
+  const sRow = make("div", "row");
+  const signBtn = make("button", "btn primary", "Capture & Seal Signature");
+  signBtn.addEventListener("click", async () => {
+    if (!sBook.value || !sName.value.trim()) { toast("Select a booking and signer name.", true); return; }
+    try {
+      const sigData = hasStroke ? canvas.toDataURL("image/png") : "data:image/png;base64,SIGNED";
+      const res = await api("/api/ops/signatures", {
+        body: { booking_id: Number(sBook.value), signer_name: sName.value, doc_kind: "agreement", signer_role: "customer", signature_data: sigData },
+      });
+      toast(`Signature sealed · SHA-256: ${res.signature.doc_hash.slice(0, 12)}…`);
+    } catch (err) { toast(err.message, true); }
+  });
+  const clrBtn = make("button", "btn", "Clear Pad");
+  clrBtn.addEventListener("click", () => { ctx.clearRect(0, 0, canvas.width, canvas.height); hasStroke = false; });
+  sRow.append(signBtn, clrBtn);
+  sb.append(sRow);
+  sp.append(sb);
+  grid.append(sp);
+  body.append(grid);
+}
+
+function renderOpsDashboard(body) {
+  const dash = OPS_DATA.dashboard || {};
+  const sg = make("div", "stat-grid");
+  [
+    ["Fleet Utilization (30d)", `${dash.fleet_utilization_pct || 0}%`, `${dash.fleet_count || 0} vehicles`],
+    ["Gross Revenue", `₹${Number(dash.total_gross_revenue || 0).toLocaleString("en-IN")}`, "taxable rental revenue"],
+    ["Workshop & Chauffeur Cost", `₹${Number((dash.total_maintenance_cost || 0) + (dash.total_driver_cost || 0)).toLocaleString("en-IN")}`, "direct costs"],
+    ["Net Fleet Profit", `₹${Number(dash.total_net_profit || 0).toLocaleString("en-IN")}`, "30-day net"],
+  ].forEach(([label, val, sub]) => {
+    const c = make("div", "stat");
+    c.append(make("b", null, val), make("small", null, `${label} · ${sub}`));
+    sg.append(c);
+  });
+  body.append(sg);
+
+  // Profitability per vehicle table
+  const dp = make("div", "panel");
+  const dh = make("div", "panel-head"); dh.append(make("b", null, "Per-Vehicle Utilization, Idle Days & Profitability")); dp.append(dh);
+  const db = make("div", "panel-body");
+  db.style.overflowX = "auto";
+  const tbl = document.createElement("table");
+  tbl.className = "grid";
+  tbl.innerHTML = "<thead><tr><th>Reg No.</th><th>Vehicle</th><th class=num>Rented Days</th><th class=num>Idle Days</th><th class=num>Utilization</th><th class=num>Revenue</th><th class=num>Maint. Cost</th><th class=num>Net Profit</th></tr></thead>";
+  const tb = document.createElement("tbody");
+  (dash.vehicles || []).forEach((v) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="mono"><b>${escapeHtml(v.reg_number)}</b></td>` +
+      `<td>${escapeHtml(v.make)} ${escapeHtml(v.model)}</td>` +
+      `<td class="num">${v.rented_days}</td>` +
+      `<td class="num">${v.idle_days}</td>` +
+      `<td class="num">${v.utilization_pct}%</td>` +
+      `<td class="num">₹${Number(v.gross_revenue).toLocaleString("en-IN")}</td>` +
+      `<td class="num">₹${Number(v.maintenance_cost).toLocaleString("en-IN")}</td>` +
+      `<td class="num"><b>₹${Number(v.net_profit).toLocaleString("en-IN")}</b></td>`;
+    tb.append(tr);
+  });
+  tbl.append(tb);
+  db.append(tbl);
+  dp.append(db);
+  body.append(dp);
+
+  // Bulk CSV / XLSX Importer with Preview
+  const imp = make("div", "panel");
+  const imh = make("div", "panel-head"); imh.append(make("b", null, "Bulk CSV / Excel (.xlsx) Importer with Dry-Run Preview")); imp.append(imh);
+  const imb = make("div", "panel-body");
+  const targetSel = opsSelect(imb, "Import Target", [["vehicles", "Vehicles (reg_number,make,model,category,fuel_type,daily_rate)"], ["customers", "Customers (full_name,phone,email,dl_number,dl_expiry)"]]);
+  const csvArea = document.createElement("textarea");
+  csvArea.rows = 4;
+  csvArea.style.cssText = "width:100%;padding:8px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--paper);font:12.5px var(--mono);margin-bottom:8px";
+  csvArea.value = "reg_number,make,model,category,fuel_type,daily_rate\nMH-12-XY-8899,Hyundai,Creta,SUV,Diesel,2800";
+  imb.append(csvArea);
+  const previewOut = make("div", "hint", "Paste CSV rows above (or upload .csv/.xlsx) and click Preview.");
+  let lastValidRows = [];
+  const btnRow = make("div", "row");
+  const prevBtn = make("button", "btn", "1. Preview & Validate");
+  const commitBtn = make("button", "btn primary", "2. Commit Valid Rows");
+  commitBtn.disabled = true;
+  prevBtn.addEventListener("click", async () => {
+    try {
+      const res = await api("/api/ops/import/preview", {
+        body: { target: targetSel.value, filename: "import.csv", content: csvArea.value },
+      });
+      lastValidRows = res.valid_rows || [];
+      commitBtn.disabled = lastValidRows.length === 0;
+      const errText = (res.errors || []).map((e) => `Row ${e.row}: ${e.errors.join("; ")}`).join(" | ");
+      previewOut.textContent = `Preview: ${res.valid_count} valid, ${res.error_count} error(s). ${errText}`;
+    } catch (err) { toast(err.message, true); }
+  });
+  commitBtn.addEventListener("click", async () => {
+    try {
+      const res = await api("/api/ops/import/commit", {
+        body: { target: targetSel.value, valid_rows: lastValidRows },
+      });
+      toast(`Imported ${res.imported_count} record(s).`);
+      commitBtn.disabled = true;
+      await refreshOpsSummary();
+      renderOpsHub();
+    } catch (err) { toast(err.message, true); }
+  });
+  btnRow.append(prevBtn, commitBtn);
+  imb.append(btnRow, previewOut);
+  imp.append(imb);
+  body.append(imp);
+}
+
+if ($("open-ops-hub")) $("open-ops-hub").addEventListener("click", () => openOpsHub());
+if ($("ops-modal-close")) $("ops-modal-close").addEventListener("click", closeOpsHub);
+if ($("ops-modal-scrim")) {
+  $("ops-modal-scrim").addEventListener("click", (e) => {
+    if (e.target === $("ops-modal-scrim")) closeOpsHub();
+  });
+}
+setTimeout(refreshOpsSummary, 1200);
 
 initMascot();
 boot();

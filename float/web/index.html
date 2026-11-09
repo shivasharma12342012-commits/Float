@@ -206,6 +206,10 @@
 
       <div class="chip" id="chip-thread" hidden><span id="chip-thread-title"></span></div>
       <span class="spacer"></span>
+      <button type="button" class="chip ops-hub-btn" id="open-ops-hub" title="Enterprise Rental Operations Hub (Fleet, Bookings, GST, DPDP, Workshop)">
+        <span>Enterprise Ops Hub</span>
+        <span class="pill warn" id="ops-alert-badge" hidden>0 alerts</span>
+      </button>
     </header>
 
     <div class="notice-strip" id="notice-strip" hidden></div>
@@ -293,6 +297,22 @@
     </div>
     <div class="modal-body" id="modal-body"></div>
     <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<!-- ------------------------------------------------ enterprise ops modal -->
+<div class="modal-scrim" id="ops-modal-scrim" hidden>
+  <div class="modal ops-modal" id="ops-modal" role="dialog" aria-modal="true" aria-labelledby="ops-modal-title">
+    <div class="modal-head">
+      <h3 id="ops-modal-title">Enterprise Rental Operations Hub</h3>
+      <span class="pill" id="ops-role-pill">owner</span>
+      <span class="spacer"></span>
+      <button type="button" class="icon-btn" id="ops-modal-close" aria-label="Close">
+        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="tabs" id="ops-tabs" role="tablist" aria-label="Operations sections"></div>
+    <div class="modal-body" id="ops-modal-body"></div>
   </div>
 </div>
 
