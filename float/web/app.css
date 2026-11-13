@@ -87,6 +87,7 @@ body {
   font: 15px/1.6 var(--sans);
   color: var(--ink);
   background: var(--paper);
+  overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
@@ -1404,6 +1405,7 @@ button.rail-foot-name .grow { min-width: 0; flex: 1; overflow: hidden; }
   display: grid;
   place-items: center;
   padding: 24px;
+  -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
 }
 .modal {

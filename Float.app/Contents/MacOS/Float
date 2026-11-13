@@ -2,17 +2,50 @@
 # Native macOS App Bundle launcher for Float
 MACOS_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONTENTS_DIR="$(cd "$MACOS_DIR/.." && pwd)"
-OUTER_DIR="$(cd "$CONTENTS_DIR/../.." && pwd)"
+APP_BUNDLE="$(cd "$CONTENTS_DIR/.." && pwd)"
+OUTER_DIR="$(cd "$APP_BUNDLE/.." && pwd)"
+STATE_DIR="$HOME/Library/Application Support/Float"
+SAVED_PATH_FILE="$STATE_DIR/app_dir"
 
-xattr -cr "$CONTENTS_DIR/.." 2>/dev/null || true
+xattr -cr "$APP_BUNDLE" 2>/dev/null || true
 
+APP_DIR=""
 if [ -f "$OUTER_DIR/Start Float.command" ] && [ -f "$OUTER_DIR/main.py" ]; then
-    exec /bin/bash "$OUTER_DIR/Start Float.command"
-elif [ -f "$CONTENTS_DIR/Resources/app/Start Float.command" ]; then
-    export FLOAT_DATA_DIR="${FLOAT_DATA_DIR:-$HOME/Library/Application Support/Float/data}"
+    APP_DIR="$OUTER_DIR"
+elif [ -f "$CONTENTS_DIR/Resources/app/Start Float.command" ] && [ -f "$CONTENTS_DIR/Resources/app/main.py" ]; then
+    APP_DIR="$CONTENTS_DIR/Resources/app"
+    export FLOAT_DATA_DIR="${FLOAT_DATA_DIR:-$STATE_DIR/data}"
     mkdir -p "$FLOAT_DATA_DIR"
-    exec /bin/bash "$CONTENTS_DIR/Resources/app/Start Float.command"
+elif [ -f "$SAVED_PATH_FILE" ]; then
+    CANDIDATE="$(cat "$SAVED_PATH_FILE" 2>/dev/null)"
+    if [ -n "$CANDIDATE" ] && [ -f "$CANDIDATE/Start Float.command" ] && [ -f "$CANDIDATE/main.py" ]; then
+        APP_DIR="$CANDIDATE"
+    fi
+fi
+
+if [ -z "$APP_DIR" ]; then
+    for cand in "$HOME/Applications/Float" "$HOME/Downloads/Float-main" "$HOME/Downloads/Float-main/Float-main" "$HOME/Desktop/Float"; do
+        if [ -f "$cand/Start Float.command" ] && [ -f "$cand/main.py" ]; then
+            APP_DIR="$cand"
+            break
+        fi
+    done
+fi
+
+if [ -z "$APP_DIR" ]; then
+    CHOSEN="$(osascript -e 'POSIX path of (choose folder with prompt "Select your Float folder (containing main.py):")' 2>/dev/null || true)"
+    CHOSEN="${CHOSEN%/}"
+    if [ -n "$CHOSEN" ] && [ -f "$CHOSEN/Start Float.command" ] && [ -f "$CHOSEN/main.py" ]; then
+        APP_DIR="$CHOSEN"
+        mkdir -p "$STATE_DIR"
+        printf '%s' "$APP_DIR" > "$SAVED_PATH_FILE"
+    fi
+fi
+
+if [ -n "$APP_DIR" ]; then
+    xattr -cr "$APP_DIR" 2>/dev/null || true
+    exec /bin/bash "$APP_DIR/Start Float.command"
 else
-    osascript -e 'display alert "Float" message "Could not locate Float application files." as critical' >/dev/null 2>&1 || true
+    osascript -e 'display alert "Float" message "Could not locate Float application files (main.py). Keep Float.app inside the Float folder, or select the Float folder when prompted." as critical' >/dev/null 2>&1 || true
     exit 1
 fi

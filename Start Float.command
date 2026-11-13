@@ -32,17 +32,11 @@ fi
 DATA_DIR="${FLOAT_DATA_DIR:-$DIR/data}"
 mkdir -p "$DATA_DIR"
 
-# First run only: install optional extras silently in the background (never blocks startup)
-if [ ! -f "$DATA_DIR/.deps_v3" ]; then
-    echo "ok" > "$DATA_DIR/.deps_v3"
-    (nohup "$PY" -m pip install --user --quiet --disable-pip-version-check "cryptography>=42.0" -r "$DIR/requirements.txt" >"$DATA_DIR/float_pip.log" 2>&1 &) >/dev/null 2>&1 || true
-fi
-
 if [ "$1" = "--show" ]; then
     exec "$PY" "$DIR/main.py"
 fi
 
-# Launch Float in the background and close the Terminal window cleanly
-nohup "$PY" "$DIR/main.py" >"$DATA_DIR/float_stdout.log" 2>&1 &
+# Launch Float cleanly in the background with stdin detached so Finder/Terminal never hangs
+nohup "$PY" "$DIR/main.py" >"$DATA_DIR/float_stdout.log" 2>&1 </dev/null &
 disown 2>/dev/null || true
 exit 0

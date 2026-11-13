@@ -117,8 +117,11 @@ def _open_window(url: str) -> None:
     for exe in candidates:
         if exe and os.path.exists(exe):
             try:
+                cmd = [exe, f"--app={url}", "--window-size=1280,820"]
+                if sys.platform == "darwin":
+                    cmd.extend(["--no-first-run", "--no-default-browser-check"])
                 subprocess.Popen(
-                    [exe, f"--app={url}", "--window-size=1280,820"],
+                    cmd,
                     close_fds=True,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
@@ -128,7 +131,12 @@ def _open_window(url: str) -> None:
                 continue
     if sys.platform == "darwin":
         try:
-            subprocess.Popen(["open", url], close_fds=True)
+            subprocess.Popen(
+                ["open", url],
+                close_fds=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
             return
         except OSError:
             pass
@@ -207,7 +215,17 @@ def _cmd_run(args: argparse.Namespace) -> None:
             pass
 
     import atexit
+    import signal
+
     atexit.register(_cleanup_pid)
+
+    def _handle_sigterm(_signum: int, _frame: object) -> None:
+        raise KeyboardInterrupt
+
+    try:
+        signal.signal(signal.SIGTERM, _handle_sigterm)
+    except Exception:
+        pass
 
     url = f"{scheme}://{shown}:{srv.server_port}"
 
@@ -220,7 +238,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     print("Close this window, or press Ctrl+C, to sign everyone out and stop Float.")
 
     if not args.no_browser:
-        time.sleep(0.05)
+        time.sleep(0.02)
         if args.tab:
             webbrowser.open(url)
         else:
@@ -231,6 +249,12 @@ def _cmd_run(args: argparse.Namespace) -> None:
             time.sleep(3600)
     except KeyboardInterrupt:
         print("\nStopping Float.")
+    finally:
+        try:
+            srv.shutdown()
+            srv.server_close()
+        except Exception:
+            pass
 
 
 def _cmd_set_password(args: argparse.Namespace) -> None:
