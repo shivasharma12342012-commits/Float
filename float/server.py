@@ -2097,7 +2097,7 @@ class FloatHandler(BaseHTTPRequestHandler):
     _PAGES = {"/": "index.html", "/login": "login.html", "/admin": "admin.html"}
 
     def _serve_static(self, path: str) -> None:
-        if path == "/float.ico":
+        if path in {"/float.ico", "/favicon.ico"}:
             target = Path(config.WEB_ROOT).resolve().parent.parent / "float.ico"
         elif path in self._PAGES:
             target = Path(config.WEB_ROOT) / self._PAGES[path]

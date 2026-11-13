@@ -2271,9 +2271,11 @@ function initMascot() {
     "Top gear dispatch! 🔥"
   ];
 
+  const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   let phraseIdx = 0;
   let hideTimer = null;
   let blinkTimer = null;
+  let spinTimer = null;
 
   function speak(text, duration = 3000) {
     if (!bubble) return;
@@ -2299,18 +2301,21 @@ function initMascot() {
     clearTimeout(hideTimer);
     hideTimer = setTimeout(() => {
       mascot.classList.remove("is-speaking", "is-active");
-    }, 800);
+    }, 650);
   });
 
-  // Click celebration spin
+  // Click celebration spin (centered axis, clean end)
   mascot.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (!(reducedMotion && reducedMotion.matches)) mascot.classList.add("is-spinning");
+    if (!(reducedMotion && reducedMotion.matches)) {
+      mascot.classList.remove("is-spinning");
+      void mascot.offsetWidth; // restart animation cleanly on rapid clicks
+      mascot.classList.add("is-spinning");
+      clearTimeout(spinTimer);
+      spinTimer = setTimeout(() => mascot.classList.remove("is-spinning"), 650);
+    }
     const pick = excitedPhrases[Math.floor(Math.random() * excitedPhrases.length)];
     speak(pick, 3500);
-    setTimeout(() => {
-      mascot.classList.remove("is-spinning");
-    }, 680);
   });
 
   mascot.addEventListener("keydown", (e) => {
@@ -2347,22 +2352,36 @@ function initMascot() {
   });
   scheduleBlink();
 
-  // Subtle pupil tracking when cursor moves inside the top rail
+  // rAF-throttled pupil tracking + gentle body lean toward cursor inside the top rail
   const railTop = document.querySelector(".rail-top");
   const eyesNormal = $("mascot-eyes-normal");
-  const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   if (railTop && eyesNormal) {
+    let rafId = 0;
+    let lastX = 0;
+    let lastY = 0;
     railTop.addEventListener("mousemove", (e) => {
       if (reducedMotion && reducedMotion.matches) return;
-      const rect = mascot.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = Math.max(-1, Math.min(1, (e.clientX - cx) / 48));
-      const dy = Math.max(-1, Math.min(1, (e.clientY - cy) / 48));
-      eyesNormal.style.transform = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px)`;
-    });
+      lastX = e.clientX;
+      lastY = e.clientY;
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        const rect = mascot.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const nx = Math.max(-1, Math.min(1, (lastX - cx) / 56));
+        const ny = Math.max(-1, Math.min(1, (lastY - cy) / 56));
+        eyesNormal.style.transform = `translate3d(${(nx * 0.9).toFixed(2)}px, ${(ny * 0.9).toFixed(2)}px, 0)`;
+        mascot.style.transform = `translate3d(${(nx * 2.2).toFixed(2)}px, ${(ny * 1.4).toFixed(2)}px, 0)`;
+      });
+    }, { passive: true });
     railTop.addEventListener("mouseleave", () => {
-      eyesNormal.style.transform = "translate(0px, 0px)";
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+      eyesNormal.style.transform = "translate3d(0, 0, 0)";
+      mascot.style.transform = "translate3d(0, 0, 0)";
     });
   }
 

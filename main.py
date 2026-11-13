@@ -117,9 +117,7 @@ def _open_window(url: str) -> None:
     for exe in candidates:
         if exe and os.path.exists(exe):
             try:
-                cmd = [exe, f"--app={url}", "--window-size=1280,820"]
-                if sys.platform == "darwin":
-                    cmd.extend(["--no-first-run", "--no-default-browser-check"])
+                cmd = [exe, f"--app={url}", "--window-size=1280,820", "--no-first-run", "--no-default-browser-check"]
                 subprocess.Popen(
                     cmd,
                     close_fds=True,

@@ -131,10 +131,11 @@ def _sample_icon(u: float, v: float, aa: float, mac_margin: bool = True) -> tupl
 
 
 def render_png(size: int, mac_margin: bool = True) -> bytes:
-    """Render an RGBA PNG of ``size x size`` pixels with 2x2 supersampling."""
-    aa = 2.2 / size
+    """Render an RGBA PNG of ``size x size`` pixels with supersampling."""
+    aa = 0.95 / size
     raw_rows = bytearray()
-    sub_offsets = (-0.25, 0.25)
+    sub_offsets = (-0.3, 0.0, 0.3) if size <= 64 else (-0.25, 0.25)
+    sample_count = float(len(sub_offsets) * len(sub_offsets))
     for y in range(size):
         raw_rows.append(0)  # PNG filter type 0 (None)
         for x in range(size):
@@ -148,7 +149,7 @@ def render_png(size: int, mac_margin: bool = True) -> bytes:
                     g_sum += g * a
                     b_sum += b * a
                     a_sum += a
-            a_avg = a_sum / 4.0
+            a_avg = a_sum / sample_count
             if a_avg > 0.5:
                 r_out = int(min(255, round(r_sum / a_sum)))
                 g_out = int(min(255, round(g_sum / a_sum)))
@@ -200,16 +201,24 @@ def write_icns(path: Path) -> None:
 
 def write_ico(path: Path) -> None:
     """Write a multi-resolution Windows/Browser .ico using PNG-encoded frames."""
-    sizes = [16, 32, 48, 64, 128, 256]
-    pngs = [render_png(s, mac_margin=False) for s in sizes]
+    sizes = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256]
+    pngs = {s: render_png(s, mac_margin=False) for s in sizes}
     header = struct.pack("<HHH", 0, 1, len(sizes))
     offset = 6 + 16 * len(sizes)
     dir_entries = bytearray()
-    for s, png in zip(sizes, pngs):
+    for s in sizes:
+        png = pngs[s]
         dim = 0 if s >= 256 else s
         dir_entries.extend(struct.pack("<BBBBHHII", dim, dim, 0, 0, 1, 32, len(png), offset))
         offset += len(png)
-    path.write_bytes(header + bytes(dir_entries) + b"".join(pngs))
+    path.write_bytes(header + bytes(dir_entries) + b"".join(pngs[s] for s in sizes))
+
+    # Also write crisp web/taskbar PNG icons for Edge/Chrome --app mode on Windows
+    web_icons_dir = ROOT / "float" / "web" / "icons"
+    web_icons_dir.mkdir(parents=True, exist_ok=True)
+    for web_size in (32, 48, 192, 256):
+        data = pngs.get(web_size) or render_png(web_size, mac_margin=False)
+        (web_icons_dir / f"icon-{web_size}.png").write_bytes(data)
 
 
 def main() -> None:

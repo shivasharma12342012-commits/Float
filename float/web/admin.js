@@ -816,16 +816,24 @@ boot();
   const quips = ["Fleet admin mode!", "All desks secure!", "Budgets on track!", "Need a backup?"];
   let idx = 0;
   let timer = null;
-  const react = () => {
+  let spinTimer = null;
+  const react = (spin = false) => {
     bubble.textContent = quips[idx % quips.length];
     idx += 1;
     mascot.classList.add("is-talking", "is-active");
+    if (spin && !(reducedMotion && reducedMotion.matches)) {
+      mascot.classList.remove("is-spinning");
+      void mascot.offsetWidth;
+      mascot.classList.add("is-spinning");
+      clearTimeout(spinTimer);
+      spinTimer = setTimeout(() => mascot.classList.remove("is-spinning"), 650);
+    }
     clearTimeout(timer);
     timer = setTimeout(() => mascot.classList.remove("is-talking", "is-active"), 2200);
   };
-  mascot.addEventListener("mouseenter", react);
-  mascot.addEventListener("click", react);
-  mascot.addEventListener("focus", react);
+  mascot.addEventListener("mouseenter", () => react(false));
+  mascot.addEventListener("click", () => react(true));
+  mascot.addEventListener("focus", () => react(false));
   mascot.addEventListener("blur", () => {
     if (!mascot.matches(":hover")) mascot.classList.remove("is-active");
   });
