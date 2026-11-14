@@ -45,7 +45,7 @@ _SAFE = re.compile(r"[^A-Za-z0-9 ._()\u0900-\u097F-]+")
 
 def safe_name(name: str, extension: str) -> str:
     extension = (extension or "txt").strip().lstrip(".").lower() or "txt"
-    stem = _SAFE.sub("", (name or "Document").strip())[:80].strip(" .") or "Document"
+    stem = re.sub(r"\.{2,}", ".", _SAFE.sub("", (name or "Document").strip()))[:80].strip(" .") or "Document"
     if stem.lower().endswith("." + extension):
         stem = stem[: -(len(extension) + 1)]
     return f"{stem}.{extension}"
