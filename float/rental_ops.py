@@ -571,12 +571,24 @@ def _dec(val: Any, default: str = "0.00") -> Decimal:
     if val is None or val == "" or isinstance(val, bool):
         return Decimal(default)
     try:
-        d = Decimal(str(val))
+        cleaned = re.sub(r"[₹$,%\s,]", "", str(val)).strip() if isinstance(val, str) else str(val)
+        if not cleaned:
+            return Decimal(default)
+        d = Decimal(cleaned)
         if not d.is_finite():
             return Decimal(default)
         return d
     except (InvalidOperation, ValueError, TypeError):
         return Decimal(default)
+
+
+def normalize_reg_plate(raw: str) -> str:
+    """Normalize an Indian vehicle registration number (e.g. 'mh 01 ab 1234' -> 'MH-01-AB-1234')."""
+    s = re.sub(r"[^A-Za-z0-9]", "", str(raw or "")).upper()
+    m = re.match(r"^([A-Z]{2})(\d{1,2})([A-Z]{1,3})(\d{1,4})$", s)
+    if m:
+        return f"{m.group(1)}-{int(m.group(2)):02d}-{m.group(3)}-{int(m.group(4)):04d}"
+    return str(raw or "").strip().upper()
 
 
 def money(val: Any) -> Decimal:
