@@ -13,7 +13,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-2563eb?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Stdlib%20Only)-059669?style=for-the-badge)](#-download--60-second-quick-start)
 [![MCP Ready](https://img.shields.io/badge/MCP-Stdio%20%26%20HTTP%2FSSE-7c3aed?style=for-the-badge)](#-clean-mcp-model-context-protocol-support)
-[![Tests](https://img.shields.io/badge/Tests-671%20Passing-16a34a?style=for-the-badge)](#-testing--verification)
+[![Tests](https://img.shields.io/badge/Tests-1275%20Passing-16a34a?style=for-the-badge)](#-testing--verification)
 
 <p align="center">
   <b>Instant GST Rental Quotes</b> • <b>Print-Ready Contracts (DOCX / PDF / XLSX)</b> • <b>Handover & Damage Checklists</b> • <b>Fleet Utilization Analytics</b> • <b>Fixed-Desk Enterprise LAN Server</b>
