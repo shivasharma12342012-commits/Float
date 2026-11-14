@@ -1213,6 +1213,15 @@ class BugcheckMatrixTestCase(unittest.TestCase):
         else:
             self.assertEqual(round(q["cgst_amount"] + q["sgst_amount"], 2), q["gst_amount"])
 
+    def test_matrix_135_tariff_and_gst_split(self) -> None:
+        q = rental_ops.calculate_tariff_exact({"days": 10, "daily_rate": "₹3,295", "gst_percent": 18, "inter_state": True, "security_deposit": 5000})
+        self.assertEqual(q["base_rent"], float(32950))
+        if True:
+            self.assertEqual(q["igst_amount"], q["gst_amount"])
+            self.assertEqual(q["cgst_amount"], 0.0)
+        else:
+            self.assertEqual(round(q["cgst_amount"] + q["sgst_amount"], 2), q["gst_amount"])
+
 
 if __name__ == "__main__":
     unittest.main()
