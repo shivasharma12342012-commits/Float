@@ -2197,6 +2197,12 @@ class BugcheckMatrixTestCase(unittest.TestCase):
         user = {"id": 65, "role": "teacher", "ops_role": "owner"}
         self.assertEqual(rental_ops.has_permission(user, "booking.write"), True)
 
+    def test_matrix_266_plate_normalization_and_rbac(self) -> None:
+        plate = rental_ops.normalize_reg_plate("up 17 ab 1066")
+        self.assertEqual(plate, "UP-17-AB-1066")
+        user = {"id": 66, "role": "teacher", "ops_role": "manager"}
+        self.assertEqual(rental_ops.has_permission(user, "booking.write"), True)
+
 
 if __name__ == "__main__":
     unittest.main()
