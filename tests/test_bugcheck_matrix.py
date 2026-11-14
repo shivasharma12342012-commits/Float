@@ -4152,6 +4152,12 @@ class BugcheckMatrixTestCase(unittest.TestCase):
         res = tools.execute("calculate_quote", {"days": 5, "daily_rate": 4175, "gst_percent": 5}, {"id": 1}, None)
         self.assertIn("₹20,875.00", res["text"])
 
+    def test_matrix_571_toolkit_and_quote_engine(self) -> None:
+        entry = tools.TOOLKIT[1]
+        self.assertEqual(tools.toolkit_entry(entry["id"])["id"], entry["id"])
+        res = tools.execute("calculate_quote", {"days": 6, "daily_rate": 4200, "gst_percent": 5}, {"id": 1}, None)
+        self.assertIn("₹25,200.00", res["text"])
+
 
 if __name__ == "__main__":
     unittest.main()
