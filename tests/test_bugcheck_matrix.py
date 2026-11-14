@@ -3344,6 +3344,13 @@ class BugcheckMatrixTestCase(unittest.TestCase):
         masked = security.mask_key("sk-proj-secretkey0091abcd")
         self.assertNotIn("secretkey", masked)
 
+    def test_matrix_442_security_and_safe_filename(self) -> None:
+        cleaned = artifacts.safe_name("Invoice_92..\\bad/92", ".pdf")
+        self.assertTrue(cleaned.endswith(".pdf"))
+        self.assertNotIn("..", cleaned)
+        masked = security.mask_key("sk-proj-secretkey0092abcd")
+        self.assertNotIn("secretkey", masked)
+
 
 if __name__ == "__main__":
     unittest.main()
