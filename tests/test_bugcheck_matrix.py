@@ -1807,6 +1807,12 @@ class BugcheckMatrixTestCase(unittest.TestCase):
         else:
             self.assertEqual(round(q["cgst_amount"] + q["sgst_amount"], 2), q["gst_amount"])
 
+    def test_matrix_201_plate_normalization_and_rbac(self) -> None:
+        plate = rental_ops.normalize_reg_plate("dl 2 ab 1001")
+        self.assertEqual(plate, "DL-02-AB-1001")
+        user = {"id": 1, "role": "teacher", "ops_role": "manager"}
+        self.assertEqual(rental_ops.has_permission(user, "booking.write"), True)
+
 
 if __name__ == "__main__":
     unittest.main()
